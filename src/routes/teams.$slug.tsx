@@ -126,7 +126,7 @@ function TeamProfile() {
                     </td>
                     <td className="py-2 text-right">#{r?.rank ?? "—"}</td>
                     <td className="py-2 text-right stat-num">
-                      {r ? formatPoints(Number(r.points)) : "—"}
+                      {r ? formatRecord(recordFromPoints(Number(r.points), Number(r.matches_played))) : "—"}
                     </td>
                     <td className="py-2 text-right text-muted-foreground tabular-nums">
                       {r?.hdcp_pinfall?.toLocaleString() ?? "—"} hdcp
