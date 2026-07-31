@@ -76,15 +76,15 @@ function TeamsPage() {
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                 <div>
-                  <p className="text-muted-foreground">Third pts</p>
+                  <p className="text-muted-foreground">Third W-L</p>
                   <p className="stat-num text-base text-foreground">
-                    {cur ? formatPoints(Number(cur.points)) : "—"}
+                    {cur ? formatRecord(recordFromPoints(Number(cur.points), Number(cur.matches_played))) : "—"}
                   </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Season #{full?.rank ?? "—"}</p>
                   <p className="stat-num text-base text-foreground">
-                    {full ? formatPoints(Number(full.points)) : "—"}
+                    {full ? formatRecord(recordFromPoints(Number(full.points), Number(full.matches_played))) : "—"}
                   </p>
                 </div>
                 <div>
