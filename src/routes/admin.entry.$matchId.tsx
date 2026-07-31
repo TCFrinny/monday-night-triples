@@ -15,7 +15,8 @@ export const Route = createFileRoute("/admin/entry/$matchId")({
   component: ScoreEntry,
 });
 
-const PARTICIPATION = ["regular", "sub", "blind", "absent"] as const;
+type Participation = "rostered" | "sub" | "blind";
+const PARTICIPATION: Participation[] = ["rostered", "sub", "blind"];
 
 function ScoreEntry() {
   const { matchId } = Route.useParams();
@@ -28,14 +29,14 @@ function ScoreEntry() {
   const invalidate = () => qc.invalidateQueries();
 
   const addLineup = useMutation({
-    mutationFn: async ({ teamId, slot, bowlerId, participation }: { teamId: string; slot: number; bowlerId: string | null; participation: string }) => {
+    mutationFn: async ({ teamId, slot, bowlerId, participation }: { teamId: string; slot: number; bowlerId: string | null; participation: Participation }) => {
       const b = (bowlers ?? []).find((x: any) => x.id === bowlerId);
       const s = (stats ?? []).find((x: any) => x.bowler_id === bowlerId);
       const games = s?.games ?? 0;
       const app = b
         ? applicableAverage({
             entryAverage: Number(b.entry_average),
-            currentAverage: games ? Number(s.average) : null,
+            currentAverage: games && s ? Number(s.average) : null,
             gamesBefore: games,
             threshold: season?.establishment_threshold ?? 15,
           })
@@ -165,7 +166,7 @@ function ScoreEntry() {
                           teamId: team.id,
                           slot,
                           bowlerId: e.target.value || null,
-                          participation: lineup?.participation ?? "regular",
+                          participation: (lineup?.participation ?? "rostered") as Participation,
                         })
                       }
                       className="rounded-md border border-border bg-card px-2 py-1.5 text-sm"
@@ -179,13 +180,13 @@ function ScoreEntry() {
                       ))}
                     </select>
                     <select
-                      value={lineup?.participation ?? "regular"}
+                      value={lineup?.participation ?? "rostered"}
                       onChange={(e) =>
                         addLineup.mutate({
                           teamId: team.id,
                           slot,
                           bowlerId: lineup?.bowler?.id ?? null,
-                          participation: e.target.value,
+                          participation: e.target.value as Participation,
                         })
                       }
                       className="rounded-md border border-border bg-card px-2 py-1.5 text-sm"
@@ -207,7 +208,7 @@ function ScoreEntry() {
                     )}
                   </div>
 
-                  {lineup && lineup.participation !== "blind" && lineup.participation !== "absent" && (
+                  {lineup && lineup.participation !== "blind" && (
                     <div className="mt-4 space-y-4">
                       {[1, 2, 3].map((gameNumber) => (
                         <GameEditor
@@ -251,15 +252,14 @@ function GameEditor({
     const next = frames.map((f) => ({ balls: [...f.balls] }));
     for (let fi = 0; fi < next.length; fi++) {
       const frame = next[fi]!;
-      const isTenth = fi === 9;
       const maxBalls = 3;
       const complete = scoreGame(next).frames[fi]!.complete;
       if (complete) continue;
       const bi = frame.balls.length;
       if (bi >= maxBalls) continue;
       const parsed = parseBallToken(token, next, fi, bi);
-      if (parsed.error) {
-        toast.error(parsed.error);
+      if (parsed.error || !parsed.ball) {
+        toast.error(parsed.error ?? "Invalid entry.");
         return;
       }
       frame.balls.push(parsed.ball);
@@ -267,7 +267,6 @@ function GameEditor({
       return;
     }
     toast.error("Game is complete.");
-    void isTenthNoop;
   };
 
   const save = useMutation({
@@ -311,5 +310,3 @@ function GameEditor({
     </div>
   );
 }
-
-const isTenthNoop = null;
