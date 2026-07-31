@@ -3,7 +3,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { activeSeasonQuery, bowlersQuery, teamsQuery } from "@/lib/queries";
+import {
+  activeSeasonQuery,
+  bowlersQuery,
+  rosterSpotsQuery,
+  seasonMatchSummaryQuery,
+  teamsQuery,
+  weeksQuery,
+} from "@/lib/queries";
+import {
+  activeTeamByBowler,
+  currentRoster,
+  currentWeekNumber,
+  type RosterSpotRow,
+} from "@/lib/roster";
 import { formatAverage, slugify } from "@/lib/league";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
