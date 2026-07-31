@@ -274,7 +274,7 @@ function TeamManager({ seasonId }: { seasonId: string }) {
                             teamId: t.id,
                             slot,
                             bowlerId: e.target.value,
-                            current: spot,
+                            current: spot ?? null,
                           })
                         }
                         className="flex-1 rounded-md border border-border bg-card px-2 py-1.5 text-sm text-foreground"
