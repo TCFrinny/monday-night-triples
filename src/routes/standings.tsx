@@ -124,7 +124,7 @@ function StandingsPage() {
     <PageShell
       eyebrow={`${season.season_name} · ${season.center_name}`}
       title="Standings"
-      description="Ranked by points, with handicap pinfall as the tiebreaker."
+      description="Ranked by wins, with handicap pinfall as the tiebreaker. W-L comes from the seven points a night."
     >
       <div className="mb-5">
         <ScopeTabs
