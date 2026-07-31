@@ -11,6 +11,7 @@
 import { blindScore } from "@/lib/league";
 
 export interface GameSnapshot {
+  [key: string]: number;
   game: number;
   a_scratch: number;
   b_scratch: number;
@@ -19,6 +20,7 @@ export interface GameSnapshot {
   a: number;
   b: number;
 }
+
 
 export interface LineupGameRow {
   team_id: string;
