@@ -9,7 +9,7 @@ import {
   teamStatsQuery,
   teamsQuery,
 } from "@/lib/queries";
-import { formatPoints } from "@/lib/league";
+import { formatPoints, formatRecord, recordFromPoints } from "@/lib/league";
 import { pct } from "@/lib/duckpin";
 import { useProjections } from "@/hooks/use-projections";
 
