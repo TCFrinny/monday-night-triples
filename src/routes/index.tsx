@@ -111,7 +111,7 @@ function HomePage() {
                 <tr className="border-b border-border text-left font-display text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                   <th className="py-2">#</th>
                   <th className="py-2">Team</th>
-                  <th className="py-2 text-right">Pts</th>
+                  <th className="py-2 text-right">W-L</th>
                   <th className="py-2 text-right">HDCP Pinfall</th>
                 </tr>
               </thead>
@@ -122,7 +122,9 @@ function HomePage() {
                     <td className="py-2">
                       <TeamLink team={r.teams} />
                     </td>
-                    <td className="py-2 text-right stat-num text-primary">{formatPoints(Number(r.points))}</td>
+                    <td className="py-2 text-right stat-num text-primary">
+                      {formatRecord(recordFromPoints(Number(r.points), Number(r.matches_played)))}
+                    </td>
                     <td className="py-2 text-right tabular-nums text-muted-foreground">
                       {Number(r.hdcp_pinfall).toLocaleString()}
                     </td>
