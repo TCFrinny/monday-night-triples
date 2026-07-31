@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { boardLeaders, BOWLER_BOARDS } from "@/routes/stats";
+import { boardLeaders, BOWLER_BOARDS } from "@/lib/leaderboards";
 import { resolveGameSnapshot, buildGameSnapshot, isRichSnapshot } from "@/lib/results";
 
-const board = (key: string) => BOWLER_BOARDS.find((b) => b.key === key)!;
+const board = (key: string) => BOWLER_BOARDS.find((b: { key: string }) => b.key === key)!;
 
 // Real Week 1 cache row (Nick Lloyd) after one finalized match.
 const nick = {

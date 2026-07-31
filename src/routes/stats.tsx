@@ -27,7 +27,7 @@ export const Route = createFileRoute("/stats")({
   component: StatsPage,
 });
 
-}
+
 
 
 function StatsPage() {
