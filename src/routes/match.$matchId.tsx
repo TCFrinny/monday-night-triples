@@ -47,11 +47,31 @@ export const Route = createFileRoute("/match/$matchId")({
 function MatchDetail() {
   const { matchId } = Route.useParams();
   const { data, isLoading } = useQuery(matchDetailQuery(matchId));
+  const { data: season } = useQuery(activeSeasonQuery);
+
+  const m = data?.match;
+  const blindDeduction = Number(season?.blind_deduction) || 0;
+
+  const games = useMemo(
+    () =>
+      m
+        ? resolveGameSnapshot({
+            gamePoints: m.game_points,
+            lineups: data?.lineups ?? [],
+            teamAId: m.team_a_id ?? m.team_a?.id,
+            teamBId: m.team_b_id ?? m.team_b?.id ?? null,
+            handicapTeamId: m.handicap_team_id ?? null,
+            handicapPins: Number(m.handicap_pins) || 0,
+            blindDeduction,
+          })
+        : [],
+    [m, data?.lineups, blindDeduction],
+  );
 
   if (isLoading) {
     return <PageShell title="Match">Loading…</PageShell>;
   }
-  if (!data?.match) {
+  if (!m) {
     return (
       <PageShell title="Match">
         <EmptyState title="Match not found" />
@@ -59,8 +79,22 @@ function MatchDetail() {
     );
   }
 
-  const m = data.match;
-  const games: any[] = Array.isArray(m.game_points) ? m.game_points : [];
+  const sum = (fn: (g: (typeof games)[number]) => number) => games.reduce((s, g) => s + fn(g), 0);
+  const totals = {
+    a: {
+      hdcp: sum((g) => g.a_hdcp),
+      scratch: sum((g) => g.a_scratch),
+      gamePts: sum((g) => g.a),
+      points: Number(m.points_a) || 0,
+    },
+    b: {
+      hdcp: sum((g) => g.b_hdcp),
+      scratch: sum((g) => g.b_scratch),
+      gamePts: sum((g) => g.b),
+      points: Number(m.points_b) || 0,
+    },
+  } as const;
+
 
   return (
     <PageShell
