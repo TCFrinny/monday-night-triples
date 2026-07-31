@@ -11,12 +11,15 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
-import { Route as BowlersRouteImport } from './routes/bowlers'
 import { Route as ResultsRouteImport } from './routes/results'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as StandingsRouteImport } from './routes/standings'
 import { Route as StatsRouteImport } from './routes/stats'
-import { Route as TeamsRouteImport } from './routes/teams'
+import { Route as BowlersIndexRouteImport } from './routes/bowlers.index'
+import { Route as BowlersSlugRouteImport } from './routes/bowlers.$slug'
+import { Route as MatchMatchIdRouteImport } from './routes/match.$matchId'
+import { Route as TeamsIndexRouteImport } from './routes/teams.index'
+import { Route as TeamsSlugRouteImport } from './routes/teams.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -26,11 +29,6 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BowlersRoute = BowlersRouteImport.update({
-  id: '/bowlers',
-  path: '/bowlers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResultsRoute = ResultsRouteImport.update({
@@ -53,85 +51,126 @@ const StatsRoute = StatsRouteImport.update({
   path: '/stats',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TeamsRoute = TeamsRouteImport.update({
-  id: '/teams',
-  path: '/teams',
+const BowlersIndexRoute = BowlersIndexRouteImport.update({
+  id: '/bowlers/',
+  path: '/bowlers/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BowlersSlugRoute = BowlersSlugRouteImport.update({
+  id: '/bowlers/$slug',
+  path: '/bowlers/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MatchMatchIdRoute = MatchMatchIdRouteImport.update({
+  id: '/match/$matchId',
+  path: '/match/$matchId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TeamsIndexRoute = TeamsIndexRouteImport.update({
+  id: '/teams/',
+  path: '/teams/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TeamsSlugRoute = TeamsSlugRouteImport.update({
+  id: '/teams/$slug',
+  path: '/teams/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/bowlers': typeof BowlersRoute
   '/results': typeof ResultsRoute
   '/schedule': typeof ScheduleRoute
   '/standings': typeof StandingsRoute
   '/stats': typeof StatsRoute
-  '/teams': typeof TeamsRoute
+  '/bowlers/$slug': typeof BowlersSlugRoute
+  '/match/$matchId': typeof MatchMatchIdRoute
+  '/teams/$slug': typeof TeamsSlugRoute
+  '/bowlers/': typeof BowlersIndexRoute
+  '/teams/': typeof TeamsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/bowlers': typeof BowlersRoute
   '/results': typeof ResultsRoute
   '/schedule': typeof ScheduleRoute
   '/standings': typeof StandingsRoute
   '/stats': typeof StatsRoute
-  '/teams': typeof TeamsRoute
+  '/bowlers/$slug': typeof BowlersSlugRoute
+  '/match/$matchId': typeof MatchMatchIdRoute
+  '/teams/$slug': typeof TeamsSlugRoute
+  '/bowlers': typeof BowlersIndexRoute
+  '/teams': typeof TeamsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/bowlers': typeof BowlersRoute
   '/results': typeof ResultsRoute
   '/schedule': typeof ScheduleRoute
   '/standings': typeof StandingsRoute
   '/stats': typeof StatsRoute
-  '/teams': typeof TeamsRoute
+  '/bowlers/$slug': typeof BowlersSlugRoute
+  '/match/$matchId': typeof MatchMatchIdRoute
+  '/teams/$slug': typeof TeamsSlugRoute
+  '/bowlers/': typeof BowlersIndexRoute
+  '/teams/': typeof TeamsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
-    | '/bowlers'
     | '/results'
     | '/schedule'
     | '/standings'
     | '/stats'
-    | '/teams'
+    | '/bowlers/$slug'
+    | '/match/$matchId'
+    | '/teams/$slug'
+    | '/bowlers/'
+    | '/teams/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
-    | '/bowlers'
     | '/results'
     | '/schedule'
     | '/standings'
     | '/stats'
+    | '/bowlers/$slug'
+    | '/match/$matchId'
+    | '/teams/$slug'
+    | '/bowlers'
     | '/teams'
   id:
     | '__root__'
     | '/'
     | '/admin'
-    | '/bowlers'
     | '/results'
     | '/schedule'
     | '/standings'
     | '/stats'
-    | '/teams'
+    | '/bowlers/$slug'
+    | '/match/$matchId'
+    | '/teams/$slug'
+    | '/bowlers/'
+    | '/teams/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
-  BowlersRoute: typeof BowlersRoute
   ResultsRoute: typeof ResultsRoute
   ScheduleRoute: typeof ScheduleRoute
   StandingsRoute: typeof StandingsRoute
   StatsRoute: typeof StatsRoute
-  TeamsRoute: typeof TeamsRoute
+  BowlersSlugRoute: typeof BowlersSlugRoute
+  MatchMatchIdRoute: typeof MatchMatchIdRoute
+  TeamsSlugRoute: typeof TeamsSlugRoute
+  BowlersIndexRoute: typeof BowlersIndexRoute
+  TeamsIndexRoute: typeof TeamsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -148,13 +187,6 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/bowlers': {
-      id: '/bowlers'
-      path: '/bowlers'
-      fullPath: '/bowlers'
-      preLoaderRoute: typeof BowlersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/results': {
@@ -185,11 +217,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StatsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/teams': {
-      id: '/teams'
+    '/bowlers/': {
+      id: '/bowlers/'
+      path: '/bowlers'
+      fullPath: '/bowlers/'
+      preLoaderRoute: typeof BowlersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bowlers/$slug': {
+      id: '/bowlers/$slug'
+      path: '/bowlers/$slug'
+      fullPath: '/bowlers/$slug'
+      preLoaderRoute: typeof BowlersSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/match/$matchId': {
+      id: '/match/$matchId'
+      path: '/match/$matchId'
+      fullPath: '/match/$matchId'
+      preLoaderRoute: typeof MatchMatchIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/teams/': {
+      id: '/teams/'
       path: '/teams'
-      fullPath: '/teams'
-      preLoaderRoute: typeof TeamsRouteImport
+      fullPath: '/teams/'
+      preLoaderRoute: typeof TeamsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/teams/$slug': {
+      id: '/teams/$slug'
+      path: '/teams/$slug'
+      fullPath: '/teams/$slug'
+      preLoaderRoute: typeof TeamsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -198,12 +258,15 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
-  BowlersRoute: BowlersRoute,
   ResultsRoute: ResultsRoute,
   ScheduleRoute: ScheduleRoute,
   StandingsRoute: StandingsRoute,
   StatsRoute: StatsRoute,
-  TeamsRoute: TeamsRoute,
+  BowlersSlugRoute: BowlersSlugRoute,
+  MatchMatchIdRoute: MatchMatchIdRoute,
+  TeamsSlugRoute: TeamsSlugRoute,
+  BowlersIndexRoute: BowlersIndexRoute,
+  TeamsIndexRoute: TeamsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
