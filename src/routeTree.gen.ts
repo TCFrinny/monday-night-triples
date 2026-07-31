@@ -16,12 +16,14 @@ import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as StandingsRouteImport } from './routes/standings'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminScheduleRouteImport } from './routes/admin.schedule'
 import { Route as AdminTeamsRouteImport } from './routes/admin.teams'
 import { Route as BowlersIndexRouteImport } from './routes/bowlers.index'
 import { Route as BowlersSlugRouteImport } from './routes/bowlers.$slug'
 import { Route as MatchMatchIdRouteImport } from './routes/match.$matchId'
 import { Route as TeamsIndexRouteImport } from './routes/teams.index'
 import { Route as TeamsSlugRouteImport } from './routes/teams.$slug'
+import { Route as AdminEntryIndexRouteImport } from './routes/admin.entry.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,6 +60,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminScheduleRoute = AdminScheduleRouteImport.update({
+  id: '/schedule',
+  path: '/schedule',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminTeamsRoute = AdminTeamsRouteImport.update({
   id: '/teams',
   path: '/teams',
@@ -88,6 +95,11 @@ const TeamsSlugRoute = TeamsSlugRouteImport.update({
   path: '/teams/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminEntryIndexRoute = AdminEntryIndexRouteImport.update({
+  id: '/entry/',
+  path: '/entry/',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/schedule': typeof ScheduleRoute
   '/standings': typeof StandingsRoute
   '/stats': typeof StatsRoute
+  '/admin/schedule': typeof AdminScheduleRoute
   '/admin/teams': typeof AdminTeamsRoute
   '/bowlers/$slug': typeof BowlersSlugRoute
   '/match/$matchId': typeof MatchMatchIdRoute
@@ -103,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/bowlers/': typeof BowlersIndexRoute
   '/teams/': typeof TeamsIndexRoute
+  '/admin/entry/': typeof AdminEntryIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -110,6 +124,7 @@ export interface FileRoutesByTo {
   '/schedule': typeof ScheduleRoute
   '/standings': typeof StandingsRoute
   '/stats': typeof StatsRoute
+  '/admin/schedule': typeof AdminScheduleRoute
   '/admin/teams': typeof AdminTeamsRoute
   '/bowlers/$slug': typeof BowlersSlugRoute
   '/match/$matchId': typeof MatchMatchIdRoute
@@ -117,6 +132,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/bowlers': typeof BowlersIndexRoute
   '/teams': typeof TeamsIndexRoute
+  '/admin/entry': typeof AdminEntryIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -126,6 +142,7 @@ export interface FileRoutesById {
   '/schedule': typeof ScheduleRoute
   '/standings': typeof StandingsRoute
   '/stats': typeof StatsRoute
+  '/admin/schedule': typeof AdminScheduleRoute
   '/admin/teams': typeof AdminTeamsRoute
   '/bowlers/$slug': typeof BowlersSlugRoute
   '/match/$matchId': typeof MatchMatchIdRoute
@@ -133,6 +150,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/bowlers/': typeof BowlersIndexRoute
   '/teams/': typeof TeamsIndexRoute
+  '/admin/entry/': typeof AdminEntryIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -143,6 +161,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/standings'
     | '/stats'
+    | '/admin/schedule'
     | '/admin/teams'
     | '/bowlers/$slug'
     | '/match/$matchId'
@@ -150,6 +169,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/bowlers/'
     | '/teams/'
+    | '/admin/entry/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -157,6 +177,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/standings'
     | '/stats'
+    | '/admin/schedule'
     | '/admin/teams'
     | '/bowlers/$slug'
     | '/match/$matchId'
@@ -164,6 +185,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/bowlers'
     | '/teams'
+    | '/admin/entry'
   id:
     | '__root__'
     | '/'
@@ -172,6 +194,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/standings'
     | '/stats'
+    | '/admin/schedule'
     | '/admin/teams'
     | '/bowlers/$slug'
     | '/match/$matchId'
@@ -179,6 +202,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/bowlers/'
     | '/teams/'
+    | '/admin/entry/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -246,6 +270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/schedule': {
+      id: '/admin/schedule'
+      path: '/schedule'
+      fullPath: '/admin/schedule'
+      preLoaderRoute: typeof AdminScheduleRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/teams': {
       id: '/admin/teams'
       path: '/teams'
@@ -288,17 +319,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TeamsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/entry/': {
+      id: '/admin/entry/'
+      path: '/entry'
+      fullPath: '/admin/entry/'
+      preLoaderRoute: typeof AdminEntryIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
+  AdminScheduleRoute: typeof AdminScheduleRoute
   AdminTeamsRoute: typeof AdminTeamsRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminEntryIndexRoute: typeof AdminEntryIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminScheduleRoute: AdminScheduleRoute,
   AdminTeamsRoute: AdminTeamsRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminEntryIndexRoute: AdminEntryIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
