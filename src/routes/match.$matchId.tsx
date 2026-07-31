@@ -11,7 +11,7 @@ import {
   TeamLink,
   framesFromRows,
 } from "@/components/league/ui";
-import { activeSeasonQuery, matchDetailQuery } from "@/lib/queries";
+import { matchDetailQuery } from "@/lib/queries";
 import { formatPoints } from "@/lib/league";
 import { resolveGameSnapshot } from "@/lib/results";
 
