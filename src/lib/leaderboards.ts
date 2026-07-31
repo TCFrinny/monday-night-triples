@@ -10,6 +10,8 @@ export type Leader = {
   /** Row qualifies for this board — based on the board's own denominator,
    *  never on the handicap establishment threshold. */
   eligible?: (r: any) => boolean;
+  /** Rank ascending (smallest value is #1) for metrics where lower is better. */
+  lowerIsBetter?: boolean;
 };
 
 const num = (v: any) => Number(v) || 0;
