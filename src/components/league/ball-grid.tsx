@@ -1,9 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   FRAME_COUNT,
   ballDisabled,
   ballToken,
+  nextCursor,
   parseBallToken,
   scoreGame,
   type Frame,
@@ -33,12 +34,19 @@ export function BallGrid({
 
   const keyFor = (f: number, b: number) => `${gridId}-${f}-${b}`;
 
-  const focusNext = (fromKey: string) => {
+  /** Focus is applied after the render that carries the newly committed ball. */
+  const pendingFocus = useRef<string | null>(null);
+  const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+  useIsoLayoutEffect(() => {
+    const key = pendingFocus.current;
+    if (!key) return;
+    pendingFocus.current = null;
     const root = containerRef.current;
     if (!root) return;
     const boxes = Array.from(root.querySelectorAll<HTMLInputElement>("input[data-ball]"));
-    const idx = boxes.findIndex((el) => el.dataset["ball"] === fromKey);
-    for (let i = idx + 1; i < boxes.length; i++) {
+    const start = boxes.findIndex((el) => el.dataset["ball"] === key);
+    if (start < 0) return;
+    for (let i = start; i < boxes.length; i++) {
       const el = boxes[i]!;
       if (!el.disabled) {
         el.focus();
@@ -46,9 +54,13 @@ export function BallGrid({
         return;
       }
     }
-  };
+  });
 
-  const commit = (frameIndex: number, ballIndex: number, raw: string) => {
+  /**
+   * Commits a ball and returns the resulting frames, so callers can derive the
+   * next legal ball box from the NEW state rather than the stale render.
+   */
+  const commit = (frameIndex: number, ballIndex: number, raw: string): Frame[] | null => {
     const next = frames.map((f) => ({ balls: f.balls.map((b) => ({ ...b })) }));
     const frame = next[frameIndex]!;
     if (!raw.trim()) {
@@ -56,18 +68,18 @@ export function BallGrid({
       frame.balls = frame.balls.slice(0, ballIndex);
       setError(null);
       onChange(next);
-      return true;
+      return next;
     }
     frame.balls = frame.balls.slice(0, ballIndex);
     const parsed = parseBallToken(raw, next, frameIndex, ballIndex);
     if (parsed.error || !parsed.ball) {
       setError(parsed.error ?? "Invalid entry.");
-      return false;
+      return null;
     }
     frame.balls.push(parsed.ball);
     setError(null);
     onChange(next);
-    return true;
+    return next;
   };
 
   return (
@@ -114,10 +126,20 @@ export function BallGrid({
                         }}
                         onKeyDown={(e) => {
                           if (e.key !== "Enter" && e.key !== "Tab") return;
+                          // Shift+Tab keeps native backward navigation.
+                          if (e.key === "Tab" && e.shiftKey) {
+                            setDraft(null);
+                            commit(i, b, (e.target as HTMLInputElement).value);
+                            return;
+                          }
                           const v = (e.target as HTMLInputElement).value;
                           e.preventDefault();
                           setDraft(null);
-                          if (commit(i, b, v)) focusNext(k);
+                          const next = commit(i, b, v);
+                          if (!next) return;
+                          const cursor = nextCursor(next, i, b);
+                          if (cursor)
+                            pendingFocus.current = keyFor(cursor.frameIndex, cursor.ballIndex);
                         }}
                         className={cn(
                           "w-full flex-1 border-r border-border/70 bg-transparent text-center text-xs uppercase outline-none last:border-r-0 focus:bg-primary/15",
