@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -275,7 +275,7 @@ function ScoreEntry() {
               const rows = lineupsOf(team.id);
               const hd = ti === 0 ? hdcpA : hdcpB;
               return (
-                <tbody key={team.id} className="contents">
+                <Fragment key={team.id}>
                   {rows.map((l, i) => (
                     <tr key={l?.id ?? `${team.id}-${i}`} className="border-b border-border/50">
                       <td className="px-4 py-1.5">
@@ -312,7 +312,7 @@ function ScoreEntry() {
                       </span>
                     </td>
                   </tr>
-                </tbody>
+                </Fragment>
               );
             })}
           </tbody>
