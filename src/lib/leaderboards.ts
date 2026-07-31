@@ -130,3 +130,4 @@ export function boardLeaders(board: Leader, rows: any[], limit = 5) {
     .filter((r) => (board.eligible ? board.eligible(r) : true))
     .sort((a, b) => board.value(b) - board.value(a))
     .slice(0, limit);
+}
