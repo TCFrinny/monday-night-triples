@@ -174,7 +174,10 @@ function TeamProfile() {
           label="Split conv %"
           value={`${pct(stats?.split_conversions ?? 0, stats?.splits ?? 0)}%`}
         />
-        <Stat label="Points won" value={stats ? formatPoints(Number(stats.points)) : "—"} />
+        <Stat
+          label="Record (W-L)"
+          value={stats ? formatRecord(recordFromPoints(Number(stats.points), Number(stats.matches))) : "—"}
+        />
       </div>
 
       <h2 className="mb-3 mt-10 font-display text-xl uppercase text-foreground">Team history</h2>
