@@ -64,7 +64,10 @@ function TeamProfile() {
     <PageShell eyebrow={season?.season_name ?? ""} title={team.name}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Full season rank" value={`#${full?.rank ?? "—"}`} gold={full?.rank === 1} />
-        <Stat label="Points" value={full ? formatPoints(Number(full.points)) : "—"} />
+        <Stat
+          label="Record (W-L)"
+          value={full ? formatRecord(recordFromPoints(Number(full.points), Number(full.matches_played))) : "—"}
+        />
         <Stat label="Team average" value={proj?.average ?? "—"} />
         <Stat
           label="Point %"
