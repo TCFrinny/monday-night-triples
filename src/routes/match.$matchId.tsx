@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { PageShell } from "@/components/page-shell";
 import {
   BowlerLink,
@@ -10,8 +11,9 @@ import {
   TeamLink,
   framesFromRows,
 } from "@/components/league/ui";
-import { matchDetailQuery } from "@/lib/queries";
+import { activeSeasonQuery, matchDetailQuery } from "@/lib/queries";
 import { formatPoints } from "@/lib/league";
+import { resolveGameSnapshot } from "@/lib/results";
 
 export const Route = createFileRoute("/match/$matchId")({
   head: () => ({
