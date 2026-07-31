@@ -252,10 +252,11 @@ export const TEAM_BOARDS: Leader[] = [
 ];
 
 
-/** Rows that qualify for a board, best first. */
+/** Rows that qualify for a board, best first (ascending when lower is better). */
 export function boardLeaders(board: Leader, rows: any[], limit = 5) {
+  const dir = board.lowerIsBetter ? -1 : 1;
   return rows
     .filter((r) => (board.eligible ? board.eligible(r) : true))
-    .sort((a, b) => board.value(b) - board.value(a))
+    .sort((a, b) => (board.value(b) - board.value(a)) * dir)
     .slice(0, limit);
 }
