@@ -166,7 +166,6 @@ function StatsPage() {
   const { data: bowlerStats } = useQuery(bowlerStatsQuery(season?.id, scope));
   const { data: teamStats } = useQuery(teamStatsQuery(season?.id, scope));
 
-  const minGames = season?.establishment_threshold ?? 15;
   const boards = mode === "bowlers" ? BOWLER_BOARDS : TEAM_BOARDS;
   const rows: any[] = (mode === "bowlers" ? bowlerStats : teamStats) ?? [];
 
@@ -174,7 +173,7 @@ function StatsPage() {
     <PageShell
       eyebrow={season?.season_name ?? ""}
       title="Stats & Leaders"
-      description={`Leaderboards marked with a minimum require ${minGames} games. All figures are scratch unless labelled HDCP.`}
+      description="Every bowler and team with finalized games appears from Week 1 onward. All figures are scratch unless labelled HDCP."
     >
       <div className="mb-5 flex flex-wrap gap-3">
         <ScopeTabs
@@ -200,11 +199,8 @@ function StatsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {boards.map((board) => {
-            const eligible = rows
-              .filter((r) => (board.min ? (r.games ?? 0) >= minGames : true))
-              .filter((r) => board.value(r) > 0)
-              .sort((a, b) => board.value(b) - board.value(a))
-              .slice(0, 5);
+            const eligible = boardLeaders(board, rows);
+
             return (
               <div key={board.key} className="panel p-5">
                 <h2 className="font-display text-base uppercase tracking-wide text-foreground">
