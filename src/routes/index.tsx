@@ -11,7 +11,15 @@ import {
   standingsQuery,
   weeksQuery,
 } from "@/lib/queries";
-import { SCOPE_LABELS, formatAverage, formatPoints, scopeForThird, thirdForWeek } from "@/lib/league";
+import {
+  SCOPE_LABELS,
+  formatAverage,
+  formatPoints,
+  formatRecord,
+  recordFromPoints,
+  scopeForThird,
+  thirdForWeek,
+} from "@/lib/league";
 
 export const Route = createFileRoute("/")({
   head: () => ({
