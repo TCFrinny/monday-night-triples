@@ -122,12 +122,30 @@ export const teamsQuery = (seasonId: string | undefined) =>
         supabase
           .from("teams")
           .select(
-            "*, roster_spots(slot, effective_from_week, effective_to_week, bowlers(id, full_name, slug, entry_average))",
+            "*, roster_spots(id, team_id, bowler_id, slot, effective_from_week, effective_to_week, bowlers(id, full_name, slug, entry_average, is_sub))",
           )
           .eq("season_id", seasonId!)
           .order("name"),
       ),
   });
+
+/** Every roster assignment (current and historical) for the season. */
+export const rosterSpotsQuery = (seasonId: string | undefined) =>
+  queryOptions({
+    queryKey: ["roster-spots", seasonId],
+    enabled: Boolean(seasonId),
+    queryFn: async () =>
+      unwrap(
+        supabase
+          .from("roster_spots")
+          .select(
+            "id, team_id, bowler_id, slot, effective_from_week, effective_to_week, bowlers(id, full_name, slug, entry_average, is_sub), teams!inner(id, name, slug, season_id)",
+          )
+          .eq("teams.season_id", seasonId!)
+          .order("slot"),
+      ),
+  });
+
 
 export const teamStandingRowsQuery = (seasonId: string | undefined) =>
   queryOptions({
