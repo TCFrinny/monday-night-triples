@@ -261,7 +261,10 @@ export function parseBallToken(
   } else if (core === "/") {
     if (ballIndex === 0) return { ball: null, error: "A spare can never be on ball 1." };
     if (remaining === 10) return { ball: null, error: "Nothing left to spare." };
+    if (rackBallIndex(frame, ballIndex, isTenth) !== 1)
+      return { ball: null, error: "Ball 3 clears are 10-boxes — enter the pin count." };
     pins = remaining;
+
   } else if (core === "-") {
     pins = 0;
   } else if (/^\d{1,2}$/.test(core)) {
