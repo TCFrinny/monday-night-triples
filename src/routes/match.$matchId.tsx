@@ -118,7 +118,10 @@ function MatchDetail() {
       </div>
 
       <div className="panel mb-8 overflow-x-auto">
-        <table className="w-full min-w-[520px] text-sm">
+        <h2 className="px-5 pt-4 font-display text-sm uppercase tracking-[0.16em] text-muted-foreground">
+          Team Game Summary
+        </h2>
+        <table className="mt-2 w-full min-w-[620px] text-sm">
           <thead>
             <tr className="border-b border-border text-left font-display text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               <th className="px-5 py-2">Team</th>
@@ -126,36 +129,41 @@ function MatchDetail() {
               <th className="px-3 py-2 text-right">G2</th>
               <th className="px-3 py-2 text-right">G3</th>
               <th className="px-3 py-2 text-right">Set</th>
-              <th className="px-5 py-2 text-right">Points</th>
+              <th className="px-5 py-2 text-right">Result</th>
             </tr>
           </thead>
           <tbody>
-            {(["a", "b"] as const).map((side) => (
-              <tr key={side} className="border-b border-border/60 last:border-0">
-                <td className="px-5 py-2">
-                  <TeamLink team={side === "a" ? m.team_a : m.team_b} />
-                </td>
-                {[0, 1, 2].map((i) => (
-                  <td key={i} className="px-3 py-2 text-right tabular-nums">
-                    {games[i]?.[`${side}_hdcp`] ?? "—"}
-                    <span className="ml-1 text-xs text-muted-foreground">
-                      ({games[i]?.[`${side}_scratch`] ?? "—"})
-                    </span>
+            {(["a", "b"] as const).map((side) => {
+              const t = totals[side];
+              const setPoints = t.points - t.gamePts;
+              return (
+                <tr key={side} className="border-b border-border/60 last:border-0">
+                  <td className="px-5 py-2">
+                    <TeamLink team={side === "a" ? m.team_a : m.team_b} />
+                  </td>
+                  {[0, 1, 2].map((i) => (
+                    <td key={i} className="px-3 py-2 text-right tabular-nums">
+                      {games[i] ? games[i]![`${side}_hdcp`] : "—"}
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        ({games[i] ? games[i]![`${side}_scratch`] : "—"})
+                      </span>
+                      <span className="ml-2 text-xs text-primary">
+                        +{formatPoints(games[i] ? games[i]![side] : 0)}
+                      </span>
+                    </td>
+                  ))}
+                  <td className="px-3 py-2 text-right tabular-nums">
+                    {t.hdcp}
+                    <span className="ml-1 text-xs text-muted-foreground">({t.scratch})</span>
                     <span className="ml-2 text-xs text-primary">
-                      +{games[i]?.[`${side}_points`] ?? 0}
+                      +{formatPoints(Math.max(0, setPoints))}
                     </span>
                   </td>
-                ))}
-                <td className="px-3 py-2 text-right tabular-nums">
-                  {side === "a" ? m.hdcp_total_a : m.hdcp_total_b}
-                  <span className="ml-1 text-xs text-muted-foreground">
-                    ({side === "a" ? m.scratch_total_a : m.scratch_total_b})
-                  </span>
-                </td>
-                <td className="stat-num px-5 py-2 text-right">
-                  {formatPoints(Number(side === "a" ? m.points_a : m.points_b))}
-                </td>
-              </tr>
+                  <td className="stat-num px-5 py-2 text-right">{formatPoints(t.points)}</td>
+                </tr>
+              );
+            })}
+
             ))}
           </tbody>
         </table>
