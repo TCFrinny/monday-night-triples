@@ -3,7 +3,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { activeSeasonQuery, bowlersQuery, teamsQuery } from "@/lib/queries";
+import {
+  activeSeasonQuery,
+  bowlersQuery,
+  rosterSpotsQuery,
+  seasonMatchSummaryQuery,
+  teamsQuery,
+  weeksQuery,
+} from "@/lib/queries";
+import {
+  activeTeamByBowler,
+  currentRoster,
+  currentWeekNumber,
+  type RosterSpotRow,
+} from "@/lib/roster";
 import { formatAverage, slugify } from "@/lib/league";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -147,7 +160,13 @@ function TeamManager({ seasonId }: { seasonId: string }) {
   const qc = useQueryClient();
   const { data: teams } = useQuery(teamsQuery(seasonId));
   const { data: bowlers } = useQuery(bowlersQuery(seasonId));
+  const { data: spots } = useQuery(rosterSpotsQuery(seasonId));
+  const { data: weeks } = useQuery(weeksQuery(seasonId));
+  const { data: matches } = useQuery(seasonMatchSummaryQuery(seasonId));
   const [teamName, setTeamName] = useState("");
+
+  const week = currentWeekNumber(weeks as any, matches as any);
+  const takenBy = activeTeamByBowler(spots as any);
 
   const addTeam = useMutation({
     mutationFn: async () => {
@@ -162,6 +181,7 @@ function TeamManager({ seasonId }: { seasonId: string }) {
       setTeamName("");
       toast.success("Team created");
       qc.invalidateQueries({ queryKey: ["teams"] });
+      qc.invalidateQueries({ queryKey: ["roster-spots"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -171,29 +191,47 @@ function TeamManager({ seasonId }: { seasonId: string }) {
       teamId,
       slot,
       bowlerId,
-      currentSpotId,
+      current,
     }: {
       teamId: string;
       slot: number;
       bowlerId: string;
-      currentSpotId?: string;
+      current?: RosterSpotRow | null;
     }) => {
-      if (currentSpotId) {
-        const { error } = await supabase.from("roster_spots").delete().eq("id", currentSpotId);
-        if (error) throw new Error(error.message);
+      if (bowlerId) {
+        const other = takenBy.get(bowlerId);
+        if (other && other !== teamId)
+          throw new Error("That bowler is already an active roster member of another team.");
+      }
+      if (current) {
+        if (current.bowler_id === bowlerId) return;
+        if (current.effective_from_week >= week) {
+          // Never bowled under this assignment yet — safe to remove outright.
+          const { error } = await supabase.from("roster_spots").delete().eq("id", current.id);
+          if (error) throw new Error(error.message);
+        } else {
+          // Preserve history: close the previous assignment out.
+          const { error } = await supabase
+            .from("roster_spots")
+            .update({ effective_to_week: week - 1 })
+            .eq("id", current.id);
+          if (error) throw new Error(error.message);
+        }
       }
       if (!bowlerId) return;
       const { error } = await supabase.from("roster_spots").insert({
         team_id: teamId,
         bowler_id: bowlerId,
         slot,
-        effective_from_week: 1,
+        effective_from_week: week,
       });
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       toast.success("Roster updated");
       qc.invalidateQueries({ queryKey: ["teams"] });
+      qc.invalidateQueries({ queryKey: ["roster-spots"] });
+      qc.invalidateQueries({ queryKey: ["bowlers"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -203,7 +241,10 @@ function TeamManager({ seasonId }: { seasonId: string }) {
   return (
     <section className="panel p-6">
       <h2 className="mb-1 font-display text-lg uppercase text-foreground">Teams & rosters</h2>
-      <p className="mb-4 text-xs text-muted-foreground">Three active bowlers per team.</p>
+      <p className="mb-4 text-xs text-muted-foreground">
+        Exactly three active bowlers per team. Changing a slot replaces that slot's current
+        assignment from week {week} onward; earlier weeks keep their historical roster.
+      </p>
       <div className="mb-5 flex flex-wrap items-end gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="tname">Team name</Label>
@@ -216,13 +257,13 @@ function TeamManager({ seasonId }: { seasonId: string }) {
 
       <div className="grid gap-4 md:grid-cols-2">
         {(teams ?? []).map((t: any) => {
-          const spots = (t.roster_spots ?? []).filter((r: any) => r.effective_to_week === null);
+          const slots = currentRoster(spots as any, t.id);
           return (
             <div key={t.id} className="rounded-md border border-border p-4">
               <h3 className="font-display text-base uppercase text-foreground">{t.name}</h3>
               <div className="mt-3 space-y-2">
                 {[1, 2, 3].map((slot) => {
-                  const spot = spots.find((s: any) => s.slot === slot);
+                  const spot = slots[slot - 1];
                   return (
                     <div key={slot} className="flex items-center gap-2">
                       <span className="w-14 text-xs uppercase text-muted-foreground">Slot {slot}</span>
@@ -233,17 +274,22 @@ function TeamManager({ seasonId }: { seasonId: string }) {
                             teamId: t.id,
                             slot,
                             bowlerId: e.target.value,
-                            currentSpotId: spot?.id,
+                            current: spot ?? null,
                           })
                         }
                         className="flex-1 rounded-md border border-border bg-card px-2 py-1.5 text-sm text-foreground"
                       >
                         <option value="">— empty —</option>
-                        {rostered.map((b: any) => (
-                          <option key={b.id} value={b.id}>
-                            {b.full_name} ({formatAverage(b.entry_average)})
-                          </option>
-                        ))}
+                        {rostered.map((b: any) => {
+                          const other = takenBy.get(b.id);
+                          const unavailable = Boolean(other) && other !== t.id;
+                          return (
+                            <option key={b.id} value={b.id} disabled={unavailable}>
+                              {b.full_name} ({formatAverage(b.entry_average)})
+                              {unavailable ? " — on another team" : ""}
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
                   );
@@ -257,3 +303,4 @@ function TeamManager({ seasonId }: { seasonId: string }) {
     </section>
   );
 }
+
