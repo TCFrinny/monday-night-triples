@@ -9,7 +9,7 @@ import {
   teamStatsQuery,
   teamsQuery,
 } from "@/lib/queries";
-import { formatPoints } from "@/lib/league";
+import { formatPoints, formatRecord, recordFromPoints } from "@/lib/league";
 import { pct } from "@/lib/duckpin";
 import { useProjections } from "@/hooks/use-projections";
 
@@ -64,7 +64,10 @@ function TeamProfile() {
     <PageShell eyebrow={season?.season_name ?? ""} title={team.name}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Full season rank" value={`#${full?.rank ?? "—"}`} gold={full?.rank === 1} />
-        <Stat label="Points" value={full ? formatPoints(Number(full.points)) : "—"} />
+        <Stat
+          label="Record (W-L)"
+          value={full ? formatRecord(recordFromPoints(Number(full.points), Number(full.matches_played))) : "—"}
+        />
         <Stat label="Team average" value={proj?.average ?? "—"} />
         <Stat
           label="Point %"
@@ -123,7 +126,7 @@ function TeamProfile() {
                     </td>
                     <td className="py-2 text-right">#{r?.rank ?? "—"}</td>
                     <td className="py-2 text-right stat-num">
-                      {r ? formatPoints(Number(r.points)) : "—"}
+                      {r ? formatRecord(recordFromPoints(Number(r.points), Number(r.matches_played))) : "—"}
                     </td>
                     <td className="py-2 text-right text-muted-foreground tabular-nums">
                       {r?.hdcp_pinfall?.toLocaleString() ?? "—"} hdcp
@@ -171,7 +174,10 @@ function TeamProfile() {
           label="Split conv %"
           value={`${pct(stats?.split_conversions ?? 0, stats?.splits ?? 0)}%`}
         />
-        <Stat label="Points won" value={stats ? formatPoints(Number(stats.points)) : "—"} />
+        <Stat
+          label="Record (W-L)"
+          value={stats ? formatRecord(recordFromPoints(Number(stats.points), Number(stats.matches))) : "—"}
+        />
       </div>
 
       <h2 className="mb-3 mt-10 font-display text-xl uppercase text-foreground">Team history</h2>

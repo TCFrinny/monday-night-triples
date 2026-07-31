@@ -148,3 +148,45 @@ export function slugify(input: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 }
+
+/** Points available per match (2 per game x3, plus 1 for the set). */
+export const POINTS_PER_MATCH = 7;
+
+export interface TeamRecord {
+  wins: number;
+  losses: number;
+}
+
+/**
+ * Standings W-L record. The 7 available match points ARE the wins; the
+ * remaining points of each played match are losses. A tied game gives 1.0/1.0
+ * and a tied set 0.5/0.5, which falls out of this automatically.
+ */
+export function recordFromPoints(points: number, matchesPlayed: number): TeamRecord {
+  const wins = Number(points) || 0;
+  const losses = Math.max(0, (Number(matchesPlayed) || 0) * POINTS_PER_MATCH - wins);
+  return { wins, losses };
+}
+
+/** One decimal only when needed: 5 -> "5", 3.5 -> "3.5". */
+export function formatRecordValue(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+export function formatRecord(record: TeamRecord): string {
+  return `${formatRecordValue(record.wins)}-${formatRecordValue(record.losses)}`;
+}
+
+/**
+ * Standard games-behind, valid with unequal matches played:
+ * GB = ((leaderW - teamW) + (teamL - leaderL)) / 2
+ */
+export function gamesBehind(leader: TeamRecord, team: TeamRecord): number {
+  return ((leader.wins - team.wins) + (team.losses - leader.losses)) / 2;
+}
+
+/** First place (or better) shows an em dash. */
+export function formatGamesBehind(gb: number): string {
+  if (gb <= 0) return "—";
+  return gb.toFixed(1);
+}
