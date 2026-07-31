@@ -95,7 +95,7 @@ export const matchDetailQuery = (matchId: string) =>
         supabase
           .from("matches")
           .select(
-            "*, weeks(id, week_number, third, is_position_round, season_id), team_a:teams!matches_team_a_id_fkey(id, name, slug), team_b:teams!matches_team_b_id_fkey(id, name, slug)",
+            "*, weeks(id, week_number, third, is_position_round, season_id, seasons(id, blind_deduction, handicap_percent)), team_a:teams!matches_team_a_id_fkey(id, name, slug), team_b:teams!matches_team_b_id_fkey(id, name, slug)",
           )
           .eq("id", matchId)
           .single(),

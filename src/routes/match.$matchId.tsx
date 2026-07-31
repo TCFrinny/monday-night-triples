@@ -11,7 +11,7 @@ import {
   TeamLink,
   framesFromRows,
 } from "@/components/league/ui";
-import { activeSeasonQuery, matchDetailQuery } from "@/lib/queries";
+import { matchDetailQuery } from "@/lib/queries";
 import { formatPoints } from "@/lib/league";
 import { resolveGameSnapshot } from "@/lib/results";
 
@@ -47,10 +47,10 @@ export const Route = createFileRoute("/match/$matchId")({
 function MatchDetail() {
   const { matchId } = Route.useParams();
   const { data, isLoading } = useQuery(matchDetailQuery(matchId));
-  const { data: season } = useQuery(activeSeasonQuery);
 
   const m = data?.match;
-  const blindDeduction = Number(season?.blind_deduction) || 0;
+  // Use the rule from the season this match belongs to, never the active season.
+  const blindDeduction = Number(m?.weeks?.seasons?.blind_deduction) || 0;
 
   const games = useMemo(
     () =>

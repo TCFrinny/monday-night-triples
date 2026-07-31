@@ -10,6 +10,8 @@ export type Leader = {
   /** Row qualifies for this board — based on the board's own denominator,
    *  never on the handicap establishment threshold. */
   eligible?: (r: any) => boolean;
+  /** Rank ascending (smallest value is #1) for metrics where lower is better. */
+  lowerIsBetter?: boolean;
 };
 
 const num = (v: any) => Number(v) || 0;
@@ -201,12 +203,14 @@ export const TEAM_BOARDS: Leader[] = [
   },
   {
     key: "topen",
-    title: "Team Open %",
-    note: "Lower is better; sorted highest first like every board.",
+    title: "Fewest Team Opens %",
+    note: "Lower is better — ranked lowest open rate first.",
     value: (r) => pct(r.opens, r.frames),
     fmt: (r) => `${pct(r.opens, r.frames)}%`,
     eligible: hasFrames,
+    lowerIsBetter: true,
   },
+
   {
     key: "tfb",
     title: "Team First-Ball Average",
@@ -248,10 +252,11 @@ export const TEAM_BOARDS: Leader[] = [
 ];
 
 
-/** Rows that qualify for a board, best first. */
+/** Rows that qualify for a board, best first (ascending when lower is better). */
 export function boardLeaders(board: Leader, rows: any[], limit = 5) {
+  const dir = board.lowerIsBetter ? -1 : 1;
   return rows
     .filter((r) => (board.eligible ? board.eligible(r) : true))
-    .sort((a, b) => board.value(b) - board.value(a))
+    .sort((a, b) => (board.value(b) - board.value(a)) * dir)
     .slice(0, limit);
 }
