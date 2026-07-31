@@ -4,7 +4,15 @@ import { useState } from "react";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState, MovementIndicator, ScopeTabs, TeamLink } from "@/components/league/ui";
 import { activeSeasonQuery, standingsQuery, seasonMatchSummaryQuery } from "@/lib/queries";
-import { SCOPE_LABELS, formatPoints, thirdForWeek, type StandingsScope } from "@/lib/league";
+import {
+  SCOPE_LABELS,
+  formatGamesBehind,
+  formatRecordValue,
+  gamesBehind,
+  recordFromPoints,
+  thirdForWeek,
+  type StandingsScope,
+} from "@/lib/league";
 
 export const Route = createFileRoute("/standings")({
   head: () => ({
