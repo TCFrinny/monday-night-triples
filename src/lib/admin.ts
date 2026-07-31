@@ -1,6 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { scoreGame, type Frame } from "@/lib/duckpin";
 import { blindScore, computeMatchPoints, teamAverage, teamHandicap, truncateAverage } from "@/lib/league";
+import { buildGameSnapshot } from "@/lib/results";
+
 
 /** Persist one bowler game: replaces its frames and balls with the current sheet. */
 export async function saveBowlerGame(args: {
@@ -141,7 +143,14 @@ export async function finalizeMatch(args: {
       hdcp_total_b: hdcpB.reduce((x, y) => x + y, 0),
       points_a: points.totalA,
       points_b: points.totalB,
-      game_points: points.gamePoints,
+      game_points: buildGameSnapshot({
+        scratchA,
+        scratchB,
+        hdcpA,
+        hdcpB,
+        gamePoints: points.gamePoints,
+      }),
+
       finalized_at: new Date().toISOString(),
     })
     .eq("id", args.matchId);

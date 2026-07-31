@@ -4,8 +4,8 @@ import { useState } from "react";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState, ScopeTabs } from "@/components/league/ui";
 import { activeSeasonQuery, bowlerStatsQuery, teamStatsQuery } from "@/lib/queries";
-import { SCOPE_LABELS, formatAverage } from "@/lib/league";
-import { pct } from "@/lib/duckpin";
+import { SCOPE_LABELS } from "@/lib/league";
+import { BOWLER_BOARDS, TEAM_BOARDS, boardLeaders } from "@/lib/leaderboards";
 import type { StandingsScope } from "@/lib/league";
 
 export const Route = createFileRoute("/stats")({
@@ -27,80 +27,8 @@ export const Route = createFileRoute("/stats")({
   component: StatsPage,
 });
 
-type Leader = { key: string; title: string; note?: string; value: (r: any) => number; fmt?: (r: any) => string; min?: boolean };
 
-const BOWLER_BOARDS: Leader[] = [
-  { key: "avg", title: "Average", value: (r) => Number(r.average), fmt: (r) => formatAverage(r.average), min: true },
-  { key: "hg", title: "High Game", value: (r) => r.high_game },
-  { key: "hs", title: "High Set", value: (r) => r.high_set },
-  { key: "pf", title: "Total Pinfall", value: (r) => r.pinfall, fmt: (r) => r.pinfall.toLocaleString() },
-  {
-    key: "strike",
-    title: "Strike %",
-    value: (r) => pct(r.strikes, r.frames),
-    fmt: (r) => `${pct(r.strikes, r.frames)}%`,
-    min: true,
-  },
-  {
-    key: "spare",
-    title: "Spare %",
-    note: "Spares only — ten pins on ball 1 is a strike, never a spare.",
-    value: (r) => pct(r.spares, r.spare_attempts),
-    fmt: (r) => `${pct(r.spares, r.spare_attempts)}%`,
-    min: true,
-  },
-  {
-    key: "mark",
-    title: "Mark %",
-    value: (r) => pct(r.strikes + r.spares, r.frames),
-    fmt: (r) => `${pct(r.strikes + r.spares, r.frames)}%`,
-    min: true,
-  },
-  {
-    key: "tenbox",
-    title: "10-Box %",
-    note: "Ten pins down using all three balls — scored 10, no bonus.",
-    value: (r) => pct(r.ten_boxes, r.frames),
-    fmt: (r) => `${pct(r.ten_boxes, r.frames)}%`,
-    min: true,
-  },
-  {
-    key: "fb",
-    title: "First-Ball Average",
-    value: (r) => (r.first_ball_count ? Number(r.first_ball_pins) / r.first_ball_count : 0),
-    fmt: (r) =>
-      r.first_ball_count ? (Number(r.first_ball_pins) / r.first_ball_count).toFixed(2) : "—",
-    min: true,
-  },
-  {
-    key: "split",
-    title: "Split Conversion %",
-    value: (r) => pct(r.split_conversions, r.splits),
-    fmt: (r) => `${pct(r.split_conversions, r.splits)}% (${r.split_conversions}/${r.splits})`,
-    min: true,
-  },
-  { key: "streak", title: "Longest Strike Streak", value: (r) => r.longest_strike_streak },
-  { key: "clean", title: "Clean Games", value: (r) => r.clean_games },
-];
 
-const TEAM_BOARDS: Leader[] = [
-  { key: "tavg", title: "Team Scratch Average", value: (r) => Number(r.scratch_avg), fmt: (r) => formatAverage(r.scratch_avg) },
-  { key: "thg", title: "Team High Scratch Game", value: (r) => r.high_scratch_game },
-  { key: "ths", title: "Team High Scratch Set", value: (r) => r.high_scratch_set },
-  { key: "thhs", title: "Team High HDCP Set", value: (r) => r.high_hdcp_set },
-  {
-    key: "tstrike",
-    title: "Team Strike %",
-    value: (r) => pct(r.strikes, r.frames),
-    fmt: (r) => `${pct(r.strikes, r.frames)}%`,
-  },
-  {
-    key: "tspare",
-    title: "Team Spare %",
-    value: (r) => pct(r.spares, r.spare_attempts),
-    fmt: (r) => `${pct(r.spares, r.spare_attempts)}%`,
-  },
-];
 
 function StatsPage() {
   const { data: season } = useQuery(activeSeasonQuery);
@@ -109,7 +37,6 @@ function StatsPage() {
   const { data: bowlerStats } = useQuery(bowlerStatsQuery(season?.id, scope));
   const { data: teamStats } = useQuery(teamStatsQuery(season?.id, scope));
 
-  const minGames = season?.establishment_threshold ?? 15;
   const boards = mode === "bowlers" ? BOWLER_BOARDS : TEAM_BOARDS;
   const rows: any[] = (mode === "bowlers" ? bowlerStats : teamStats) ?? [];
 
@@ -117,7 +44,7 @@ function StatsPage() {
     <PageShell
       eyebrow={season?.season_name ?? ""}
       title="Stats & Leaders"
-      description={`Leaderboards marked with a minimum require ${minGames} games. All figures are scratch unless labelled HDCP.`}
+      description="Every bowler and team with finalized games appears from Week 1 onward. All figures are scratch unless labelled HDCP."
     >
       <div className="mb-5 flex flex-wrap gap-3">
         <ScopeTabs
@@ -143,11 +70,8 @@ function StatsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {boards.map((board) => {
-            const eligible = rows
-              .filter((r) => (board.min ? (r.games ?? 0) >= minGames : true))
-              .filter((r) => board.value(r) > 0)
-              .sort((a, b) => board.value(b) - board.value(a))
-              .slice(0, 5);
+            const eligible = boardLeaders(board, rows);
+
             return (
               <div key={board.key} className="panel p-5">
                 <h2 className="font-display text-base uppercase tracking-wide text-foreground">
@@ -183,7 +107,7 @@ function StatsPage() {
                     </li>
                   ))}
                   {!eligible.length && (
-                    <li className="text-xs text-muted-foreground">Not enough qualifying data.</li>
+                    <li className="text-xs text-muted-foreground">No data yet.</li>
                   )}
                 </ol>
               </div>
