@@ -37,6 +37,8 @@ function StandingsTable({ rows, title, note }: { rows: any[]; title: string; not
   if (!rows.length) {
     return <EmptyState title={`No ${title.toLowerCase()} yet`} hint="Standings appear once matches are finalized." />;
   }
+  const leaderRow = rows.find((r) => r.rank === 1) ?? rows[0];
+  const leader = recordFromPoints(Number(leaderRow.points), Number(leaderRow.matches_played));
   return (
     <div className="panel overflow-hidden">
       <div className="flex items-center justify-between border-b border-border px-5 py-3">
@@ -44,43 +46,55 @@ function StandingsTable({ rows, title, note }: { rows: any[]; title: string; not
         {note && <span className="eyebrow">{note}</span>}
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[560px] text-sm">
+        <table className="w-full min-w-[620px] text-sm">
           <thead>
             <tr className="border-b border-border text-left font-display text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               <th className="w-16 px-5 py-2">Rank</th>
               <th className="px-3 py-2">Team</th>
-              <th className="px-3 py-2 text-right">Points</th>
+              <th className="px-3 py-2 text-right">W</th>
+              <th className="px-3 py-2 text-right">L</th>
+              <th className="px-3 py-2 text-right">GB</th>
               <th className="px-3 py-2 text-right">HDCP Pinfall</th>
               <th className="px-5 py-2 text-right">Scratch Pinfall</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.id} className="border-b border-border/60 last:border-0 hover:bg-secondary/30">
-                <td className="px-5 py-2.5">
-                  <span className={r.rank === 1 ? "stat-num text-gold" : "stat-num text-foreground"}>
-                    {r.rank}
-                  </span>
-                  <span className="ml-2 text-xs">
-                    <MovementIndicator rank={r.rank} previous={r.previous_rank} />
-                  </span>
-                </td>
-                <td className="px-3 py-2.5">
-                  <TeamLink team={r.teams} />
-                </td>
-                <td className="stat-num px-3 py-2.5 text-right text-base">{formatPoints(Number(r.points))}</td>
-                <td className="px-3 py-2.5 text-right tabular-nums">{r.hdcp_pinfall.toLocaleString()}</td>
-                <td className="px-5 py-2.5 text-right tabular-nums text-muted-foreground">
-                  {r.scratch_pinfall.toLocaleString()}
-                </td>
-              </tr>
-            ))}
+            {rows.map((r) => {
+              const rec = recordFromPoints(Number(r.points), Number(r.matches_played));
+              return (
+                <tr key={r.id} className="border-b border-border/60 last:border-0 hover:bg-secondary/30">
+                  <td className="px-5 py-2.5">
+                    <span className={r.rank === 1 ? "stat-num text-gold" : "stat-num text-foreground"}>
+                      {r.rank}
+                    </span>
+                    <span className="ml-2 text-xs">
+                      <MovementIndicator rank={r.rank} previous={r.previous_rank} />
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <TeamLink team={r.teams} />
+                  </td>
+                  <td className="stat-num px-3 py-2.5 text-right text-base">{formatRecordValue(rec.wins)}</td>
+                  <td className="stat-num px-3 py-2.5 text-right text-base text-muted-foreground">
+                    {formatRecordValue(rec.losses)}
+                  </td>
+                  <td className="px-3 py-2.5 text-right tabular-nums">
+                    {r.rank === 1 ? "—" : formatGamesBehind(gamesBehind(leader, rec))}
+                  </td>
+                  <td className="px-3 py-2.5 text-right tabular-nums">{r.hdcp_pinfall.toLocaleString()}</td>
+                  <td className="px-5 py-2.5 text-right tabular-nums text-muted-foreground">
+                    {r.scratch_pinfall.toLocaleString()}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
     </div>
   );
 }
+
 
 function StandingsPage() {
   const { data: season } = useQuery(activeSeasonQuery);
