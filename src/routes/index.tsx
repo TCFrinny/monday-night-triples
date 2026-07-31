@@ -87,7 +87,7 @@ function HomePage() {
           {(news ?? []).slice(0, 3).map((n: any) => (
             <div key={n.id} className="panel border-l-2 border-l-gold p-4">
               <p className="font-display text-sm uppercase tracking-wide text-gold">{n.title}</p>
-              <p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{n.body}</p>
+              <p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{n.message}</p>
             </div>
           ))}
         </div>
