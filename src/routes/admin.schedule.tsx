@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { activeSeasonQuery, seasonMatchSummaryQuery, teamsQuery, weeksQuery } from "@/lib/queries";
+import { activeSeasonQuery, rosterSpotsQuery, seasonMatchSummaryQuery, teamsQuery, weeksQuery } from "@/lib/queries";
+import { rosterForWeek } from "@/lib/roster";
 import { isPositionRound, thirdForWeek } from "@/lib/league";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ function AdminSchedule() {
   const { data: weeks } = useQuery(weeksQuery(season?.id));
   const { data: teams } = useQuery(teamsQuery(season?.id));
   const { data: matches } = useQuery(seasonMatchSummaryQuery(season?.id));
+  const { data: spots } = useQuery(rosterSpotsQuery(season?.id));
   const [startDate, setStartDate] = useState("");
   const [weekId, setWeekId] = useState("");
   const [teamA, setTeamA] = useState("");
@@ -166,7 +168,7 @@ function AdminSchedule() {
                 </p>
                 <ul className="rounded-md border border-border divide-y divide-border/60">
                   {rows.map((m: any) => (
-                    <li key={m.id} className="flex items-center gap-3 px-3 py-2 text-sm">
+                    <li key={m.id} className="flex flex-wrap items-center gap-3 px-3 py-2 text-sm">
                       <span className="w-16 text-xs text-muted-foreground">{m.lane_pair ?? "—"}</span>
                       <span className="flex-1">
                         {m.team_a?.name} vs {m.is_bye ? "Bye" : m.team_b?.name}
@@ -175,6 +177,16 @@ function AdminSchedule() {
                       <Button variant="ghost" size="sm" onClick={() => removeMatch.mutate(m.id)}>
                         Delete
                       </Button>
+                      <div className="w-full text-[11px] text-muted-foreground">
+                        {[m.team_a, m.is_bye ? null : m.team_b].filter(Boolean).map((t: any) => (
+                          <span key={t.id} className="mr-6">
+                            {t.name}:{" "}
+                            {rosterForWeek(spots as any, t.id, w.week_number)
+                              .map((s) => s?.bowlers?.full_name ?? "—")
+                              .join(" · ")}
+                          </span>
+                        ))}
+                      </div>
                     </li>
                   ))}
                 </ul>

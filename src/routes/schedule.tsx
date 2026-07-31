@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState, PositionRoundBadge, ScopeTabs, TeamLink } from "@/components/league/ui";
-import { activeSeasonQuery, seasonMatchSummaryQuery, weeksQuery } from "@/lib/queries";
+import { activeSeasonQuery, rosterSpotsQuery, seasonMatchSummaryQuery, weeksQuery } from "@/lib/queries";
+import { rosterForWeek, type RosterSpotRow } from "@/lib/roster";
 import { useProjections } from "@/hooks/use-projections";
 
 export const Route = createFileRoute("/schedule")({
@@ -26,7 +27,36 @@ export const Route = createFileRoute("/schedule")({
   component: SchedulePage,
 });
 
-function MatchRow({ match, projected }: { match: any; projected: any }) {
+function RosterLine({
+  team,
+  spots,
+  week,
+}: {
+  team: any;
+  spots: RosterSpotRow[] | undefined;
+  week: number;
+}) {
+  if (!team) return null;
+  const names = rosterForWeek(spots, team.id, week)
+    .map((s) => s?.bowlers?.full_name)
+    .filter(Boolean);
+  if (!names.length) return null;
+  return (
+    <span className="text-[11px] text-muted-foreground">
+      {team.name}: {names.join(" · ")}
+    </span>
+  );
+}
+
+function MatchRow({
+  match,
+  projected,
+  spots,
+}: {
+  match: any;
+  projected: any;
+  spots: RosterSpotRow[] | undefined;
+}) {
   const hdcpLabel = match.status === "final"
     ? match.handicap_pins > 0
       ? `HDCP: ${match.handicap_team_id === match.team_a?.id ? match.team_a?.name : match.team_b?.name} +${match.handicap_pins}`
@@ -53,6 +83,12 @@ function MatchRow({ match, projected }: { match: any; projected: any }) {
             : ""}
       </span>
       <span className="font-display text-xs uppercase tracking-wide text-gold">{hdcpLabel}</span>
+      <div className="flex w-full flex-wrap gap-x-6">
+        <RosterLine team={match.team_a} spots={spots} week={match.weeks?.week_number ?? 1} />
+        {!match.is_bye && (
+          <RosterLine team={match.team_b} spots={spots} week={match.weeks?.week_number ?? 1} />
+        )}
+      </div>
       {match.status === "final" ? (
         <Link
           to="/match/$matchId"
@@ -74,6 +110,7 @@ function SchedulePage() {
   const { data: season } = useQuery(activeSeasonQuery);
   const { data: weeks } = useQuery(weeksQuery(season?.id));
   const { data: matches } = useQuery(seasonMatchSummaryQuery(season?.id));
+  const { data: spots } = useQuery(rosterSpotsQuery(season?.id));
   const { projectHandicap } = useProjections();
   const [view, setView] = useState<"week" | "full">("week");
 
@@ -164,6 +201,7 @@ function SchedulePage() {
           week={week}
           matches={byWeek.get(current) ?? []}
           projectHandicap={projectHandicap}
+          spots={spots as any}
         />
       ) : (
         <div className="space-y-6">
@@ -173,6 +211,7 @@ function SchedulePage() {
               week={w}
               matches={byWeek.get(w.week_number) ?? []}
               projectHandicap={projectHandicap}
+              spots={spots as any}
             />
           ))}
         </div>
@@ -185,10 +224,12 @@ function WeekBlock({
   week,
   matches,
   projectHandicap,
+  spots,
 }: {
   week: any;
   matches: any[];
   projectHandicap: (a: string, b: string | null) => any;
+  spots: RosterSpotRow[] | undefined;
 }) {
   if (!week) return <EmptyState title="Week not found" />;
   return (
@@ -206,7 +247,12 @@ function WeekBlock({
       </div>
       {matches.length ? (
         matches.map((m) => (
-          <MatchRow key={m.id} match={m} projected={projectHandicap(m.team_a?.id, m.team_b?.id ?? null)} />
+          <MatchRow
+            key={m.id}
+            match={m}
+            spots={spots}
+            projected={projectHandicap(m.team_a?.id, m.team_b?.id ?? null)}
+          />
         ))
       ) : (
         <p className="px-5 py-6 text-sm text-muted-foreground">No match-ups entered for this week.</p>
