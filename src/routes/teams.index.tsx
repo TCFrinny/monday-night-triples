@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState } from "@/components/league/ui";
 import { activeSeasonQuery, teamStandingRowsQuery, teamsQuery } from "@/lib/queries";
-import { formatPoints, thirdForWeek } from "@/lib/league";
+import { formatRecord, recordFromPoints, thirdForWeek } from "@/lib/league";
 import { useProjections } from "@/hooks/use-projections";
 import { seasonMatchSummaryQuery } from "@/lib/queries";
 
