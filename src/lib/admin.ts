@@ -56,7 +56,7 @@ export async function saveBowlerGame(args: {
       frame_number: f.frameNumber,
       outcome: f.outcome,
       frame_score: f.frameScore,
-      cumulative_score: f.cumulative,
+      cumulative_score: f.cumulative ?? 0,
       is_split: f.isSplit,
       split_converted: f.splitConverted,
       first_ball_pins: f.firstBallPins,
