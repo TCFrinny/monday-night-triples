@@ -3,8 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState, PositionRoundBadge, TeamLink } from "@/components/league/ui";
-import { activeSeasonQuery, seasonMatchSummaryQuery, weeksQuery } from "@/lib/queries";
+import {
+  activeSeasonQuery,
+  seasonLineupGamesQuery,
+  seasonMatchSummaryQuery,
+  weeksQuery,
+} from "@/lib/queries";
 import { formatPoints } from "@/lib/league";
+import { resolveGameSnapshot } from "@/lib/results";
+
 
 export const Route = createFileRoute("/results")({
   head: () => ({
@@ -29,6 +36,17 @@ function ResultsPage() {
   const { data: season } = useQuery(activeSeasonQuery);
   const { data: weeks } = useQuery(weeksQuery(season?.id));
   const { data: matches } = useQuery(seasonMatchSummaryQuery(season?.id));
+  const { data: lineupGames } = useQuery(seasonLineupGamesQuery(season?.id));
+
+  const lineupsByMatch = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const l of (lineupGames as any[]) ?? []) {
+      const arr = map.get(l.match_id) ?? [];
+      arr.push(l);
+      map.set(l.match_id, arr);
+    }
+    return map;
+  }, [lineupGames]);
 
   const finalWeeks = useMemo(() => {
     const set = new Set<number>();
@@ -70,16 +88,42 @@ function ResultsPage() {
 
       <div className="space-y-4">
         {weekMatches.map((m: any) => (
-          <ResultCard key={m.id} match={m} />
+          <ResultCard
+            key={m.id}
+            match={m}
+            lineups={lineupsByMatch.get(m.id) ?? []}
+            blindDeduction={season?.blind_deduction ?? 10}
+          />
         ))}
       </div>
     </PageShell>
   );
 }
 
-function ResultCard({ match }: { match: any }) {
-  const games: any[] = Array.isArray(match.game_points) ? match.game_points : [];
+function ResultCard({
+  match,
+  lineups,
+  blindDeduction,
+}: {
+  match: any;
+  lineups: any[];
+  blindDeduction: number;
+}) {
+  const games = useMemo(
+    () =>
+      resolveGameSnapshot({
+        gamePoints: match.game_points,
+        lineups,
+        teamAId: match.team_a_id ?? match.team_a?.id,
+        teamBId: match.team_b_id ?? match.team_b?.id ?? null,
+        handicapTeamId: match.handicap_team_id ?? null,
+        handicapPins: Number(match.handicap_pins) || 0,
+        blindDeduction,
+      }),
+    [match, lineups, blindDeduction],
+  );
   const aWins = Number(match.points_a) > Number(match.points_b);
+
   return (
     <div className="panel overflow-hidden">
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3">
