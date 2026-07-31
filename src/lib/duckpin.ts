@@ -192,21 +192,49 @@ export function ballDisabled(frame: Frame, frameIndex: number, ballIndex: number
   return false;
 }
 
-/** Display token for a ball box, e.g. X, /, 7s, -. */
+/**
+ * Position of a ball within its CURRENT rack (0 = first ball at a full rack).
+ * In frames 1-9 the rack never resets, so this equals the ball index. In the
+ * 10th the rack resets after every clear.
+ */
+export function rackBallIndex(frame: Frame, ballIndex: number, isTenth: boolean): number {
+  if (!isTenth) return ballIndex;
+  let pos = 0;
+  let standing = 10;
+  for (let i = 0; i < ballIndex; i++) {
+    const b = frame.balls[i];
+    if (!b) break;
+    standing -= b.pins;
+    if (standing === 0) {
+      standing = 10;
+      pos = 0;
+    } else {
+      pos += 1;
+    }
+  }
+  return pos;
+}
+
+/**
+ * Display token for a ball box, e.g. X, /, 7s, -.
+ * `/` is spare notation and is only ever used for the SECOND ball of a rack.
+ * A third-ball clear in frames 1-9 is a 10-box and shows its numeric pin count.
+ */
 export function ballToken(frame: Frame, frameIndex: number, ballIndex: number): string {
   const ball = frame.balls[ballIndex];
   if (!ball) return "";
   const isTenth = frameIndex === FRAME_COUNT - 1;
   const remaining = pinsRemaining(frame, ballIndex, isTenth);
+  const rackPos = rackBallIndex(frame, ballIndex, isTenth);
   let token: string;
-  if (ball.pins === 10 && ballIndex === 0) token = "X";
-  else if (ball.pins === 10) token = "X";
-  else if (ball.pins === remaining && ball.pins > 0 && ballIndex > 0) token = "/";
+  if (ball.pins === 10) token = "X";
+  else if (ball.pins === remaining && ball.pins > 0 && rackPos === 1) token = "/";
   else if (ball.pins === 0) token = "-";
   else token = String(ball.pins);
   if (ball.isSplit) token += "s";
   return token;
 }
+
 
 /**
  * Parse a keyboard token into a ball. Returns null when the token is not valid
@@ -233,7 +261,10 @@ export function parseBallToken(
   } else if (core === "/") {
     if (ballIndex === 0) return { ball: null, error: "A spare can never be on ball 1." };
     if (remaining === 10) return { ball: null, error: "Nothing left to spare." };
+    if (rackBallIndex(frame, ballIndex, isTenth) !== 1)
+      return { ball: null, error: "Ball 3 clears are 10-boxes — enter the pin count." };
     pins = remaining;
+
   } else if (core === "-") {
     pins = 0;
   } else if (/^\d{1,2}$/.test(core)) {
