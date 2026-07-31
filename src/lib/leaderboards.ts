@@ -1,4 +1,4 @@
-import { formatAverage } from "@/lib/league";
+import { formatAverage, formatPoints, formatRecord, recordFromPoints } from "@/lib/league";
 import { pct } from "@/lib/duckpin";
 
 export type Leader = {
@@ -82,31 +82,92 @@ export const BOWLER_BOARDS: Leader[] = [
   { key: "clean", title: "Clean Games", value: (r) => r.clean_games, eligible: hasGames },
 ];
 
+const hasMatches = (r: any) => num(r.matches) > 0;
+
 export const TEAM_BOARDS: Leader[] = [
+  {
+    key: "twins",
+    title: "Standing Wins",
+    note: "Wins from the 7-point match system.",
+    value: (r) => num(r.points),
+    fmt: (r) => formatRecord(recordFromPoints(num(r.points), num(r.matches))),
+    eligible: hasMatches,
+  },
+  {
+    key: "tpctw",
+    title: "Standing Percentage",
+    value: (r) => (num(r.points_possible) ? (num(r.points) / num(r.points_possible)) * 100 : 0),
+    fmt: (r) =>
+      num(r.points_possible)
+        ? `${((num(r.points) / num(r.points_possible)) * 100).toFixed(1)}%`
+        : "—",
+    eligible: (r) => num(r.points_possible) > 0,
+  },
+  {
+    key: "tgp",
+    title: "Game Points",
+    value: (r) => num(r.game_points),
+    fmt: (r) => formatPoints(num(r.game_points)),
+    eligible: hasMatches,
+  },
+  {
+    key: "tsp",
+    title: "Set Points",
+    value: (r) => num(r.set_points),
+    fmt: (r) => formatPoints(num(r.set_points)),
+    eligible: hasMatches,
+  },
+  {
+    key: "tscrpf",
+    title: "Total Scratch Pinfall",
+    value: (r) => num(r.scratch_pinfall),
+    fmt: (r) => num(r.scratch_pinfall).toLocaleString(),
+    eligible: hasMatches,
+  },
+  {
+    key: "thdcppf",
+    title: "Total HDCP Pinfall",
+    value: (r) => num(r.hdcp_pinfall),
+    fmt: (r) => num(r.hdcp_pinfall).toLocaleString(),
+    eligible: hasMatches,
+  },
   {
     key: "tavg",
     title: "Team Scratch Average",
     value: (r) => Number(r.scratch_avg),
     fmt: (r) => formatAverage(r.scratch_avg),
-    eligible: (r) => num(r.matches) > 0,
+    eligible: hasMatches,
+  },
+  {
+    key: "thavg",
+    title: "Team HDCP Average",
+    value: (r) => Number(r.hdcp_avg),
+    fmt: (r) => formatAverage(r.hdcp_avg),
+    eligible: hasMatches,
   },
   {
     key: "thg",
     title: "Team High Scratch Game",
     value: (r) => r.high_scratch_game,
-    eligible: (r) => num(r.matches) > 0,
+    eligible: hasMatches,
+  },
+  {
+    key: "thhg",
+    title: "Team High HDCP Game",
+    value: (r) => r.high_hdcp_game,
+    eligible: hasMatches,
   },
   {
     key: "ths",
     title: "Team High Scratch Set",
     value: (r) => r.high_scratch_set,
-    eligible: (r) => num(r.matches) > 0,
+    eligible: hasMatches,
   },
   {
     key: "thhs",
     title: "Team High HDCP Set",
     value: (r) => r.high_hdcp_set,
-    eligible: (r) => num(r.matches) > 0,
+    eligible: hasMatches,
   },
   {
     key: "tstrike",
@@ -118,11 +179,74 @@ export const TEAM_BOARDS: Leader[] = [
   {
     key: "tspare",
     title: "Team Spare %",
+    note: "Spares only — ten pins on ball 1 is a strike, never a spare.",
     value: (r) => pct(r.spares, r.spare_attempts),
     fmt: (r) => `${pct(r.spares, r.spare_attempts)}%`,
     eligible: (r) => num(r.spare_attempts) > 0,
   },
+  {
+    key: "ttenbox",
+    title: "Team 10-Box %",
+    note: "Ten pins down using all three balls — scored 10, no bonus.",
+    value: (r) => pct(r.ten_boxes, r.frames),
+    fmt: (r) => `${pct(r.ten_boxes, r.frames)}%`,
+    eligible: hasFrames,
+  },
+  {
+    key: "tmark",
+    title: "Team Mark %",
+    value: (r) => pct(num(r.strikes) + num(r.spares), r.frames),
+    fmt: (r) => `${pct(num(r.strikes) + num(r.spares), r.frames)}%`,
+    eligible: hasFrames,
+  },
+  {
+    key: "topen",
+    title: "Team Open %",
+    note: "Lower is better; sorted highest first like every board.",
+    value: (r) => pct(r.opens, r.frames),
+    fmt: (r) => `${pct(r.opens, r.frames)}%`,
+    eligible: hasFrames,
+  },
+  {
+    key: "tfb",
+    title: "Team First-Ball Average",
+    value: (r) => (num(r.first_ball_count) ? num(r.first_ball_pins) / num(r.first_ball_count) : 0),
+    fmt: (r) =>
+      num(r.first_ball_count)
+        ? (num(r.first_ball_pins) / num(r.first_ball_count)).toFixed(2)
+        : "—",
+    eligible: (r) => num(r.first_ball_count) > 0,
+  },
+  {
+    key: "tfb8",
+    title: "Team 8+ First-Ball %",
+    value: (r) => pct(r.first_ball_eight_plus, r.first_ball_count),
+    fmt: (r) => `${pct(r.first_ball_eight_plus, r.first_ball_count)}%`,
+    eligible: (r) => num(r.first_ball_count) > 0,
+  },
+  {
+    key: "tfb9",
+    title: "Team 9+ First-Ball %",
+    value: (r) => pct(r.first_ball_nine_plus, r.first_ball_count),
+    fmt: (r) => `${pct(r.first_ball_nine_plus, r.first_ball_count)}%`,
+    eligible: (r) => num(r.first_ball_count) > 0,
+  },
+  {
+    key: "tsplitconv",
+    title: "Team Split Conversion %",
+    value: (r) => pct(r.split_conversions, r.splits),
+    fmt: (r) => `${pct(r.split_conversions, r.splits)}% (${r.split_conversions}/${r.splits})`,
+    eligible: (r) => num(r.splits) > 0,
+  },
+  {
+    key: "tsplits",
+    title: "Team Splits Left",
+    value: (r) => num(r.splits),
+    fmt: (r) => num(r.splits).toLocaleString(),
+    eligible: hasFrames,
+  },
 ];
+
 
 /** Rows that qualify for a board, best first. */
 export function boardLeaders(board: Leader, rows: any[], limit = 5) {
