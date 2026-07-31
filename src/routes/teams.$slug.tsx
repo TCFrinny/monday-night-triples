@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { PageShell } from "@/components/page-shell";
-import { BowlerLink, EmptyState, Stat, TeamLink } from "@/components/league/ui";
+import { EmptyState, Stat, TeamLink } from "@/components/league/ui";
 import {
   activeSeasonQuery,
   teamHistoryQuery,
@@ -9,7 +9,7 @@ import {
   teamStatsQuery,
   teamsQuery,
 } from "@/lib/queries";
-import { formatPoints, pct as _unused } from "@/lib/league";
+import { formatPoints } from "@/lib/league";
 import { pct } from "@/lib/duckpin";
 import { useProjections } from "@/hooks/use-projections";
 
@@ -229,8 +229,7 @@ function TeamProfile() {
         </table>
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
-        Individual contributions and subs used are listed inside each match detail.{" "}
-        <BowlerLink bowler={null} />
+        Individual contributions and subs used are listed inside each match detail.
       </p>
     </PageShell>
   );

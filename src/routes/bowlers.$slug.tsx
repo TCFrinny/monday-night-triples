@@ -49,7 +49,7 @@ function BowlerProfile() {
   const threshold = season?.establishment_threshold ?? 15;
   const next = applicableAverage({
     entryAverage: Number(bowler.entry_average),
-    currentAverage: games ? Number(s.average) : null,
+    currentAverage: games && s ? Number(s.average) : null,
     gamesBefore: games,
     threshold,
   });
@@ -63,7 +63,7 @@ function BowlerProfile() {
     >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Entry average" value={formatAverage(bowler.entry_average)} />
-        <Stat label="Current average" value={games ? formatAverage(s.average) : "—"} />
+        <Stat label="Current average" value={games && s ? formatAverage(s.average) : "—"} />
         <Stat label="Games" value={games} />
         <Stat
           label="Applicable next week"
