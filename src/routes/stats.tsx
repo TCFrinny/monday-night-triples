@@ -236,7 +236,7 @@ function StatsPage() {
                     </li>
                   ))}
                   {!eligible.length && (
-                    <li className="text-xs text-muted-foreground">Not enough qualifying data.</li>
+                    <li className="text-xs text-muted-foreground">No data yet.</li>
                   )}
                 </ol>
               </div>
