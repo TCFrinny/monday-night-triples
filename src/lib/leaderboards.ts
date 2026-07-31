@@ -201,12 +201,14 @@ export const TEAM_BOARDS: Leader[] = [
   },
   {
     key: "topen",
-    title: "Team Open %",
-    note: "Lower is better; sorted highest first like every board.",
+    title: "Fewest Team Opens %",
+    note: "Lower is better — ranked lowest open rate first.",
     value: (r) => pct(r.opens, r.frames),
     fmt: (r) => `${pct(r.opens, r.frames)}%`,
     eligible: hasFrames,
+    lowerIsBetter: true,
   },
+
   {
     key: "tfb",
     title: "Team First-Ball Average",
