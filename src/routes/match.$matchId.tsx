@@ -163,8 +163,6 @@ function MatchDetail() {
                 </tr>
               );
             })}
-
-            ))}
           </tbody>
         </table>
       </div>
