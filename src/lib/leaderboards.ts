@@ -416,3 +416,59 @@ export function boardLeaders(board: Leader, rows: any[], limit = 5) {
     .slice(0, limit);
 }
 
+
+/** Reference implementations of the segment metrics computed in the aggregate
+ *  cache refresh. Kept here so the SQL formulas stay documented and testable. */
+export interface GameCumulatives {
+  /** Cumulative score through frame 3. */
+  c3: number;
+  /** Cumulative score through frame 5. */
+  c5: number;
+  /** Cumulative score through frame 7. */
+  c7: number;
+  /** Final scratch score of the complete game. */
+  final: number;
+}
+
+export function gameSegments(g: GameCumulatives) {
+  return {
+    first5: g.c5,
+    last5: g.final - g.c5,
+    bigOpening: g.c3,
+    bigFinish: g.final - g.c7,
+  };
+}
+
+/** Average of a segment across complete games (team totals are summed first). */
+export function segmentAverage(
+  games: GameCumulatives[],
+  key: keyof ReturnType<typeof gameSegments>,
+) {
+  if (!games.length) return 0;
+  return games.reduce((s, g) => s + gameSegments(g)[key], 0) / games.length;
+}
+
+export interface FrameLike {
+  frame_number: number;
+  outcome: "strike" | "spare" | "ten_box" | "open" | "incomplete";
+  balls?: number[];
+}
+
+/** Marks recorded in frames 9 and 10 only. */
+export function clutchMarks(frames: FrameLike[]) {
+  return frames.filter(
+    (f) =>
+      (f.frame_number === 9 || f.frame_number === 10) &&
+      (f.outcome === "strike" || f.outcome === "spare"),
+  ).length;
+}
+
+/** Pins left standing after the final ball of a frame. */
+export function framePinsLost(f: FrameLike) {
+  if (f.outcome !== "open") return 0;
+  return Math.max(0, 10 - (f.balls ?? []).reduce((s, p) => s + p, 0));
+}
+
+export function pinsLost(frames: FrameLike[]) {
+  return frames.reduce((s, f) => s + framePinsLost(f), 0);
+}
