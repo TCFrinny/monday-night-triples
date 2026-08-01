@@ -252,11 +252,22 @@ export const TEAM_BOARDS: Leader[] = [
 ];
 
 
-/** Rows that qualify for a board, best first (ascending when lower is better). */
+/** Substitute bowlers never appear on individual leaderboards (all scopes).
+ *  Their stats stay intact in the cache and still count toward team boards. */
+export const isSubRow = (r: any) => r?.bowlers?.is_sub === true;
+
+/** Rows eligible for individual leaderboards — subs removed. */
+export function individualRows<T>(rows: T[]): T[] {
+  return rows.filter((r) => !isSubRow(r));
+}
+
+/** Rows that qualify for a board, best first (ascending when lower is better).
+ *  Sub-attributed bowler rows are dropped here so no board can leak them. */
 export function boardLeaders(board: Leader, rows: any[], limit = 5) {
   const dir = board.lowerIsBetter ? -1 : 1;
-  return rows
+  return individualRows(rows)
     .filter((r) => (board.eligible ? board.eligible(r) : true))
     .sort((a, b) => (board.value(b) - board.value(a)) * dir)
     .slice(0, limit);
 }
+
