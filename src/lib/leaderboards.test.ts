@@ -43,7 +43,7 @@ describe("individual leaderboards exclude subs", () => {
         { ...sub, scope },
       ];
       expect(individualRows(rows)).toHaveLength(1);
-      expect(boardLeaders(BOWLER_BOARDS[0], rows)[0].bowlers.is_sub).toBe(false);
+      expect(boardLeaders(BOWLER_BOARDS[0]!, rows)[0]!.bowlers.is_sub).toBe(false);
     }
   });
 });
