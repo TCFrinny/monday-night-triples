@@ -1,4 +1,4 @@
-import { formatAverage, formatPoints, formatRecord, recordFromPoints } from "@/lib/league";
+import { formatAverage } from "@/lib/league";
 import { pct } from "@/lib/duckpin";
 
 export type Leader = {
@@ -103,12 +103,12 @@ export const BOWLER_BOARDS: Leader[] = [
   {
     key: "pinslost",
     title: "Pins Lost / Game",
-    note: "Pins left standing after the final ball of each open frame, per game. Lower is better.",
     value: (r) => Number(r.pins_lost_per_game) || 0,
     fmt: (r) => dec2(r.pins_lost_per_game),
     eligible: hasGames,
     lowerIsBetter: true,
   },
+
   {
     key: "consistency",
     title: "Consistency (Std. Dev.)",
@@ -150,10 +150,13 @@ export const BOWLER_BOARDS: Leader[] = [
   },
   {
     key: "clutch",
-    title: "Clutch (Frames 9–10 Marks)",
-    value: (r) => num(r.clutch_marks),
-    eligible: hasFrames,
+    title: "Clutch % (Frames 9–10)",
+    note: "Marks in completed frames 9–10 as a share of those frames.",
+    value: (r) => pct(r.clutch_marks, r.clutch_frames),
+    fmt: (r) => `${pct(r.clutch_marks, r.clutch_frames)}%`,
+    eligible: (r) => num(r.clutch_frames) > 0,
   },
+
   {
     key: "marks",
     title: "Total Marks",
@@ -165,52 +168,7 @@ export const BOWLER_BOARDS: Leader[] = [
 const hasMatches = (r: any) => num(r.matches) > 0;
 
 export const TEAM_BOARDS: Leader[] = [
-  {
-    key: "twins",
-    title: "Standing Wins",
-    note: "Wins from the 7-point match system.",
-    value: (r) => num(r.points),
-    fmt: (r) => formatRecord(recordFromPoints(num(r.points), num(r.matches))),
-    eligible: hasMatches,
-  },
-  {
-    key: "tpctw",
-    title: "Standing Percentage",
-    value: (r) => (num(r.points_possible) ? (num(r.points) / num(r.points_possible)) * 100 : 0),
-    fmt: (r) =>
-      num(r.points_possible)
-        ? `${((num(r.points) / num(r.points_possible)) * 100).toFixed(1)}%`
-        : "—",
-    eligible: (r) => num(r.points_possible) > 0,
-  },
-  {
-    key: "tgp",
-    title: "Game Points",
-    value: (r) => num(r.game_points),
-    fmt: (r) => formatPoints(num(r.game_points)),
-    eligible: hasMatches,
-  },
-  {
-    key: "tsp",
-    title: "Set Points",
-    value: (r) => num(r.set_points),
-    fmt: (r) => formatPoints(num(r.set_points)),
-    eligible: hasMatches,
-  },
-  {
-    key: "tscrpf",
-    title: "Total Scratch Pinfall",
-    value: (r) => num(r.scratch_pinfall),
-    fmt: (r) => num(r.scratch_pinfall).toLocaleString(),
-    eligible: hasMatches,
-  },
-  {
-    key: "thdcppf",
-    title: "Total HDCP Pinfall",
-    value: (r) => num(r.hdcp_pinfall),
-    fmt: (r) => num(r.hdcp_pinfall).toLocaleString(),
-    eligible: hasMatches,
-  },
+
   {
     key: "tavg",
     title: "Team Scratch Average",
@@ -297,12 +255,12 @@ export const TEAM_BOARDS: Leader[] = [
   {
     key: "tpinslost",
     title: "Team Pins Lost / Game",
-    note: "Pins left standing after the final ball of each open frame, per team game. Lower is better.",
     value: (r) => Number(r.pins_lost_per_game) || 0,
     fmt: (r) => dec2(r.pins_lost_per_game),
     eligible: hasTeamGames,
     lowerIsBetter: true,
   },
+
   {
     key: "tconsistency",
     title: "Team Consistency (Std. Dev.)",
@@ -344,10 +302,13 @@ export const TEAM_BOARDS: Leader[] = [
   },
   {
     key: "tclutch",
-    title: "Team Clutch (Frames 9–10 Marks)",
-    value: (r) => num(r.clutch_marks),
-    eligible: hasFrames,
+    title: "Team Clutch % (Frames 9–10)",
+    note: "Marks in completed frames 9–10 as a share of those frames, all bowlers including subs.",
+    value: (r) => pct(r.clutch_marks, r.clutch_frames),
+    fmt: (r) => `${pct(r.clutch_marks, r.clutch_frames)}%`,
+    eligible: (r) => num(r.clutch_frames) > 0,
   },
+
   {
     key: "tmarks",
     title: "Team Total Marks",
@@ -448,20 +409,85 @@ export function segmentAverage(
   return games.reduce((s, g) => s + gameSegments(g)[key], 0) / games.length;
 }
 
+/** A game actually rolled by a bowler (blinds are never included). The
+ *  `is_complete` flag is deliberately ignored: eligibility is decided by the
+ *  frame data that is actually present, because a finalized match can contain
+ *  a fully-scored game whose flag was never flipped. */
+export interface RolledGame extends Partial<GameCumulatives> {
+  /** Number of frames recorded for the game. */
+  frames: number;
+  /** Frames still marked incomplete. */
+  incompleteFrames?: number;
+  /** Stored completion flag — informational only. */
+  is_complete?: boolean;
+}
+
+/** A rolled game contributes to segment metrics only with 10 scored frames
+ *  and the cumulative values the formulas need. */
+export function isSegmentEligible(g: RolledGame): g is RolledGame & GameCumulatives {
+  return (
+    g.frames === 10 &&
+    !g.incompleteFrames &&
+    [g.c3, g.c5, g.c7, g.final].every((v) => typeof v === "number")
+  );
+}
+
+/** Segment totals for one team game, or null when any rolled bowler game in
+ *  that team game lacks segment data. Missing data is never counted as zero —
+ *  the whole team game drops out of the average instead. */
+export function teamGameSegmentTotals(games: RolledGame[]) {
+  if (!games.length || !games.every(isSegmentEligible)) return null;
+  return games.reduce(
+    (acc, g) => {
+      const seg = gameSegments(g as GameCumulatives);
+      return {
+        first5: acc.first5 + seg.first5,
+        last5: acc.last5 + seg.last5,
+        bigOpening: acc.bigOpening + seg.bigOpening,
+        bigFinish: acc.bigFinish + seg.bigFinish,
+      };
+    },
+    { first5: 0, last5: 0, bigOpening: 0, bigFinish: 0 },
+  );
+}
+
+/** Average a team segment across team games, skipping incomplete team games. */
+export function teamSegmentAverage(
+  teamGames: RolledGame[][],
+  key: keyof ReturnType<typeof gameSegments>,
+) {
+  const totals = teamGames
+    .map(teamGameSegmentTotals)
+    .filter((t): t is NonNullable<typeof t> => t !== null);
+  if (!totals.length) return 0;
+  return totals.reduce((s, t) => s + t[key], 0) / totals.length;
+}
+
 export interface FrameLike {
   frame_number: number;
   outcome: "strike" | "spare" | "ten_box" | "open" | "incomplete";
   balls?: number[];
 }
 
+const isClutchFrame = (f: FrameLike) => f.frame_number === 9 || f.frame_number === 10;
+
 /** Marks recorded in frames 9 and 10 only. */
 export function clutchMarks(frames: FrameLike[]) {
   return frames.filter(
-    (f) =>
-      (f.frame_number === 9 || f.frame_number === 10) &&
-      (f.outcome === "strike" || f.outcome === "spare"),
+    (f) => isClutchFrame(f) && (f.outcome === "strike" || f.outcome === "spare"),
   ).length;
 }
+
+/** Completed frame 9–10 opportunities (incomplete frames don't count). */
+export function clutchOpportunities(frames: FrameLike[]) {
+  return frames.filter((f) => isClutchFrame(f) && f.outcome !== "incomplete").length;
+}
+
+/** Clutch percentage: marks / completed frame 9–10 opportunities. */
+export function clutchPct(frames: FrameLike[]) {
+  return pct(clutchMarks(frames), clutchOpportunities(frames));
+}
+
 
 /** Pins left standing after the final ball of a frame. */
 export function framePinsLost(f: FrameLike) {

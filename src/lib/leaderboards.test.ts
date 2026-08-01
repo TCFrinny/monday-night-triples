@@ -4,11 +4,16 @@ import {
   TEAM_BOARDS,
   boardLeaders,
   clutchMarks,
+  clutchOpportunities,
+  clutchPct,
   framePinsLost,
   gameSegments,
   individualRows,
+  isSegmentEligible,
   pinsLost,
   segmentAverage,
+  teamGameSegmentTotals,
+  teamSegmentAverage,
 } from "./leaderboards";
 
 const bowlerRow = (name: string, is_sub: boolean, average: number) => ({
@@ -41,6 +46,7 @@ const bowlerRow = (name: string, is_sub: boolean, average: number) => ({
   big_opening_avg: 36,
   big_finish_avg: 40,
   clutch_marks: 3,
+  clutch_frames: 6,
 });
 
 const rostered = bowlerRow("Rostered Ray", false, 120);
@@ -107,6 +113,7 @@ describe("team leaderboards keep sub-attributed performance", () => {
       big_opening_avg: 100,
       big_finish_avg: 120,
       clutch_marks: 9,
+      clutch_frames: 18,
     };
     for (const board of TEAM_BOARDS) {
       expect(boardLeaders(board, [teamRow])).toHaveLength(1);
@@ -126,6 +133,7 @@ const advBowler = (name: string, over: Record<string, any> = {}) => ({
   big_opening_avg: 36,
   big_finish_avg: 40,
   clutch_marks: 3,
+  clutch_frames: 6,
   ...over,
 });
 
@@ -240,6 +248,7 @@ describe("new boards keep existing sub and team behaviour", () => {
       big_opening_avg: 100,
       big_finish_avg: 120,
       clutch_marks: 9,
+      clutch_frames: 18,
     };
     for (const key of [
       "tstrikes",
@@ -262,9 +271,87 @@ describe("new boards keep existing sub and team behaviour", () => {
 });
 
 describe("card notes", () => {
-  it("has no note on spare %, 10-box % or team open boards", () => {
-    for (const key of ["spare", "tenbox", "tspare", "ttenbox", "topen"]) {
+  it("has no note on spare %, 10-box %, team open or pins-lost boards", () => {
+    for (const key of ["spare", "tenbox", "tspare", "ttenbox", "topen", "pinslost", "tpinslost"]) {
       expect(board(key).note).toBeUndefined();
     }
+  });
+});
+
+describe("removed team cards", () => {
+  it("drops standings-style cards from team leaderboards", () => {
+    const keys = TEAM_BOARDS.map((b) => b.key);
+    for (const key of ["twins", "tpctw", "tgp", "tsp", "tscrpf", "thdcppf"]) {
+      expect(keys).not.toContain(key);
+    }
+  });
+});
+
+describe("team segment eligibility (Sortino William regression)", () => {
+  // Week 1 raw data: Jeff Kapper game 2 was stored with is_complete = false
+  // even though all ten frames were scored, which dropped his 67-pin First 5
+  // out of the team-game numerator while still dividing by three team games.
+  const g = (c3: number, c5: number, c7: number, final: number, over = {}) => ({
+    frames: 10,
+    c3,
+    c5,
+    c7,
+    final,
+    ...over,
+  });
+
+  const week1 = [
+    [g(77, 103, 129, 157), g(35, 59, 87, 115), g(27, 55, 80, 125)],
+    [g(28, 67, 87, 91, { is_complete: false }), g(46, 70, 96, 133), g(38, 64, 91, 119)],
+    [g(42, 61, 107, 160), g(26, 47, 63, 91), g(49, 72, 97, 133)],
+  ];
+
+  it("counts a fully-scored game flagged incomplete", () => {
+    expect(isSegmentEligible(g(28, 67, 87, 91, { is_complete: false }))).toBe(true);
+    expect(teamGameSegmentTotals(week1[1]!)!.first5).toBe(201);
+    expect(teamSegmentAverage(week1, "first5")).toBeCloseTo(199.33, 2);
+  });
+
+  it("never treats missing bowler segment data as zero", () => {
+    const partial = [g(77, 103, 129, 157), g(35, 59, 87, 115), { frames: 4, c3: 20 }];
+    expect(teamGameSegmentTotals(partial)).toBeNull();
+    // the partial team game drops out entirely instead of dragging the average down
+    expect(teamSegmentAverage([week1[0]!, partial], "first5")).toBe(217);
+  });
+});
+
+describe("clutch percentage", () => {
+  const frames = [
+    { frame_number: 9, outcome: "strike" as const },
+    { frame_number: 9, outcome: "open" as const, balls: [3, 2, 1] },
+    { frame_number: 10, outcome: "spare" as const },
+    { frame_number: 10, outcome: "incomplete" as const },
+    { frame_number: 8, outcome: "strike" as const },
+  ];
+
+  it("uses only completed frames 9-10 as the denominator", () => {
+    expect(clutchMarks(frames)).toBe(2);
+    expect(clutchOpportunities(frames)).toBe(3);
+    expect(clutchPct(frames)).toBe(66.7);
+  });
+
+  it("ranks higher percentage first for bowlers and teams", () => {
+    for (const key of ["clutch", "tclutch"]) {
+      const b = board(key);
+      expect(b.lowerIsBetter).toBeUndefined();
+      const rows = [
+        { ...advBowler("Cold"), clutch_marks: 2, clutch_frames: 10 },
+        { ...advBowler("Hot"), clutch_marks: 8, clutch_frames: 10 },
+      ];
+      expect(boardLeaders(b, rows)[0]!.bowlers.full_name).toBe("Hot");
+      expect(b.fmt!(rows[1]!)).toBe("80%");
+      expect(b.eligible!({ clutch_frames: 0 })).toBe(false);
+    }
+  });
+
+  it("includes substitute-thrown frames in team clutch", () => {
+    const teamRow = { clutch_marks: 12, clutch_frames: 18 }; // 18 = 3 bowlers x 3 games x 2 frames, one a sub
+    expect(board("tclutch").value(teamRow)).toBe(66.7);
+    expect(boardLeaders(board("tclutch"), [teamRow])).toHaveLength(1);
   });
 });

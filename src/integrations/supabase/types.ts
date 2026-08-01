@@ -139,6 +139,7 @@ export type Database = {
           bowler_id: string
           clean_frames: number
           clean_games: number
+          clutch_frames: number
           clutch_marks: number
           complete_games: number
           first_ball_count: number
@@ -182,6 +183,7 @@ export type Database = {
           bowler_id: string
           clean_frames?: number
           clean_games?: number
+          clutch_frames?: number
           clutch_marks?: number
           complete_games?: number
           first_ball_count?: number
@@ -225,6 +227,7 @@ export type Database = {
           bowler_id?: string
           clean_frames?: number
           clean_games?: number
+          clutch_frames?: number
           clutch_marks?: number
           complete_games?: number
           first_ball_count?: number
@@ -729,6 +732,7 @@ export type Database = {
         Row: {
           big_finish_avg: number
           big_opening_avg: number
+          clutch_frames: number
           clutch_marks: number
           first_ball_count: number
           first_ball_eight_plus: number
@@ -770,6 +774,7 @@ export type Database = {
         Insert: {
           big_finish_avg?: number
           big_opening_avg?: number
+          clutch_frames?: number
           clutch_marks?: number
           first_ball_count?: number
           first_ball_eight_plus?: number
@@ -811,6 +816,7 @@ export type Database = {
         Update: {
           big_finish_avg?: number
           big_opening_avg?: number
+          clutch_frames?: number
           clutch_marks?: number
           first_ball_count?: number
           first_ball_eight_plus?: number
