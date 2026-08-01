@@ -1,0 +1,14 @@
+{
+  // Cloudflare Workers deployment config for Monday Night Triples.
+  // Nitro (run by the Lovable Vite config during `vite build`) merges this file
+  // into the generated `dist/server/wrangler.json`, which is what Wrangler
+  // actually deploys via the redirect written to `.wrangler/deploy/config.json`.
+  // Keep `main` / `assets` out of this file — Nitro sets them from the build output.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "monday-night-triples",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "monday-night-triples",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -9,7 +9,12 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "deploy": "vite build && wrangler deploy",
+    "cf:preview": "vite build && wrangler dev"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -84,6 +89,7 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "^8.1.5",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "wrangler": "^4.115.0"
   }
 }
