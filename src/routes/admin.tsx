@@ -1,6 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageShell } from "@/components/page-shell";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
