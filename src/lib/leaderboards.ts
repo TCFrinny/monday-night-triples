@@ -103,12 +103,12 @@ export const BOWLER_BOARDS: Leader[] = [
   {
     key: "pinslost",
     title: "Pins Lost / Game",
-    note: "Pins left standing after the final ball of each open frame, per game. Lower is better.",
     value: (r) => Number(r.pins_lost_per_game) || 0,
     fmt: (r) => dec2(r.pins_lost_per_game),
     eligible: hasGames,
     lowerIsBetter: true,
   },
+
   {
     key: "consistency",
     title: "Consistency (Std. Dev.)",
