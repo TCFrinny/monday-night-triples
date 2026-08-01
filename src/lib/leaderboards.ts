@@ -168,52 +168,7 @@ export const BOWLER_BOARDS: Leader[] = [
 const hasMatches = (r: any) => num(r.matches) > 0;
 
 export const TEAM_BOARDS: Leader[] = [
-  {
-    key: "twins",
-    title: "Standing Wins",
-    note: "Wins from the 7-point match system.",
-    value: (r) => num(r.points),
-    fmt: (r) => formatRecord(recordFromPoints(num(r.points), num(r.matches))),
-    eligible: hasMatches,
-  },
-  {
-    key: "tpctw",
-    title: "Standing Percentage",
-    value: (r) => (num(r.points_possible) ? (num(r.points) / num(r.points_possible)) * 100 : 0),
-    fmt: (r) =>
-      num(r.points_possible)
-        ? `${((num(r.points) / num(r.points_possible)) * 100).toFixed(1)}%`
-        : "—",
-    eligible: (r) => num(r.points_possible) > 0,
-  },
-  {
-    key: "tgp",
-    title: "Game Points",
-    value: (r) => num(r.game_points),
-    fmt: (r) => formatPoints(num(r.game_points)),
-    eligible: hasMatches,
-  },
-  {
-    key: "tsp",
-    title: "Set Points",
-    value: (r) => num(r.set_points),
-    fmt: (r) => formatPoints(num(r.set_points)),
-    eligible: hasMatches,
-  },
-  {
-    key: "tscrpf",
-    title: "Total Scratch Pinfall",
-    value: (r) => num(r.scratch_pinfall),
-    fmt: (r) => num(r.scratch_pinfall).toLocaleString(),
-    eligible: hasMatches,
-  },
-  {
-    key: "thdcppf",
-    title: "Total HDCP Pinfall",
-    value: (r) => num(r.hdcp_pinfall),
-    fmt: (r) => num(r.hdcp_pinfall).toLocaleString(),
-    eligible: hasMatches,
-  },
+
   {
     key: "tavg",
     title: "Team Scratch Average",
