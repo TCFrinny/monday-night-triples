@@ -15,12 +15,13 @@ export const Route = createFileRoute("/stats")({
       {
         name: "description",
         content:
-          "Duckpin leaderboards for average, high game, high set, strike percentage, spare conversion, 10-boxes and split conversions.",
+          "Advanced duckpin leaderboards: averages, marks, consistency (std. dev.), pins lost per game, first five, last five, big opening, big finish and clutch frames for bowlers and teams.",
       },
       { property: "og:title", content: "Stats & Leaders — Monday Night Triples" },
       {
         property: "og:description",
-        content: "Averages, high games and sets, marks, first-ball and split leaderboards.",
+        content:
+          "Bowler and team leaderboards for consistency, pins lost, segment scoring, clutch marks, strikes, spares and opens.",
       },
     ],
   }),

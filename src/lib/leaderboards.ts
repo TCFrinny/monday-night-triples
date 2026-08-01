@@ -15,8 +15,11 @@ export type Leader = {
 };
 
 const num = (v: any) => Number(v) || 0;
+const dec2 = (v: any) => (Number(v) || 0).toFixed(2);
 const hasGames = (r: any) => num(r.games) > 0;
 const hasFrames = (r: any) => num(r.frames) > 0;
+const hasCompleteGames = (r: any) => num(r.complete_games) > 0;
+const hasTeamGames = (r: any) => num(r.team_games) > 0;
 
 export const BOWLER_BOARDS: Leader[] = [
   {
@@ -45,7 +48,6 @@ export const BOWLER_BOARDS: Leader[] = [
   {
     key: "spare",
     title: "Spare %",
-    note: "Spares only — ten pins on ball 1 is a strike, never a spare.",
     value: (r) => pct(r.spares, r.spare_attempts),
     fmt: (r) => `${pct(r.spares, r.spare_attempts)}%`,
     eligible: (r) => num(r.spare_attempts) > 0,
@@ -60,7 +62,6 @@ export const BOWLER_BOARDS: Leader[] = [
   {
     key: "tenbox",
     title: "10-Box %",
-    note: "Ten pins down using all three balls — scored 10, no bonus.",
     value: (r) => pct(r.ten_boxes, r.frames),
     fmt: (r) => `${pct(r.ten_boxes, r.frames)}%`,
     eligible: hasFrames,
@@ -82,6 +83,83 @@ export const BOWLER_BOARDS: Leader[] = [
   },
   { key: "streak", title: "Longest Strike Streak", value: (r) => r.longest_strike_streak, eligible: hasFrames },
   { key: "clean", title: "Clean Games", value: (r) => r.clean_games, eligible: hasGames },
+  { key: "strikes", title: "Most Strikes", value: (r) => num(r.strikes), eligible: hasFrames },
+  { key: "sparect", title: "Most Spares", value: (r) => num(r.spares), eligible: hasFrames },
+  {
+    key: "opens",
+    title: "Fewest Opens",
+    value: (r) => num(r.opens),
+    eligible: hasFrames,
+    lowerIsBetter: true,
+  },
+  {
+    key: "openpct",
+    title: "Open %",
+    value: (r) => pct(r.opens, r.frames),
+    fmt: (r) => `${pct(r.opens, r.frames)}%`,
+    eligible: hasFrames,
+    lowerIsBetter: true,
+  },
+  {
+    key: "pinslost",
+    title: "Pins Lost / Game",
+    note: "Pins left standing after the final ball of each open frame, per game. Lower is better.",
+    value: (r) => Number(r.pins_lost_per_game) || 0,
+    fmt: (r) => dec2(r.pins_lost_per_game),
+    eligible: hasGames,
+    lowerIsBetter: true,
+  },
+  {
+    key: "consistency",
+    title: "Consistency (Std. Dev.)",
+    note: "Spread of scratch game scores — lower means steadier.",
+    value: (r) => Number(r.score_stddev) || 0,
+    fmt: (r) => dec2(r.score_stddev),
+    eligible: hasCompleteGames,
+    lowerIsBetter: true,
+  },
+  {
+    key: "first5",
+    title: "First 5 (Pins / Game)",
+    value: (r) => Number(r.first5_avg) || 0,
+    fmt: (r) => dec2(r.first5_avg),
+    eligible: hasCompleteGames,
+  },
+  {
+    key: "last5",
+    title: "Last 5 (Pins / Game)",
+    value: (r) => Number(r.last5_avg) || 0,
+    fmt: (r) => dec2(r.last5_avg),
+    eligible: hasCompleteGames,
+  },
+  {
+    key: "bigopen",
+    title: "Big Opening (Pins / Game)",
+    note: "Pins through frame 3, per complete game.",
+    value: (r) => Number(r.big_opening_avg) || 0,
+    fmt: (r) => dec2(r.big_opening_avg),
+    eligible: hasCompleteGames,
+  },
+  {
+    key: "bigfinish",
+    title: "Big Finish (Pins / Game)",
+    note: "Pins in frames 8–10, per complete game.",
+    value: (r) => Number(r.big_finish_avg) || 0,
+    fmt: (r) => dec2(r.big_finish_avg),
+    eligible: hasCompleteGames,
+  },
+  {
+    key: "clutch",
+    title: "Clutch (Frames 9–10 Marks)",
+    value: (r) => num(r.clutch_marks),
+    eligible: hasFrames,
+  },
+  {
+    key: "marks",
+    title: "Total Marks",
+    value: (r) => num(r.strikes) + num(r.spares),
+    eligible: hasFrames,
+  },
 ];
 
 const hasMatches = (r: any) => num(r.matches) > 0;
@@ -181,7 +259,6 @@ export const TEAM_BOARDS: Leader[] = [
   {
     key: "tspare",
     title: "Team Spare %",
-    note: "Spares only — ten pins on ball 1 is a strike, never a spare.",
     value: (r) => pct(r.spares, r.spare_attempts),
     fmt: (r) => `${pct(r.spares, r.spare_attempts)}%`,
     eligible: (r) => num(r.spare_attempts) > 0,
@@ -189,7 +266,6 @@ export const TEAM_BOARDS: Leader[] = [
   {
     key: "ttenbox",
     title: "Team 10-Box %",
-    note: "Ten pins down using all three balls — scored 10, no bonus.",
     value: (r) => pct(r.ten_boxes, r.frames),
     fmt: (r) => `${pct(r.ten_boxes, r.frames)}%`,
     eligible: hasFrames,
@@ -203,13 +279,82 @@ export const TEAM_BOARDS: Leader[] = [
   },
   {
     key: "topen",
-    title: "Fewest Team Opens %",
-    note: "Lower is better — ranked lowest open rate first.",
+    title: "Team Open %",
     value: (r) => pct(r.opens, r.frames),
     fmt: (r) => `${pct(r.opens, r.frames)}%`,
     eligible: hasFrames,
     lowerIsBetter: true,
   },
+  { key: "tstrikes", title: "Team Strikes", value: (r) => num(r.strikes), eligible: hasFrames },
+  { key: "tsparect", title: "Team Spares", value: (r) => num(r.spares), eligible: hasFrames },
+  {
+    key: "topens",
+    title: "Fewest Team Opens",
+    value: (r) => num(r.opens),
+    eligible: hasFrames,
+    lowerIsBetter: true,
+  },
+  {
+    key: "tpinslost",
+    title: "Team Pins Lost / Game",
+    note: "Pins left standing after the final ball of each open frame, per team game. Lower is better.",
+    value: (r) => Number(r.pins_lost_per_game) || 0,
+    fmt: (r) => dec2(r.pins_lost_per_game),
+    eligible: hasTeamGames,
+    lowerIsBetter: true,
+  },
+  {
+    key: "tconsistency",
+    title: "Team Consistency (Std. Dev.)",
+    note: "Spread of team scratch game totals — lower means steadier.",
+    value: (r) => Number(r.score_stddev) || 0,
+    fmt: (r) => dec2(r.score_stddev),
+    eligible: hasTeamGames,
+    lowerIsBetter: true,
+  },
+  {
+    key: "tfirst5",
+    title: "Team First 5 (Pins / Game)",
+    value: (r) => Number(r.first5_avg) || 0,
+    fmt: (r) => dec2(r.first5_avg),
+    eligible: hasTeamGames,
+  },
+  {
+    key: "tlast5",
+    title: "Team Last 5 (Pins / Game)",
+    value: (r) => Number(r.last5_avg) || 0,
+    fmt: (r) => dec2(r.last5_avg),
+    eligible: hasTeamGames,
+  },
+  {
+    key: "tbigopen",
+    title: "Team Big Opening (Pins / Game)",
+    note: "Pins through frame 3 for all three bowlers, per team game.",
+    value: (r) => Number(r.big_opening_avg) || 0,
+    fmt: (r) => dec2(r.big_opening_avg),
+    eligible: hasTeamGames,
+  },
+  {
+    key: "tbigfinish",
+    title: "Team Big Finish (Pins / Game)",
+    note: "Pins in frames 8–10 for all three bowlers, per team game.",
+    value: (r) => Number(r.big_finish_avg) || 0,
+    fmt: (r) => dec2(r.big_finish_avg),
+    eligible: hasTeamGames,
+  },
+  {
+    key: "tclutch",
+    title: "Team Clutch (Frames 9–10 Marks)",
+    value: (r) => num(r.clutch_marks),
+    eligible: hasFrames,
+  },
+  {
+    key: "tmarks",
+    title: "Team Total Marks",
+    value: (r) => num(r.strikes) + num(r.spares),
+    eligible: hasFrames,
+  },
+
 
   {
     key: "tfb",
@@ -271,3 +416,59 @@ export function boardLeaders(board: Leader, rows: any[], limit = 5) {
     .slice(0, limit);
 }
 
+
+/** Reference implementations of the segment metrics computed in the aggregate
+ *  cache refresh. Kept here so the SQL formulas stay documented and testable. */
+export interface GameCumulatives {
+  /** Cumulative score through frame 3. */
+  c3: number;
+  /** Cumulative score through frame 5. */
+  c5: number;
+  /** Cumulative score through frame 7. */
+  c7: number;
+  /** Final scratch score of the complete game. */
+  final: number;
+}
+
+export function gameSegments(g: GameCumulatives) {
+  return {
+    first5: g.c5,
+    last5: g.final - g.c5,
+    bigOpening: g.c3,
+    bigFinish: g.final - g.c7,
+  };
+}
+
+/** Average of a segment across complete games (team totals are summed first). */
+export function segmentAverage(
+  games: GameCumulatives[],
+  key: keyof ReturnType<typeof gameSegments>,
+) {
+  if (!games.length) return 0;
+  return games.reduce((s, g) => s + gameSegments(g)[key], 0) / games.length;
+}
+
+export interface FrameLike {
+  frame_number: number;
+  outcome: "strike" | "spare" | "ten_box" | "open" | "incomplete";
+  balls?: number[];
+}
+
+/** Marks recorded in frames 9 and 10 only. */
+export function clutchMarks(frames: FrameLike[]) {
+  return frames.filter(
+    (f) =>
+      (f.frame_number === 9 || f.frame_number === 10) &&
+      (f.outcome === "strike" || f.outcome === "spare"),
+  ).length;
+}
+
+/** Pins left standing after the final ball of a frame. */
+export function framePinsLost(f: FrameLike) {
+  if (f.outcome !== "open") return 0;
+  return Math.max(0, 10 - (f.balls ?? []).reduce((s, p) => s + p, 0));
+}
+
+export function pinsLost(frames: FrameLike[]) {
+  return frames.reduce((s, f) => s + framePinsLost(f), 0);
+}

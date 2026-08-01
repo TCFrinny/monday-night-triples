@@ -134,26 +134,35 @@ export type Database = {
       bowler_stats_cache: {
         Row: {
           average: number
+          big_finish_avg: number
+          big_opening_avg: number
           bowler_id: string
           clean_frames: number
           clean_games: number
+          clutch_marks: number
+          complete_games: number
           first_ball_count: number
           first_ball_dist: Json
           first_ball_eight_plus: number
           first_ball_nine_plus: number
           first_ball_pins: number
+          first5_avg: number
           frames: number
           games: number
           high_game: number
           high_set: number
           id: string
+          last5_avg: number
           longest_mark_streak: number
           longest_strike_streak: number
           low_game: number
           low_set: number
           opens: number
           pinfall: number
+          pins_lost: number
+          pins_lost_per_game: number
           scope: string
+          score_stddev: number
           season_id: string
           sets: number
           spare_attempts: number
@@ -168,26 +177,35 @@ export type Database = {
         }
         Insert: {
           average?: number
+          big_finish_avg?: number
+          big_opening_avg?: number
           bowler_id: string
           clean_frames?: number
           clean_games?: number
+          clutch_marks?: number
+          complete_games?: number
           first_ball_count?: number
           first_ball_dist?: Json
           first_ball_eight_plus?: number
           first_ball_nine_plus?: number
           first_ball_pins?: number
+          first5_avg?: number
           frames?: number
           games?: number
           high_game?: number
           high_set?: number
           id?: string
+          last5_avg?: number
           longest_mark_streak?: number
           longest_strike_streak?: number
           low_game?: number
           low_set?: number
           opens?: number
           pinfall?: number
+          pins_lost?: number
+          pins_lost_per_game?: number
           scope: string
+          score_stddev?: number
           season_id: string
           sets?: number
           spare_attempts?: number
@@ -202,26 +220,35 @@ export type Database = {
         }
         Update: {
           average?: number
+          big_finish_avg?: number
+          big_opening_avg?: number
           bowler_id?: string
           clean_frames?: number
           clean_games?: number
+          clutch_marks?: number
+          complete_games?: number
           first_ball_count?: number
           first_ball_dist?: Json
           first_ball_eight_plus?: number
           first_ball_nine_plus?: number
           first_ball_pins?: number
+          first5_avg?: number
           frames?: number
           games?: number
           high_game?: number
           high_set?: number
           id?: string
+          last5_avg?: number
           longest_mark_streak?: number
           longest_strike_streak?: number
           low_game?: number
           low_set?: number
           opens?: number
           pinfall?: number
+          pins_lost?: number
+          pins_lost_per_game?: number
           scope?: string
+          score_stddev?: number
           season_id?: string
           sets?: number
           spare_attempts?: number
@@ -700,10 +727,14 @@ export type Database = {
       }
       team_stats_cache: {
         Row: {
+          big_finish_avg: number
+          big_opening_avg: number
+          clutch_marks: number
           first_ball_count: number
           first_ball_eight_plus: number
           first_ball_nine_plus: number
           first_ball_pins: number
+          first5_avg: number
           frames: number
           game_points: number
           hdcp_avg: number
@@ -713,11 +744,15 @@ export type Database = {
           high_scratch_game: number
           high_scratch_set: number
           id: string
+          last5_avg: number
           matches: number
           opens: number
+          pins_lost: number
+          pins_lost_per_game: number
           points: number
           points_possible: number
           scope: string
+          score_stddev: number
           scratch_avg: number
           scratch_pinfall: number
           season_id: string
@@ -727,15 +762,20 @@ export type Database = {
           split_conversions: number
           splits: number
           strikes: number
+          team_games: number
           team_id: string
           ten_boxes: number
           updated_at: string
         }
         Insert: {
+          big_finish_avg?: number
+          big_opening_avg?: number
+          clutch_marks?: number
           first_ball_count?: number
           first_ball_eight_plus?: number
           first_ball_nine_plus?: number
           first_ball_pins?: number
+          first5_avg?: number
           frames?: number
           game_points?: number
           hdcp_avg?: number
@@ -745,11 +785,15 @@ export type Database = {
           high_scratch_game?: number
           high_scratch_set?: number
           id?: string
+          last5_avg?: number
           matches?: number
           opens?: number
+          pins_lost?: number
+          pins_lost_per_game?: number
           points?: number
           points_possible?: number
           scope: string
+          score_stddev?: number
           scratch_avg?: number
           scratch_pinfall?: number
           season_id: string
@@ -759,15 +803,20 @@ export type Database = {
           split_conversions?: number
           splits?: number
           strikes?: number
+          team_games?: number
           team_id: string
           ten_boxes?: number
           updated_at?: string
         }
         Update: {
+          big_finish_avg?: number
+          big_opening_avg?: number
+          clutch_marks?: number
           first_ball_count?: number
           first_ball_eight_plus?: number
           first_ball_nine_plus?: number
           first_ball_pins?: number
+          first5_avg?: number
           frames?: number
           game_points?: number
           hdcp_avg?: number
@@ -777,11 +826,15 @@ export type Database = {
           high_scratch_game?: number
           high_scratch_set?: number
           id?: string
+          last5_avg?: number
           matches?: number
           opens?: number
+          pins_lost?: number
+          pins_lost_per_game?: number
           points?: number
           points_possible?: number
           scope?: string
+          score_stddev?: number
           scratch_avg?: number
           scratch_pinfall?: number
           season_id?: string
@@ -791,6 +844,7 @@ export type Database = {
           split_conversions?: number
           splits?: number
           strikes?: number
+          team_games?: number
           team_id?: string
           ten_boxes?: number
           updated_at?: string
@@ -990,6 +1044,10 @@ export type Database = {
         Returns: boolean
       }
       refresh_season_aggregates: {
+        Args: { p_season_id: string }
+        Returns: undefined
+      }
+      refresh_season_aggregates_impl: {
         Args: { p_season_id: string }
         Returns: undefined
       }
