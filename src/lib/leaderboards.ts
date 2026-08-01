@@ -150,10 +150,13 @@ export const BOWLER_BOARDS: Leader[] = [
   },
   {
     key: "clutch",
-    title: "Clutch (Frames 9–10 Marks)",
-    value: (r) => num(r.clutch_marks),
-    eligible: hasFrames,
+    title: "Clutch % (Frames 9–10)",
+    note: "Marks in completed frames 9–10 as a share of those frames.",
+    value: (r) => pct(r.clutch_marks, r.clutch_frames),
+    fmt: (r) => `${pct(r.clutch_marks, r.clutch_frames)}%`,
+    eligible: (r) => num(r.clutch_frames) > 0,
   },
+
   {
     key: "marks",
     title: "Total Marks",
