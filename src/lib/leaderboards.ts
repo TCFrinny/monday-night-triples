@@ -15,8 +15,11 @@ export type Leader = {
 };
 
 const num = (v: any) => Number(v) || 0;
+const dec2 = (v: any) => (Number(v) || 0).toFixed(2);
 const hasGames = (r: any) => num(r.games) > 0;
 const hasFrames = (r: any) => num(r.frames) > 0;
+const hasCompleteGames = (r: any) => num(r.complete_games) > 0;
+const hasTeamGames = (r: any) => num(r.team_games) > 0;
 
 export const BOWLER_BOARDS: Leader[] = [
   {
