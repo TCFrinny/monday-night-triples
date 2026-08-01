@@ -302,10 +302,13 @@ export const TEAM_BOARDS: Leader[] = [
   },
   {
     key: "tclutch",
-    title: "Team Clutch (Frames 9–10 Marks)",
-    value: (r) => num(r.clutch_marks),
-    eligible: hasFrames,
+    title: "Team Clutch % (Frames 9–10)",
+    note: "Marks in completed frames 9–10 as a share of those frames, all bowlers including subs.",
+    value: (r) => pct(r.clutch_marks, r.clutch_frames),
+    fmt: (r) => `${pct(r.clutch_marks, r.clutch_frames)}%`,
+    eligible: (r) => num(r.clutch_frames) > 0,
   },
+
   {
     key: "tmarks",
     title: "Team Total Marks",
