@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.refresh_season_aggregates_impl(uuid) FROM PUBLIC, anon, authenticated;
