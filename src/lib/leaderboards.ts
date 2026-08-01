@@ -45,7 +45,6 @@ export const BOWLER_BOARDS: Leader[] = [
   {
     key: "spare",
     title: "Spare %",
-    note: "Spares only — ten pins on ball 1 is a strike, never a spare.",
     value: (r) => pct(r.spares, r.spare_attempts),
     fmt: (r) => `${pct(r.spares, r.spare_attempts)}%`,
     eligible: (r) => num(r.spare_attempts) > 0,
@@ -60,7 +59,6 @@ export const BOWLER_BOARDS: Leader[] = [
   {
     key: "tenbox",
     title: "10-Box %",
-    note: "Ten pins down using all three balls — scored 10, no bonus.",
     value: (r) => pct(r.ten_boxes, r.frames),
     fmt: (r) => `${pct(r.ten_boxes, r.frames)}%`,
     eligible: hasFrames,
