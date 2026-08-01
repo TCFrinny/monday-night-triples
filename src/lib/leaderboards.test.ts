@@ -355,7 +355,6 @@ describe("clutch percentage", () => {
     expect(board("tclutch").value(teamRow)).toBe(66.7);
     expect(boardLeaders(board("tclutch"), [teamRow])).toHaveLength(1);
   });
-}
 
   it("High HDCP Game uses the max team game total including handicap", () => {
     const games = [
