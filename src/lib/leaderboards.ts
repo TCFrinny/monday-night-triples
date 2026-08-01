@@ -255,12 +255,12 @@ export const TEAM_BOARDS: Leader[] = [
   {
     key: "tpinslost",
     title: "Team Pins Lost / Game",
-    note: "Pins left standing after the final ball of each open frame, per team game. Lower is better.",
     value: (r) => Number(r.pins_lost_per_game) || 0,
     fmt: (r) => dec2(r.pins_lost_per_game),
     eligible: hasTeamGames,
     lowerIsBetter: true,
   },
+
   {
     key: "tconsistency",
     title: "Team Consistency (Std. Dev.)",
