@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   BOWLER_BOARDS,
   TEAM_BOARDS,
+  highHdcpGame,
   boardLeaders,
   clutchMarks,
   clutchOpportunities,
@@ -354,4 +355,25 @@ describe("clutch percentage", () => {
     expect(board("tclutch").value(teamRow)).toBe(66.7);
     expect(boardLeaders(board("tclutch"), [teamRow])).toHaveLength(1);
   });
+}
+
+  it("High HDCP Game uses the max team game total including handicap", () => {
+    const games = [
+      { scratch: 397, handicap: 8 },
+      { scratch: 372, handicap: 8 },
+      { scratch: 384, handicap: 8 },
+    ];
+    expect(highHdcpGame(games)).toBe(405);
+    expect(highHdcpGame([])).toBe(0);
+
+    const b = board("thhg");
+    const row = { matches: 1, high_hdcp_game: highHdcpGame(games) };
+    expect(b.value(row)).toBe(405);
+    expect(b.value(row)).not.toBe(0);
+    expect(boardLeaders(b, [row])).toHaveLength(1);
+    // ranks the higher handicap game first
+    const other = { matches: 1, high_hdcp_game: highHdcpGame([{ scratch: 467, handicap: 0 }]) };
+    expect(boardLeaders(b, [row, other]).map((r: any) => r.high_hdcp_game)).toEqual([467, 405]);
+  });
 });
+

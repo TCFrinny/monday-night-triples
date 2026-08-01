@@ -498,3 +498,19 @@ export function framePinsLost(f: FrameLike) {
 export function pinsLost(frames: FrameLike[]) {
   return frames.reduce((s, f) => s + framePinsLost(f), 0);
 }
+
+/** A finalized team game: scratch total of the three bowler games (subs
+ *  included) plus the handicap pins that team received for that match. */
+export interface TeamGameTotal {
+  scratch: number;
+  /** Handicap pins awarded to this team for the match (0 when giving). */
+  handicap: number;
+}
+
+export const teamGameHdcpTotal = (g: TeamGameTotal) => g.scratch + g.handicap;
+
+/** High HDCP Game = the largest single finalized team game total with handicap. */
+export function highHdcpGame(games: TeamGameTotal[]) {
+  if (!games.length) return 0;
+  return Math.max(...games.map(teamGameHdcpTotal));
+}
