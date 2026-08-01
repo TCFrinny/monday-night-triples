@@ -1,4 +1,4 @@
-import { formatAverage, formatPoints, formatRecord, recordFromPoints } from "@/lib/league";
+import { formatAverage } from "@/lib/league";
 import { pct } from "@/lib/duckpin";
 
 export type Leader = {
