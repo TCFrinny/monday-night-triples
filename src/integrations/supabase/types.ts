@@ -1047,6 +1047,10 @@ export type Database = {
         Args: { p_season_id: string }
         Returns: undefined
       }
+      refresh_season_aggregates_impl: {
+        Args: { p_season_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
