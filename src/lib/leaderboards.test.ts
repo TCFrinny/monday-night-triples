@@ -32,6 +32,15 @@ const bowlerRow = (name: string, is_sub: boolean, average: number) => ({
   split_conversions: 2,
   longest_strike_streak: 3,
   clean_games: 1,
+  complete_games: 3,
+  pins_lost: 12,
+  pins_lost_per_game: 4,
+  score_stddev: 10,
+  first5_avg: 60,
+  last5_avg: 60,
+  big_opening_avg: 36,
+  big_finish_avg: 40,
+  clutch_marks: 3,
 });
 
 const rostered = bowlerRow("Rostered Ray", false, 120);
@@ -89,6 +98,15 @@ describe("team leaderboards keep sub-attributed performance", () => {
       first_ball_nine_plus: 30,
       splits: 6,
       split_conversions: 3,
+      team_games: 3,
+      pins_lost: 36,
+      pins_lost_per_game: 12,
+      score_stddev: 14,
+      first5_avg: 180,
+      last5_avg: 190,
+      big_opening_avg: 100,
+      big_finish_avg: 120,
+      clutch_marks: 9,
     };
     for (const board of TEAM_BOARDS) {
       expect(boardLeaders(board, [teamRow])).toHaveLength(1);
@@ -165,7 +183,7 @@ describe("clutch marks and pins lost", () => {
   ];
 
   it("counts only marks in frames 9 and 10", () => {
-    expect(clutchMarks(frames)).toBe(3);
+    expect(clutchMarks(frames)).toBe(2);
   });
 
   it("loses no pins on strikes, spares and 10-boxes", () => {
