@@ -403,7 +403,7 @@ describe("weekly leaderboards", () => {
   });
 
   it("includes subs on weekly individual boards but not season boards", () => {
-    const board = BOWLER_BOARDS.find((b) => b.key === "average")!;
+    const board = BOWLER_BOARDS.find((b) => b.key === "avg")!;
     const season = boardLeaders(board, [rostered, sub]).map((r) => r.bowlers.full_name);
     const week = boardLeaders(board, [rostered, sub], 5, { includeSubs: true }).map(
       (r) => r.bowlers.full_name,
