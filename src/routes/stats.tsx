@@ -3,9 +3,21 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState, ScopeTabs } from "@/components/league/ui";
-import { activeSeasonQuery, bowlerStatsQuery, teamStatsQuery } from "@/lib/queries";
+import {
+  activeSeasonQuery,
+  bowlerStatsQuery,
+  seasonMatchSummaryQuery,
+  teamStatsQuery,
+} from "@/lib/queries";
 import { SCOPE_LABELS } from "@/lib/league";
-import { BOWLER_BOARDS, TEAM_BOARDS, boardLeaders } from "@/lib/leaderboards";
+import {
+  BOWLER_BOARDS,
+  TEAM_BOARDS,
+  boardLeaders,
+  defaultWeek,
+  finalizedWeeks,
+  weeklyScope,
+} from "@/lib/leaderboards";
 import type { StandingsScope } from "@/lib/league";
 
 export const Route = createFileRoute("/stats")({
