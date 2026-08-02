@@ -77,6 +77,14 @@ function StatsPage() {
     >
       <div className="mb-5 flex flex-wrap gap-3">
         <ScopeTabs
+          value={view}
+          onChange={setView}
+          options={[
+            { value: "season", label: "Season / Third Leaders" },
+            { value: "weekly", label: "Weekly Leaders" },
+          ]}
+        />
+        <ScopeTabs
           value={mode}
           onChange={setMode}
           options={[
@@ -84,22 +92,42 @@ function StatsPage() {
             { value: "teams", label: "Teams" },
           ]}
         />
-        <ScopeTabs
-          value={scope}
-          onChange={setScope}
-          options={(["third_1", "third_2", "third_3", "full"] as StandingsScope[]).map((s) => ({
-            value: s,
-            label: SCOPE_LABELS[s],
-          }))}
-        />
+        {weekly ? (
+          weeks.length > 0 && (
+            <ScopeTabs
+              value={String(selectedWeek ?? "")}
+              onChange={(v) => setWeek(Number(v))}
+              options={weeks.map((w) => ({ value: String(w), label: `Week ${w}` }))}
+            />
+          )
+        ) : (
+          <ScopeTabs
+            value={scope}
+            onChange={setScope}
+            options={(["third_1", "third_2", "third_3", "full"] as StandingsScope[]).map((s) => ({
+              value: s,
+              label: SCOPE_LABELS[s],
+            }))}
+          />
+        )}
       </div>
 
+      {weekly && (
+        <p className="mb-4 text-xs text-muted-foreground">
+          {mode === "bowlers"
+            ? "Weekly individual rankings include substitutes who actually bowled this week. Season and third leaderboards continue to exclude substitutes."
+            : "Weekly team rankings include every performance credited to the team that week, substitutes included."}
+        </p>
+      )}
+
       {!rows.length ? (
-        <EmptyState title="No statistics yet" hint="Leaderboards populate once matches are finalized." />
+        <EmptyState
+          title={weekly ? "No finalized matches for this week" : "No statistics yet"}
+          hint="Leaderboards populate once matches are finalized."
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {boards.map((board) => {
-            const eligible = boardLeaders(board, rows);
+
 
             return (
               <div key={board.key} className="panel p-5">
