@@ -4,6 +4,9 @@ import {
   TEAM_BOARDS,
   highHdcpGame,
   boardLeaders,
+  defaultWeek,
+  finalizedWeeks,
+  weeklyScope,
   clutchMarks,
   clutchOpportunities,
   clutchPct,
@@ -376,3 +379,48 @@ describe("clutch percentage", () => {
   });
 });
 
+
+describe("weekly leaderboards", () => {
+  const matches = [
+    { status: "final", is_bye: false, weeks: { week_number: 1 } },
+    { status: "final", is_bye: false, weeks: { week_number: 2 } },
+    { status: "final", is_bye: true, weeks: { week_number: 3 } },
+    { status: "scheduled", is_bye: false, weeks: { week_number: 4 } },
+  ];
+
+  it("lists only weeks with finalized, non-bye play", () => {
+    expect(finalizedWeeks(matches)).toEqual([1, 2]);
+    expect(finalizedWeeks([])).toEqual([]);
+  });
+
+  it("defaults to the latest finalized week", () => {
+    expect(defaultWeek(finalizedWeeks(matches))).toBe(2);
+    expect(defaultWeek([])).toBeNull();
+  });
+
+  it("builds the cache scope key for a week", () => {
+    expect(weeklyScope(7)).toBe("week_7");
+  });
+
+  it("includes subs on weekly individual boards but not season boards", () => {
+    const board = BOWLER_BOARDS.find((b) => b.key === "average")!;
+    const season = boardLeaders(board, [rostered, sub]).map((r) => r.bowlers.full_name);
+    const week = boardLeaders(board, [rostered, sub], 5, { includeSubs: true }).map(
+      (r) => r.bowlers.full_name,
+    );
+    expect(season).not.toContain("Sub Sam");
+    expect(week[0]).toBe("Sub Sam");
+    expect(week).toContain("Rostered Ray");
+  });
+
+  it("keeps lower-is-better ordering when subs are included", () => {
+    const board = BOWLER_BOARDS.find((b) => b.lowerIsBetter)!;
+    const rows = [rostered, { ...sub, ...zeroed(board) }];
+    const ranked = boardLeaders(board, rows, 5, { includeSubs: true });
+    expect(board.value(ranked[0]!)).toBeLessThanOrEqual(board.value(ranked[1]!));
+  });
+});
+
+function zeroed(board: any) {
+  return { pins_lost: 0, pins_lost_per_game: 0, score_stddev: 0, opens: 0 };
+}
