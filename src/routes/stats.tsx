@@ -127,7 +127,8 @@ function StatsPage() {
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-
+          {boards.map((board) => {
+            const eligible = boardLeaders(board, rows, 5, { includeSubs });
 
             return (
               <div key={board.key} className="panel p-5">
