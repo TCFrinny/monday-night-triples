@@ -287,6 +287,23 @@ function TeamManager({ seasonId }: { seasonId: string }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Display-name only: the team keeps its id AND its existing slug, so public
+  // links, schedules, results and cached rows are unaffected.
+  const renameTeamMut = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) =>
+      renameTeam(supabase as any, {
+        id,
+        name,
+        existing: (teams ?? []).map((t: any): NamedRow => ({ id: t.id, name: t.name })),
+      }),
+    onSuccess: (value) => {
+      toast.success(`Team renamed to ${value}`);
+      qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
   const assign = useMutation({
     mutationFn: async ({
       teamId,
