@@ -157,7 +157,7 @@ export const teamStandingRowsQuery = (seasonId: string | undefined) =>
       ),
   });
 
-export const teamStatsQuery = (seasonId: string | undefined, scope: StandingsScope) =>
+export const teamStatsQuery = (seasonId: string | undefined, scope: StandingsScope | string) =>
   queryOptions({
     queryKey: ["team-stats", seasonId, scope],
     enabled: Boolean(seasonId),
@@ -185,7 +185,7 @@ export const bowlersQuery = (seasonId: string | undefined) =>
       ),
   });
 
-export const bowlerStatsQuery = (seasonId: string | undefined, scope: StandingsScope) =>
+export const bowlerStatsQuery = (seasonId: string | undefined, scope: StandingsScope | string) =>
   queryOptions({
     queryKey: ["bowler-stats", seasonId, scope],
     enabled: Boolean(seasonId),

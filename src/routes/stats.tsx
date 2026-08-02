@@ -3,9 +3,21 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState, ScopeTabs } from "@/components/league/ui";
-import { activeSeasonQuery, bowlerStatsQuery, teamStatsQuery } from "@/lib/queries";
+import {
+  activeSeasonQuery,
+  bowlerStatsQuery,
+  seasonMatchSummaryQuery,
+  teamStatsQuery,
+} from "@/lib/queries";
 import { SCOPE_LABELS } from "@/lib/league";
-import { BOWLER_BOARDS, TEAM_BOARDS, boardLeaders } from "@/lib/leaderboards";
+import {
+  BOWLER_BOARDS,
+  TEAM_BOARDS,
+  boardLeaders,
+  defaultWeek,
+  finalizedWeeks,
+  weeklyScope,
+} from "@/lib/leaderboards";
 import type { StandingsScope } from "@/lib/league";
 
 export const Route = createFileRoute("/stats")({
@@ -33,13 +45,29 @@ export const Route = createFileRoute("/stats")({
 
 function StatsPage() {
   const { data: season } = useQuery(activeSeasonQuery);
+  const [view, setView] = useState<"season" | "weekly">("season");
   const [scope, setScope] = useState<StandingsScope>("full");
   const [mode, setMode] = useState<"bowlers" | "teams">("bowlers");
-  const { data: bowlerStats } = useQuery(bowlerStatsQuery(season?.id, scope));
-  const { data: teamStats } = useQuery(teamStatsQuery(season?.id, scope));
+  const [week, setWeek] = useState<number | null>(null);
+  const { data: matches } = useQuery(seasonMatchSummaryQuery(season?.id));
+
+  // Only finalized, non-bye matches produce a selectable week; default to the
+  // latest one so an unbowled future week is never preselected.
+  const weeks = finalizedWeeks(matches as any);
+  const selectedWeek = week !== null && weeks.includes(week) ? week : defaultWeek(weeks);
+  const weekly = view === "weekly";
+  const activeScope = weekly ? (selectedWeek ? weeklyScope(selectedWeek) : "__none__") : scope;
+
+  const { data: bowlerStats } = useQuery(bowlerStatsQuery(season?.id, activeScope));
+  const { data: teamStats } = useQuery(teamStatsQuery(season?.id, activeScope));
 
   const boards = mode === "bowlers" ? BOWLER_BOARDS : TEAM_BOARDS;
-  const rows: any[] = (mode === "bowlers" ? bowlerStats : teamStats) ?? [];
+  const rows: any[] =
+    (weekly && !selectedWeek ? [] : (mode === "bowlers" ? bowlerStats : teamStats)) ?? [];
+  // Weekly individual rankings include substitutes who actually bowled;
+  // season and third boards keep excluding them.
+  const includeSubs = weekly && mode === "bowlers";
+
 
   return (
     <PageShell
@@ -49,6 +77,14 @@ function StatsPage() {
     >
       <div className="mb-5 flex flex-wrap gap-3">
         <ScopeTabs
+          value={view}
+          onChange={setView}
+          options={[
+            { value: "season", label: "Season / Third Leaders" },
+            { value: "weekly", label: "Weekly Leaders" },
+          ]}
+        />
+        <ScopeTabs
           value={mode}
           onChange={setMode}
           options={[
@@ -56,22 +92,43 @@ function StatsPage() {
             { value: "teams", label: "Teams" },
           ]}
         />
-        <ScopeTabs
-          value={scope}
-          onChange={setScope}
-          options={(["third_1", "third_2", "third_3", "full"] as StandingsScope[]).map((s) => ({
-            value: s,
-            label: SCOPE_LABELS[s],
-          }))}
-        />
+        {weekly ? (
+          weeks.length > 0 && (
+            <ScopeTabs
+              value={String(selectedWeek ?? "")}
+              onChange={(v) => setWeek(Number(v))}
+              options={weeks.map((w) => ({ value: String(w), label: `Week ${w}` }))}
+            />
+          )
+        ) : (
+          <ScopeTabs
+            value={scope}
+            onChange={setScope}
+            options={(["third_1", "third_2", "third_3", "full"] as StandingsScope[]).map((s) => ({
+              value: s,
+              label: SCOPE_LABELS[s],
+            }))}
+          />
+        )}
       </div>
 
+      {weekly && (
+        <p className="mb-4 text-xs text-muted-foreground">
+          {mode === "bowlers"
+            ? "Weekly individual rankings include substitutes who actually bowled this week. Season and third leaderboards continue to exclude substitutes."
+            : "Weekly team rankings include every performance credited to the team that week, substitutes included."}
+        </p>
+      )}
+
       {!rows.length ? (
-        <EmptyState title="No statistics yet" hint="Leaderboards populate once matches are finalized." />
+        <EmptyState
+          title={weekly ? "No finalized matches for this week" : "No statistics yet"}
+          hint="Leaderboards populate once matches are finalized."
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {boards.map((board) => {
-            const eligible = boardLeaders(board, rows);
+            const eligible = boardLeaders(board, rows, 5, { includeSubs });
 
             return (
               <div key={board.key} className="panel p-5">
