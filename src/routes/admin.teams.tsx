@@ -378,7 +378,16 @@ function TeamManager({ seasonId }: { seasonId: string }) {
           const slots = currentRoster(spots as any, t.id);
           return (
             <div key={t.id} className="rounded-md border border-border p-4">
-              <h3 className="font-display text-base uppercase text-foreground">{t.name}</h3>
+              <h3 className="font-display text-base uppercase text-foreground">
+                <InlineNameEditor
+                  value={t.name}
+                  maxLength={80}
+                  pending={renameTeamMut.isPending && renameTeamMut.variables?.id === t.id}
+                  onSave={(next) => renameTeamMut.mutate({ id: t.id, name: next })}
+                />
+              </h3>
+              <p className="mt-1 text-[11px] normal-case text-muted-foreground">/teams/{t.slug}</p>
+
               <div className="mt-3 space-y-2">
                 {[1, 2, 3].map((slot) => {
                   const spot = slots[slot - 1];
