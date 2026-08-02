@@ -368,14 +368,58 @@ export function individualRows<T>(rows: T[]): T[] {
 }
 
 /** Rows that qualify for a board, best first (ascending when lower is better).
- *  Sub-attributed bowler rows are dropped here so no board can leak them. */
-export function boardLeaders(board: Leader, rows: any[], limit = 5) {
+ *  Sub-attributed bowler rows are dropped here so no season/third board can
+ *  leak them; weekly individual boards opt in with `includeSubs`. */
+export function boardLeaders(
+  board: Leader,
+  rows: any[],
+  limit = 5,
+  opts: { includeSubs?: boolean } = {},
+) {
   const dir = board.lowerIsBetter ? -1 : 1;
-  return individualRows(rows)
+  const pool = opts.includeSubs ? rows : individualRows(rows);
+  return pool
     .filter((r) => (board.eligible ? board.eligible(r) : true))
     .sort((a, b) => (board.value(b) - board.value(a)) * dir)
     .slice(0, limit);
 }
+
+/* ---------------------------------------------------------------------------
+ * Weekly leaderboards
+ *
+ * Weekly rows live in the same cache tables under a `week_<n>` scope, built by
+ * the same aggregate refresh as `full` / `third_n`, so every formula (segment
+ * eligibility, clutch, consistency, blind handling) is identical. Only
+ * finalized, non-bye matches produce a weekly scope at all.
+ * ------------------------------------------------------------------------ */
+
+/** Cache scope key for a single week. */
+export const weeklyScope = (week: number) => `week_${week}`;
+
+export interface MatchWeekRow {
+  status?: string | null;
+  is_bye?: boolean | null;
+  weeks?: { week_number?: number | null } | null;
+}
+
+/** Week numbers that have at least one finalized, non-bye match, ascending.
+ *  Draft / in-progress weeks never appear. */
+export function finalizedWeeks(matches: MatchWeekRow[] | null | undefined): number[] {
+  const set = new Set<number>();
+  for (const m of matches ?? []) {
+    if (m.status !== "final" || m.is_bye) continue;
+    const w = m.weeks?.week_number;
+    if (typeof w === "number") set.add(w);
+  }
+  return [...set].sort((a, b) => a - b);
+}
+
+/** Default weekly selection: the latest week with finalized play, never a
+ *  future/unbowled week. Null when nothing has been finalized yet. */
+export function defaultWeek(weeks: number[]): number | null {
+  return weeks.length ? weeks[weeks.length - 1]! : null;
+}
+
 
 
 /** Reference implementations of the segment metrics computed in the aggregate
