@@ -18,10 +18,86 @@ import {
   type RosterSpotRow,
 } from "@/lib/roster";
 import { formatAverage, slugify } from "@/lib/league";
+import { renameBowler, renameTeam, type NamedRow } from "@/lib/rename";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+
+/**
+ * Inline admin rename control. Saves the display name only — the row id and
+ * any existing slug are preserved so all historical data stays attached.
+ */
+function InlineNameEditor({
+  value,
+  maxLength,
+  pending,
+  onSave,
+  className,
+}: {
+  value: string;
+  maxLength: number;
+  pending: boolean;
+  onSave: (next: string) => void;
+  className?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  if (!editing) {
+    return (
+      <div className={`flex items-center gap-2 ${className ?? ""}`}>
+        <span className="truncate">{value}</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs"
+          onClick={() => {
+            setDraft(value);
+            setEditing(true);
+          }}
+        >
+          Edit
+        </Button>
+      </div>
+    );
+  }
+
+  const save = () => {
+    onSave(draft);
+    setEditing(false);
+  };
+
+  return (
+    <div className={`flex items-center gap-2 ${className ?? ""}`}>
+      <Input
+        autoFocus
+        className="h-8 w-56"
+        maxLength={maxLength}
+        value={draft}
+        disabled={pending}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") save();
+          if (e.key === "Escape") setEditing(false);
+        }}
+      />
+      <Button size="sm" className="h-8 px-3 text-xs" disabled={pending} onClick={save}>
+        {pending ? "Saving…" : "Save"}
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-8 px-3 text-xs"
+        disabled={pending}
+        onClick={() => setEditing(false)}
+      >
+        Cancel
+      </Button>
+    </div>
+  );
+}
+
 
 export const Route = createFileRoute("/admin/teams")({
   component: AdminTeams,
@@ -78,6 +154,23 @@ function BowlerManager({ seasonId }: { seasonId: string }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Display-name only: bowler id and slug are preserved, so all games,
+  // lineups and cached stats stay attached to the same bowler.
+  const rename = useMutation({
+    mutationFn: async ({ id, name: next }: { id: string; name: string }) =>
+      renameBowler(supabase as any, {
+        id,
+        name: next,
+        existing: (bowlers ?? []).map((b: any): NamedRow => ({ id: b.id, name: b.full_name })),
+      }),
+    onSuccess: (value) => {
+      toast.success(`Bowler renamed to ${value}`);
+      qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
   return (
     <section className="panel p-6">
       <h2 className="mb-1 font-display text-lg uppercase text-foreground">Bowlers</h2>
@@ -116,7 +209,15 @@ function BowlerManager({ seasonId }: { seasonId: string }) {
           <tbody>
             {(bowlers ?? []).map((b: any) => (
               <tr key={b.id} className="border-b border-border/60 last:border-0">
-                <td className="py-2">{b.full_name}</td>
+                <td className="py-2">
+                  <InlineNameEditor
+                    value={b.full_name}
+                    maxLength={100}
+                    pending={rename.isPending && rename.variables?.id === b.id}
+                    onSave={(next) => rename.mutate({ id: b.id, name: next })}
+                  />
+                </td>
+
                 <td className="py-2">
                   <Input
                     className="h-8 w-24"
@@ -185,6 +286,23 @@ function TeamManager({ seasonId }: { seasonId: string }) {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  // Display-name only: the team keeps its id AND its existing slug, so public
+  // links, schedules, results and cached rows are unaffected.
+  const renameTeamMut = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) =>
+      renameTeam(supabase as any, {
+        id,
+        name,
+        existing: (teams ?? []).map((t: any): NamedRow => ({ id: t.id, name: t.name })),
+      }),
+    onSuccess: (value) => {
+      toast.success(`Team renamed to ${value}`);
+      qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const assign = useMutation({
     mutationFn: async ({
@@ -260,7 +378,16 @@ function TeamManager({ seasonId }: { seasonId: string }) {
           const slots = currentRoster(spots as any, t.id);
           return (
             <div key={t.id} className="rounded-md border border-border p-4">
-              <h3 className="font-display text-base uppercase text-foreground">{t.name}</h3>
+              <h3 className="font-display text-base uppercase text-foreground">
+                <InlineNameEditor
+                  value={t.name}
+                  maxLength={80}
+                  pending={renameTeamMut.isPending && renameTeamMut.variables?.id === t.id}
+                  onSave={(next) => renameTeamMut.mutate({ id: t.id, name: next })}
+                />
+              </h3>
+              <p className="mt-1 text-[11px] normal-case text-muted-foreground">/teams/{t.slug}</p>
+
               <div className="mt-3 space-y-2">
                 {[1, 2, 3].map((slot) => {
                   const spot = slots[slot - 1];
