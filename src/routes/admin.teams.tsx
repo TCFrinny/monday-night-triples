@@ -154,6 +154,23 @@ function BowlerManager({ seasonId }: { seasonId: string }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Display-name only: bowler id and slug are preserved, so all games,
+  // lineups and cached stats stay attached to the same bowler.
+  const rename = useMutation({
+    mutationFn: async ({ id, name: next }: { id: string; name: string }) =>
+      renameBowler(supabase as any, {
+        id,
+        name: next,
+        existing: (bowlers ?? []).map((b: any): NamedRow => ({ id: b.id, name: b.full_name })),
+      }),
+    onSuccess: (value) => {
+      toast.success(`Bowler renamed to ${value}`);
+      qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
   return (
     <section className="panel p-6">
       <h2 className="mb-1 font-display text-lg uppercase text-foreground">Bowlers</h2>
