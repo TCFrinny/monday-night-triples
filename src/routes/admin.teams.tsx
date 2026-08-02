@@ -209,7 +209,15 @@ function BowlerManager({ seasonId }: { seasonId: string }) {
           <tbody>
             {(bowlers ?? []).map((b: any) => (
               <tr key={b.id} className="border-b border-border/60 last:border-0">
-                <td className="py-2">{b.full_name}</td>
+                <td className="py-2">
+                  <InlineNameEditor
+                    value={b.full_name}
+                    maxLength={100}
+                    pending={rename.isPending && rename.variables?.id === b.id}
+                    onSave={(next) => rename.mutate({ id: b.id, name: next })}
+                  />
+                </td>
+
                 <td className="py-2">
                   <Input
                     className="h-8 w-24"
