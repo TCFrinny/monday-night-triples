@@ -33,13 +33,29 @@ export const Route = createFileRoute("/stats")({
 
 function StatsPage() {
   const { data: season } = useQuery(activeSeasonQuery);
+  const [view, setView] = useState<"season" | "weekly">("season");
   const [scope, setScope] = useState<StandingsScope>("full");
   const [mode, setMode] = useState<"bowlers" | "teams">("bowlers");
-  const { data: bowlerStats } = useQuery(bowlerStatsQuery(season?.id, scope));
-  const { data: teamStats } = useQuery(teamStatsQuery(season?.id, scope));
+  const [week, setWeek] = useState<number | null>(null);
+  const { data: matches } = useQuery(seasonMatchSummaryQuery(season?.id));
+
+  // Only finalized, non-bye matches produce a selectable week; default to the
+  // latest one so an unbowled future week is never preselected.
+  const weeks = finalizedWeeks(matches as any);
+  const selectedWeek = week !== null && weeks.includes(week) ? week : defaultWeek(weeks);
+  const weekly = view === "weekly";
+  const activeScope = weekly ? (selectedWeek ? weeklyScope(selectedWeek) : "__none__") : scope;
+
+  const { data: bowlerStats } = useQuery(bowlerStatsQuery(season?.id, activeScope));
+  const { data: teamStats } = useQuery(teamStatsQuery(season?.id, activeScope));
 
   const boards = mode === "bowlers" ? BOWLER_BOARDS : TEAM_BOARDS;
-  const rows: any[] = (mode === "bowlers" ? bowlerStats : teamStats) ?? [];
+  const rows: any[] =
+    (weekly && !selectedWeek ? [] : (mode === "bowlers" ? bowlerStats : teamStats)) ?? [];
+  // Weekly individual rankings include substitutes who actually bowled;
+  // season and third boards keep excluding them.
+  const includeSubs = weekly && mode === "bowlers";
+
 
   return (
     <PageShell
