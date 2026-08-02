@@ -18,10 +18,86 @@ import {
   type RosterSpotRow,
 } from "@/lib/roster";
 import { formatAverage, slugify } from "@/lib/league";
+import { renameBowler, renameTeam, type NamedRow } from "@/lib/rename";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+
+/**
+ * Inline admin rename control. Saves the display name only — the row id and
+ * any existing slug are preserved so all historical data stays attached.
+ */
+function InlineNameEditor({
+  value,
+  maxLength,
+  pending,
+  onSave,
+  className,
+}: {
+  value: string;
+  maxLength: number;
+  pending: boolean;
+  onSave: (next: string) => void;
+  className?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  if (!editing) {
+    return (
+      <div className={`flex items-center gap-2 ${className ?? ""}`}>
+        <span className="truncate">{value}</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs"
+          onClick={() => {
+            setDraft(value);
+            setEditing(true);
+          }}
+        >
+          Edit
+        </Button>
+      </div>
+    );
+  }
+
+  const save = () => {
+    onSave(draft);
+    setEditing(false);
+  };
+
+  return (
+    <div className={`flex items-center gap-2 ${className ?? ""}`}>
+      <Input
+        autoFocus
+        className="h-8 w-56"
+        maxLength={maxLength}
+        value={draft}
+        disabled={pending}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") save();
+          if (e.key === "Escape") setEditing(false);
+        }}
+      />
+      <Button size="sm" className="h-8 px-3 text-xs" disabled={pending} onClick={save}>
+        {pending ? "Saving…" : "Save"}
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-8 px-3 text-xs"
+        disabled={pending}
+        onClick={() => setEditing(false)}
+      >
+        Cancel
+      </Button>
+    </div>
+  );
+}
+
 
 export const Route = createFileRoute("/admin/teams")({
   component: AdminTeams,
