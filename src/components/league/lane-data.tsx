@@ -86,7 +86,7 @@ export function LaneData({
                     Lanes {r.lane_pair}
                   </h3>
                   <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                    {r.games} games · {r.frames} frames
+                    {r.games} games
                   </span>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
