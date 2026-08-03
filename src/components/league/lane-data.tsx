@@ -156,12 +156,6 @@ export function LaneData({
                     <td className="stat-num px-3 py-2 text-right text-muted-foreground">
                       {r.games}
                     </td>
-                    <td className="stat-num px-3 py-2 text-right text-muted-foreground">
-                      {r.frames}
-                    </td>
-                    <td className="stat-num px-3 py-2 text-right text-muted-foreground">
-                      {r.first_ball_count}
-                    </td>
                   </tr>
                 ))}
               </tbody>
