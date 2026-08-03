@@ -45,7 +45,7 @@ export const Route = createFileRoute("/stats")({
 
 function StatsPage() {
   const { data: season } = useQuery(activeSeasonQuery);
-  const [view, setView] = useState<"season" | "weekly">("season");
+  const [view, setView] = useState<"season" | "weekly" | "lanes">("season");
   const [scope, setScope] = useState<StandingsScope>("full");
   const [mode, setMode] = useState<"bowlers" | "teams">("bowlers");
   const [week, setWeek] = useState<number | null>(null);
@@ -56,6 +56,7 @@ function StatsPage() {
   const weeks = finalizedWeeks(matches as any);
   const selectedWeek = week !== null && weeks.includes(week) ? week : defaultWeek(weeks);
   const weekly = view === "weekly";
+  const lanes = view === "lanes";
   const activeScope = weekly ? (selectedWeek ? weeklyScope(selectedWeek) : "__none__") : scope;
 
   const { data: bowlerStats } = useQuery(bowlerStatsQuery(season?.id, activeScope));
@@ -67,6 +68,8 @@ function StatsPage() {
   // Weekly individual rankings include substitutes who actually bowled;
   // season and third boards keep excluding them.
   const includeSubs = weekly && mode === "bowlers";
+
+
 
 
   return (
