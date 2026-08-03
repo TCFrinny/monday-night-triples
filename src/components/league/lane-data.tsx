@@ -86,7 +86,7 @@ export function LaneData({
                     Lanes {r.lane_pair}
                   </h3>
                   <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                    {r.games} games · {r.frames} frames
+                    {r.games} games
                   </span>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
@@ -99,7 +99,6 @@ export function LaneData({
                   <Cell label="10-Box %" value={`${laneTenBoxPct(r)}%`} />
                   <Cell label="Pins Lost / G" value={Number(r.pins_lost_per_game).toFixed(2)} />
                   <Cell label="High Game" value={String(r.high_scratch_game)} />
-                  <Cell label="First Balls" value={String(r.first_ball_count)} />
                 </div>
               </div>
             ))}
@@ -121,8 +120,6 @@ export function LaneData({
                   <th className="px-3 py-2 text-right">Pins Lost / G</th>
                   <th className="px-3 py-2 text-right">High Game</th>
                   <th className="px-3 py-2 text-right">Games</th>
-                  <th className="px-3 py-2 text-right">Frames</th>
-                  <th className="px-3 py-2 text-right">1st Balls</th>
                 </tr>
               </thead>
               <tbody>
@@ -158,12 +155,6 @@ export function LaneData({
                     </td>
                     <td className="stat-num px-3 py-2 text-right text-muted-foreground">
                       {r.games}
-                    </td>
-                    <td className="stat-num px-3 py-2 text-right text-muted-foreground">
-                      {r.frames}
-                    </td>
-                    <td className="stat-num px-3 py-2 text-right text-muted-foreground">
-                      {r.first_ball_count}
                     </td>
                   </tr>
                 ))}
