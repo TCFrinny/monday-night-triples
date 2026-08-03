@@ -99,7 +99,6 @@ export function LaneData({
                   <Cell label="10-Box %" value={`${laneTenBoxPct(r)}%`} />
                   <Cell label="Pins Lost / G" value={Number(r.pins_lost_per_game).toFixed(2)} />
                   <Cell label="High Game" value={String(r.high_scratch_game)} />
-                  <Cell label="First Balls" value={String(r.first_ball_count)} />
                 </div>
               </div>
             ))}
