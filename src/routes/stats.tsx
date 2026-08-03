@@ -126,8 +126,10 @@ function StatsPage() {
         </p>
       )}
 
+      {lanes ? (
+        <LaneData seasonId={season?.id} weeks={weeks} />
+      ) : !rows.length ? (
 
-      {!rows.length ? (
         <EmptyState
           title={weekly ? "No finalized matches for this week" : "No statistics yet"}
           hint="Leaderboards populate once matches are finalized."
