@@ -85,17 +85,20 @@ function StatsPage() {
           options={[
             { value: "season", label: "Season / Third Leaders" },
             { value: "weekly", label: "Weekly Leaders" },
+            { value: "lanes", label: "Lane Data" },
           ]}
         />
-        <ScopeTabs
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: "bowlers", label: "Bowlers" },
-            { value: "teams", label: "Teams" },
-          ]}
-        />
-        {weekly ? (
+        {!lanes && (
+          <ScopeTabs
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: "bowlers", label: "Bowlers" },
+              { value: "teams", label: "Teams" },
+            ]}
+          />
+        )}
+        {lanes ? null : weekly ? (
           weeks.length > 0 && (
             <ScopeTabs
               value={String(selectedWeek ?? "")}
@@ -122,6 +125,7 @@ function StatsPage() {
             : "Weekly team rankings include every performance credited to the team that week, substitutes included."}
         </p>
       )}
+
 
       {!rows.length ? (
         <EmptyState
