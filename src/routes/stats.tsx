@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState, ScopeTabs } from "@/components/league/ui";
+import { LaneData } from "@/components/league/lane-data";
+
 import {
   activeSeasonQuery,
   bowlerStatsQuery,
