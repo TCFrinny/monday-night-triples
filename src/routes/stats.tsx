@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState, ScopeTabs } from "@/components/league/ui";
+import { LaneData } from "@/components/league/lane-data";
+
 import {
   activeSeasonQuery,
   bowlerStatsQuery,
@@ -45,7 +47,7 @@ export const Route = createFileRoute("/stats")({
 
 function StatsPage() {
   const { data: season } = useQuery(activeSeasonQuery);
-  const [view, setView] = useState<"season" | "weekly">("season");
+  const [view, setView] = useState<"season" | "weekly" | "lanes">("season");
   const [scope, setScope] = useState<StandingsScope>("full");
   const [mode, setMode] = useState<"bowlers" | "teams">("bowlers");
   const [week, setWeek] = useState<number | null>(null);
@@ -56,6 +58,7 @@ function StatsPage() {
   const weeks = finalizedWeeks(matches as any);
   const selectedWeek = week !== null && weeks.includes(week) ? week : defaultWeek(weeks);
   const weekly = view === "weekly";
+  const lanes = view === "lanes";
   const activeScope = weekly ? (selectedWeek ? weeklyScope(selectedWeek) : "__none__") : scope;
 
   const { data: bowlerStats } = useQuery(bowlerStatsQuery(season?.id, activeScope));
@@ -67,6 +70,8 @@ function StatsPage() {
   // Weekly individual rankings include substitutes who actually bowled;
   // season and third boards keep excluding them.
   const includeSubs = weekly && mode === "bowlers";
+
+
 
 
   return (
@@ -82,17 +87,20 @@ function StatsPage() {
           options={[
             { value: "season", label: "Season / Third Leaders" },
             { value: "weekly", label: "Weekly Leaders" },
+            { value: "lanes", label: "Lane Data" },
           ]}
         />
-        <ScopeTabs
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: "bowlers", label: "Bowlers" },
-            { value: "teams", label: "Teams" },
-          ]}
-        />
-        {weekly ? (
+        {!lanes && (
+          <ScopeTabs
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: "bowlers", label: "Bowlers" },
+              { value: "teams", label: "Teams" },
+            ]}
+          />
+        )}
+        {lanes ? null : weekly ? (
           weeks.length > 0 && (
             <ScopeTabs
               value={String(selectedWeek ?? "")}
@@ -120,7 +128,10 @@ function StatsPage() {
         </p>
       )}
 
-      {!rows.length ? (
+      {lanes ? (
+        <LaneData seasonId={season?.id} weeks={weeks} />
+      ) : !rows.length ? (
+
         <EmptyState
           title={weekly ? "No finalized matches for this week" : "No statistics yet"}
           hint="Leaderboards populate once matches are finalized."

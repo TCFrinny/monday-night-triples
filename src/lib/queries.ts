@@ -300,3 +300,19 @@ export const seasonLineupGamesQuery = (seasonId: string | undefined) =>
       ),
   });
 
+
+/** Lane-pair performance for a scope ("full" | "third_n" | "week_n"). */
+export const laneStatsQuery = (seasonId: string | undefined, scope: string) =>
+  queryOptions({
+    queryKey: ["lane-stats", seasonId, scope],
+    enabled: Boolean(seasonId),
+    queryFn: async () =>
+      unwrap(
+        supabase
+          .from("lane_stats_cache")
+          .select("*")
+          .eq("season_id", seasonId!)
+          .eq("scope", scope)
+          .order("lane_sort"),
+      ),
+  });

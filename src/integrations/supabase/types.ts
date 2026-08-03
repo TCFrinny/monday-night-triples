@@ -382,6 +382,89 @@ export type Database = {
           },
         ]
       }
+      lane_stats_cache: {
+        Row: {
+          average: number
+          first_ball_avg: number
+          first_ball_count: number
+          first_ball_pins: number
+          frames: number
+          games: number
+          high_scratch_game: number
+          id: string
+          lane_pair: string
+          lane_sort: number
+          opens: number
+          pinfall: number
+          pins_lost: number
+          pins_lost_per_game: number
+          poa: number
+          scope: string
+          season_id: string
+          spare_attempts: number
+          spares: number
+          strikes: number
+          ten_boxes: number
+          updated_at: string
+        }
+        Insert: {
+          average?: number
+          first_ball_avg?: number
+          first_ball_count?: number
+          first_ball_pins?: number
+          frames?: number
+          games?: number
+          high_scratch_game?: number
+          id?: string
+          lane_pair: string
+          lane_sort?: number
+          opens?: number
+          pinfall?: number
+          pins_lost?: number
+          pins_lost_per_game?: number
+          poa?: number
+          scope: string
+          season_id: string
+          spare_attempts?: number
+          spares?: number
+          strikes?: number
+          ten_boxes?: number
+          updated_at?: string
+        }
+        Update: {
+          average?: number
+          first_ball_avg?: number
+          first_ball_count?: number
+          first_ball_pins?: number
+          frames?: number
+          games?: number
+          high_scratch_game?: number
+          id?: string
+          lane_pair?: string
+          lane_sort?: number
+          opens?: number
+          pinfall?: number
+          pins_lost?: number
+          pins_lost_per_game?: number
+          poa?: number
+          scope?: string
+          season_id?: string
+          spare_attempts?: number
+          spares?: number
+          strikes?: number
+          ten_boxes?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lane_stats_cache_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_lineups: {
         Row: {
           absent_bowler_id: string | null
@@ -976,10 +1059,13 @@ export type Database = {
     Views: {
       v_game_context: {
         Row: {
+          applicable_average: number | null
           bowler_id: string | null
           game_id: string | null
           game_number: number | null
           is_blind: boolean | null
+          is_bye: boolean | null
+          lane_pair: string | null
           lineup_id: string | null
           match_id: string | null
           match_status: Database["public"]["Enums"]["match_status"] | null
@@ -1048,6 +1134,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      refresh_lane_aggregates_impl: {
+        Args: { p_season_id: string }
+        Returns: undefined
       }
       refresh_season_aggregates: {
         Args: { p_season_id: string }
