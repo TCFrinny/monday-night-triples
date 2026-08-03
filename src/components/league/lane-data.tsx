@@ -120,8 +120,6 @@ export function LaneData({
                   <th className="px-3 py-2 text-right">Pins Lost / G</th>
                   <th className="px-3 py-2 text-right">High Game</th>
                   <th className="px-3 py-2 text-right">Games</th>
-                  <th className="px-3 py-2 text-right">Frames</th>
-                  <th className="px-3 py-2 text-right">1st Balls</th>
                 </tr>
               </thead>
               <tbody>
