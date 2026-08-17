@@ -481,7 +481,7 @@ describe("milestone performance cards", () => {
       ev("x1", 210),
     ];
     const out = topFivePlusMilestones(events, 200);
-    expect(out.filter((e) => e.full_name === "Ray")).toHaveLength(2);
+    expect(out.filter((e) => e['full_name'] === "Ray")).toHaveLength(2);
     expect(out.filter((e) => e.event_id === "x1")).toHaveLength(1);
   });
 
@@ -503,8 +503,8 @@ describe("milestone performance cards", () => {
   it("excludes subs on season/third individual cards and keeps them weekly", () => {
     const events = [ev("r", 210), ev("s", 260, { full_name: "Sub Sam", is_sub: true })];
     const b = milestoneBoard("hg")!;
-    expect(milestoneLeaders(b, events).map((e) => e.full_name)).toEqual(["Ray"]);
-    expect(milestoneLeaders(b, events, { includeSubs: true }).map((e) => e.full_name)).toEqual([
+    expect(milestoneLeaders(b, events).map((e) => e['full_name'])).toEqual(["Ray"]);
+    expect(milestoneLeaders(b, events, { includeSubs: true }).map((e) => e['full_name'])).toEqual([
       "Sub Sam",
       "Ray",
     ]);
