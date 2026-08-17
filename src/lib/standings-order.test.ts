@@ -43,4 +43,17 @@ describe("standings preseason ordering", () => {
     expect(out.map((r) => r.teams.name)).toEqual(names);
     expect(out.map((r) => r.rank)).toEqual(names.map((_, i) => i + 1));
   });
+
+  it("preserves double-digit ranks through preseason reordering", () => {
+    const rows = [
+      row("#10 TEAM", 10),
+      row("#2 TEAM", 2),
+      row("#11 TEAM", 11),
+      row("#1 TEAM", 1),
+      row("#9 TEAM", 9),
+    ];
+    const out = orderStandingsRows(rows);
+    expect(out.map((r) => r.teams.name)).toEqual(["#1 TEAM", "#2 TEAM", "#9 TEAM", "#10 TEAM", "#11 TEAM"]);
+    expect(out.map((r) => r.rank)).toEqual([1, 2, 3, 4, 5]);
+  });
 });
