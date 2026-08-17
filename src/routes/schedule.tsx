@@ -241,7 +241,7 @@ function WeekBlock({
         </h2>
         {week.bowl_date && (
           <span className="text-xs text-muted-foreground">
-            {new Date(week.bowl_date).toLocaleDateString(undefined, { dateStyle: "medium" })}
+            {formatDateOnly(week.bowl_date)}
           </span>
         )}
         {week.is_position_round && <PositionRoundBadge />}
