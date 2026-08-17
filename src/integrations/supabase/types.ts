@@ -709,6 +709,7 @@ export type Database = {
           position_round_weeks: number[]
           season_name: string
           sponsor: string | null
+          starting_lane_number: number | null
           team_count: number
           third_boundaries: number[]
           total_weeks: number
@@ -728,6 +729,7 @@ export type Database = {
           position_round_weeks?: number[]
           season_name: string
           sponsor?: string | null
+          starting_lane_number?: number | null
           team_count?: number
           third_boundaries?: number[]
           total_weeks?: number
@@ -747,6 +749,7 @@ export type Database = {
           position_round_weeks?: number[]
           season_name?: string
           sponsor?: string | null
+          starting_lane_number?: number | null
           team_count?: number
           third_boundaries?: number[]
           total_weeks?: number
