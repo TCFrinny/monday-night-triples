@@ -1147,6 +1147,10 @@ export type Database = {
         Args: { p_season_id: string }
         Returns: undefined
       }
+      shift_schedule_dates: {
+        Args: { p_days: number; p_from_week: number; p_season_id: string }
+        Returns: number
+      }
     }
     Enums: {
       app_role: "admin" | "user"
