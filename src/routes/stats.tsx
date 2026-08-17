@@ -100,16 +100,14 @@ function StatsPage() {
             { value: "weekly", label: "Weekly Leaders" },
           ]}
         />
-        {(
-          <ScopeTabs
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: "bowlers", label: "Bowlers" },
-              { value: "teams", label: "Teams" },
-            ]}
-          />
-        )}
+        <ScopeTabs
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: "bowlers", label: "Bowlers" },
+            { value: "teams", label: "Teams" },
+          ]}
+        />
         {weekly ? (
           weeks.length > 0 && (
             <ScopeTabs
