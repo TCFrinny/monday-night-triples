@@ -10,6 +10,7 @@ import { isPositionRound, thirdForWeek } from "@/lib/league";
 import {
   generateWeekDates,
   normalizeSkipDates,
+  planWeekDates,
   shiftPreview,
   validateShift,
   type WeekRow,
@@ -37,40 +38,6 @@ function AdminSchedule() {
   const [teamB, setTeamB] = useState("");
   const [lanes, setLanes] = useState("");
 
-  const previewRows = useMemo(() => {
-    if (!season || !startDate) return [];
-    try {
-      return generateWeekDates(startDate, season.total_weeks, skipDates);
-    } catch {
-      return [];
-    }
-  }, [season?.total_weeks, startDate, skipDates]);
-
-  const generate = useMutation({
-    mutationFn: async () => {
-      if (!season) throw new Error("No season.");
-      if (!startDate) throw new Error("Pick the week 1 bowling date.");
-      const existing = new Set((weeks ?? []).map((w: any) => w.week_number));
-      const rows = generateWeekDates(startDate, season.total_weeks, skipDates)
-        .filter((r) => !existing.has(r.week_number))
-        .map((r) => ({
-          season_id: season.id,
-          week_number: r.week_number,
-          bowl_date: r.bowl_date,
-          third: thirdForWeek(r.week_number, season.third_boundaries ?? [12, 24, 36]),
-          is_position_round: isPositionRound(r.week_number, season.position_round_weeks ?? []),
-        }));
-      if (!rows.length) throw new Error("All weeks already exist.");
-      const { error } = await supabase.from("weeks").insert(rows);
-      if (error) throw new Error(error.message);
-    },
-    onSuccess: () => {
-      toast.success("Weeks generated");
-      qc.invalidateQueries();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
   const weekRows: WeekRow[] = (weeks ?? []).map((w: any) => ({
     id: w.id,
     week_number: w.week_number,
@@ -83,6 +50,52 @@ function AdminSchedule() {
         .map((m: any) => m.weeks.week_number as number),
     ),
   );
+
+  const plan = useMemo(() => {
+    if (!season || !startDate) return null;
+    try {
+      const generated = generateWeekDates(startDate, season.total_weeks, skipDates);
+      return planWeekDates({
+        existing: weekRows,
+        generated,
+        finalizedWeekNumbers,
+        thirdFor: (n) => thirdForWeek(n, season.third_boundaries ?? [12, 24, 36]),
+        isPositionRoundFor: (n) => isPositionRound(n, season.position_round_weeks ?? []),
+      });
+    } catch {
+      return null;
+    }
+  }, [season?.total_weeks, startDate, skipDates, weeks, matches]);
+
+  const generate = useMutation({
+    mutationFn: async () => {
+      if (!season) throw new Error("No season.");
+      if (!startDate) throw new Error("Pick the week 1 bowling date.");
+      if (!plan || !plan.rows.length) throw new Error("Nothing to apply.");
+      const { data, error } = await supabase.rpc("apply_week_dates", {
+        p_season_id: season.id,
+        p_rows: plan.rows.map((r) => ({
+          week_number: r.week_number,
+          bowl_date: r.bowl_date,
+          third: r.third,
+          is_position_round: r.is_position_round,
+        })),
+      });
+      if (error) throw new Error(error.message);
+      return data as { updated: number; inserted: number; locked: number[] };
+    },
+    onSuccess: (res) => {
+      toast.success(
+        `${res?.inserted ?? 0} week(s) created · ${res?.updated ?? 0} date(s) updated` +
+          (res?.locked?.length ? ` · ${res.locked.length} finalized week(s) kept` : ""),
+      );
+      qc.invalidateQueries({ queryKey: ["weeks"] });
+      qc.invalidateQueries({ queryKey: ["season-match-summary"] });
+      qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const defaultShiftWeek =
     weekRows.find((w) => !finalizedWeekNumbers.includes(w.week_number))?.week_number ?? 0;
   const [shiftWeek, setShiftWeek] = useState<number | null>(null);
@@ -112,6 +125,8 @@ function AdminSchedule() {
     },
     onSuccess: () => {
       toast.success(`Week ${selectedShiftWeek} and later moved by ${shiftWeeksCount} week(s)`);
+      qc.invalidateQueries({ queryKey: ["weeks"] });
+      qc.invalidateQueries({ queryKey: ["season-match-summary"] });
       qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -187,7 +202,7 @@ function AdminSchedule() {
             </div>
           </div>
           <Button onClick={() => generate.mutate()} disabled={generate.isPending}>
-            Generate {season.total_weeks} weeks
+            Apply {season.total_weeks} week dates
           </Button>
           <span className="text-xs text-muted-foreground">
             {(weeks ?? []).length} week{(weeks ?? []).length === 1 ? "" : "s"} created
@@ -214,17 +229,41 @@ function AdminSchedule() {
           </div>
         )}
 
-        {!!previewRows.length && (
+        {!!plan && (
           <div className="mt-5">
             <p className="mb-2 font-display text-xs uppercase tracking-[0.14em] text-muted-foreground">
-              Preview · {previewRows.length} weeks
+              Preview · {plan.inserts.length} new · {plan.updates.length} date change
+              {plan.updates.length === 1 ? "" : "s"} · {plan.unchanged.length} unchanged
+              {plan.lockedWeekNumbers.length
+                ? ` · ${plan.lockedWeekNumbers.length} finalized week(s) kept as-is`
+                : ""}
               {skipDates.length ? ` · ${skipDates.length} date(s) skipped` : ""}
             </p>
+            {!!plan.extraWeekNumbers.length && (
+              <p className="mb-2 text-xs text-gold">
+                Weeks {plan.extraWeekNumbers.join(", ")} exist beyond the configured{" "}
+                {season.total_weeks}-week season. They are left untouched — remove them manually if
+                they are not wanted.
+              </p>
+            )}
             <div className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2 lg:grid-cols-4">
-              {previewRows.map((r) => (
-                <div key={r.week_number} className="flex justify-between border-b border-border/50 py-1">
+              {plan.rows.map((r) => (
+                <div
+                  key={r.week_number}
+                  className="flex items-center justify-between gap-2 border-b border-border/50 py-1"
+                >
                   <span className="text-muted-foreground">Week {r.week_number}</span>
-                  <span className="tabular-nums">{r.bowl_date}</span>
+                  <span className="flex items-center gap-2 tabular-nums">
+                    {r.action === "update" && (
+                      <span className="text-muted-foreground line-through">{r.from}</span>
+                    )}
+                    <span className={r.action === "unchanged" ? "" : "text-primary"}>
+                      {r.bowl_date}
+                    </span>
+                    <span className="font-display text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                      {r.action === "insert" ? "New" : r.action === "update" ? "Update" : "Same"}
+                    </span>
+                  </span>
                 </div>
               ))}
             </div>
