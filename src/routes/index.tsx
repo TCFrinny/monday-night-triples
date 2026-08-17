@@ -20,6 +20,7 @@ import {
   scopeForThird,
   thirdForWeek,
 } from "@/lib/league";
+import { resolveLeagueName } from "@/lib/branding";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const { data: season } = useQuery(activeSeasonQuery);
+  const leagueName = resolveLeagueName(season);
   const { data: weeks } = useQuery(weeksQuery(season?.id));
   const { data: matches } = useQuery(seasonMatchSummaryQuery(season?.id));
   const { data: results } = useQuery(recentResultsQuery(season?.id));
@@ -68,7 +70,7 @@ function HomePage() {
 
   if (!season) {
     return (
-      <PageShell eyebrow="AMF Dundalk" title="Monday Night Triples">
+      <PageShell eyebrow="AMF Dundalk" title={leagueName}>
         <EmptyState
           title="No active season"
           hint="An administrator can create a season, add teams and generate the schedule from the Admin area."
@@ -80,7 +82,7 @@ function HomePage() {
   return (
     <PageShell
       eyebrow={`AMF Dundalk · ${season.season_name}`}
-      title="Monday Night Triples"
+      title={leagueName}
       description="Three-person duckpin teams, 80% team handicap, seven points a week. Everything below updates the moment a sheet is finalized."
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
