@@ -5,6 +5,14 @@ import { toast } from "sonner";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { sortTeamsByName } from "@/lib/team-order";
+import {
+  buildWeekSlots,
+  hasBye,
+  laneSlots,
+  matchupsPerWeek,
+  parseStartingLane,
+  validateWeekAssignments,
+} from "@/lib/lane-slots";
 import { activeSeasonQuery, rosterSpotsQuery, seasonMatchSummaryQuery, teamsQuery, weeksQuery } from "@/lib/queries";
 import { rosterForWeek } from "@/lib/roster";
 import { isPositionRound, thirdForWeek } from "@/lib/league";
@@ -166,7 +174,7 @@ function AdminSchedule() {
 
   // ---- Week matchup grid -------------------------------------------------
   const weekMatches = (matches ?? []).filter((m: any) => m.weeks.id === weekId);
-  const plan = useMemo(
+  const weekPlan = useMemo(
     () => buildWeekSlots(activePairs, weekMatches as any),
     [activePairs.join("|"), weekId, matches],
   );
@@ -175,14 +183,14 @@ function AdminSchedule() {
   if (weekId && draftWeekId !== weekId) {
     setDraftWeekId(weekId);
     const next: Record<string, { a: string; b: string }> = {};
-    for (const s of plan.slots) {
+    for (const s of weekPlan.slots) {
       next[s.lane_pair] = { a: s.match?.team_a_id ?? "", b: s.match?.team_b_id ?? "" };
     }
     setDraft(next);
     setByeTeam(existingBye?.team_a_id ?? "");
   }
 
-  const assignments = plan.slots.map((s) => ({
+  const assignments = weekPlan.slots.map((s) => ({
     lane_pair: s.lane_pair,
     team_a_id: draft[s.lane_pair]?.a ?? "",
     team_b_id: draft[s.lane_pair]?.b ?? "",
@@ -194,7 +202,7 @@ function AdminSchedule() {
     mutationFn: async () => {
       if (!weekId) throw new Error("Choose a week.");
       if (weekError) throw new Error(weekError);
-      for (const [i, s] of plan.slots.entries()) {
+      for (const [i, s] of weekPlan.slots.entries()) {
         if (s.locked) continue;
         const a = draft[s.lane_pair]?.a ?? "";
         const b = draft[s.lane_pair]?.b ?? "";
@@ -247,7 +255,7 @@ function AdminSchedule() {
             team_b_id: null,
             is_bye: true,
             lane_pair: null,
-            sort_order: plan.slots.length + 1,
+            sort_order: weekPlan.slots.length + 1,
             status: "scheduled",
           });
           if (error) throw new Error(error.message);
