@@ -36,9 +36,11 @@ function AdminSchedule() {
   const [skipDraft, setSkipDraft] = useState("");
   const [skipDates, setSkipDates] = useState<string[]>([]);
   const [weekId, setWeekId] = useState("");
-  const [teamA, setTeamA] = useState("");
-  const [teamB, setTeamB] = useState("");
-  const [lanes, setLanes] = useState("");
+  const [laneDraft, setLaneDraft] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Record<string, { a: string; b: string }>>({});
+  const [byeTeam, setByeTeam] = useState("");
+  const [draftWeekId, setDraftWeekId] = useState("");
+
 
   const weekRows: WeekRow[] = (weeks ?? []).map((w: any) => ({
     id: w.id,
