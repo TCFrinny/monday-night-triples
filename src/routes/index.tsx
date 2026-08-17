@@ -21,6 +21,7 @@ import {
   thirdForWeek,
 } from "@/lib/league";
 import { DEFAULT_LEAGUE_NAME, resolveLeagueName } from "@/lib/branding";
+import { orderStandingsRows } from "@/lib/standings-order";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -57,7 +58,8 @@ function HomePage() {
   const currentThird = thirdForWeek(Math.max(1, lastWeek || 1), boundaries);
   const scope = scopeForThird(currentThird);
 
-  const { data: standings } = useQuery(standingsQuery(season?.id, scope));
+  const { data: standingsRaw } = useQuery(standingsQuery(season?.id, scope));
+  const standings = orderStandingsRows((standingsRaw ?? []) as any[]) as any[];
   const { data: bowlerStats } = useQuery(bowlerStatsQuery(season?.id, "full"));
 
   const nextWeek = (weeks ?? []).find((w: any) => w.week_number > lastWeek);
