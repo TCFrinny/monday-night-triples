@@ -1,11 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { activeSeasonQuery, rosterSpotsQuery, seasonMatchSummaryQuery, teamsQuery, weeksQuery } from "@/lib/queries";
 import { rosterForWeek } from "@/lib/roster";
 import { isPositionRound, thirdForWeek } from "@/lib/league";
+import {
+  generateWeekDates,
+  normalizeSkipDates,
+  shiftPreview,
+  validateShift,
+  type WeekRow,
+} from "@/lib/schedule-dates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,29 +30,36 @@ function AdminSchedule() {
   const { data: matches } = useQuery(seasonMatchSummaryQuery(season?.id));
   const { data: spots } = useQuery(rosterSpotsQuery(season?.id));
   const [startDate, setStartDate] = useState("");
+  const [skipDraft, setSkipDraft] = useState("");
+  const [skipDates, setSkipDates] = useState<string[]>([]);
   const [weekId, setWeekId] = useState("");
   const [teamA, setTeamA] = useState("");
   const [teamB, setTeamB] = useState("");
   const [lanes, setLanes] = useState("");
+
+  const previewRows = useMemo(() => {
+    if (!season || !startDate) return [];
+    try {
+      return generateWeekDates(startDate, season.total_weeks, skipDates);
+    } catch {
+      return [];
+    }
+  }, [season?.total_weeks, startDate, skipDates]);
 
   const generate = useMutation({
     mutationFn: async () => {
       if (!season) throw new Error("No season.");
       if (!startDate) throw new Error("Pick the week 1 bowling date.");
       const existing = new Set((weeks ?? []).map((w: any) => w.week_number));
-      const rows = [];
-      for (let n = 1; n <= season.total_weeks; n++) {
-        if (existing.has(n)) continue;
-        const d = new Date(`${startDate}T00:00:00`);
-        d.setDate(d.getDate() + (n - 1) * 7);
-        rows.push({
+      const rows = generateWeekDates(startDate, season.total_weeks, skipDates)
+        .filter((r) => !existing.has(r.week_number))
+        .map((r) => ({
           season_id: season.id,
-          week_number: n,
-          bowl_date: d.toISOString().slice(0, 10),
-          third: thirdForWeek(n, season.third_boundaries ?? [12, 24, 36]),
-          is_position_round: isPositionRound(n, season.position_round_weeks ?? []),
-        });
-      }
+          week_number: r.week_number,
+          bowl_date: r.bowl_date,
+          third: thirdForWeek(r.week_number, season.third_boundaries ?? [12, 24, 36]),
+          is_position_round: isPositionRound(r.week_number, season.position_round_weeks ?? []),
+        }));
       if (!rows.length) throw new Error("All weeks already exist.");
       const { error } = await supabase.from("weeks").insert(rows);
       if (error) throw new Error(error.message);
@@ -55,6 +70,7 @@ function AdminSchedule() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const addMatch = useMutation({
     mutationFn: async () => {
