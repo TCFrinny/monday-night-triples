@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, generateWeekDates, normalizeSkipDates, planWeekDates, shiftPreview, type WeekRow, validateShift } from "./schedule-dates";
+import { addDays, formatDateOnly, formatDateOnlyLong, generateWeekDates, normalizeSkipDates, planWeekDates, shiftPreview, type WeekRow, validateShift } from "./schedule-dates";
 
 const dates = (rows: { bowl_date: string }[]) => rows.map((r) => r.bowl_date);
 
@@ -198,5 +198,25 @@ describe("planWeekDates (regenerating dates over an existing schedule)", () => {
     expect(plan.unchanged).toHaveLength(36);
     expect(plan.rows[11]).toMatchObject({ week_number: 12, third: 1, is_position_round: true });
     expect(plan.rows[24]).toMatchObject({ week_number: 25, third: 3, is_position_round: false });
+  });
+});
+
+describe("formatDateOnly (no timezone shift)", () => {
+  it("renders 2026-08-31 as Monday, August 31, 2026", () => {
+    expect(formatDateOnlyLong("2026-08-31", "en-US")).toBe("Monday, August 31, 2026");
+    expect(formatDateOnly("2026-08-31", { dateStyle: "medium" }, "en-US")).toBe("Aug 31, 2026");
+  });
+
+  it("survives DST boundaries", () => {
+    expect(formatDateOnlyLong("2026-03-08", "en-US")).toBe("Sunday, March 8, 2026");
+    expect(formatDateOnlyLong("2026-03-09", "en-US")).toBe("Monday, March 9, 2026");
+    expect(formatDateOnlyLong("2026-11-01", "en-US")).toBe("Sunday, November 1, 2026");
+    expect(formatDateOnlyLong("2026-11-02", "en-US")).toBe("Monday, November 2, 2026");
+  });
+
+  it("accepts timestamp-ish input and rejects junk", () => {
+    expect(formatDateOnly("2026-08-31T00:00:00Z", { dateStyle: "medium" }, "en-US")).toBe("Aug 31, 2026");
+    expect(formatDateOnly(null)).toBe("");
+    expect(formatDateOnly("nope")).toBe("");
   });
 });
