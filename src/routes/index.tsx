@@ -20,7 +20,7 @@ import {
   scopeForThird,
   thirdForWeek,
 } from "@/lib/league";
-import { resolveLeagueName } from "@/lib/branding";
+import { DEFAULT_LEAGUE_NAME, resolveLeagueName } from "@/lib/branding";
 
 export const Route = createFileRoute("/")({
   head: () => ({
