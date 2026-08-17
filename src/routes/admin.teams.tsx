@@ -373,6 +373,13 @@ function TeamManager({ seasonId }: { seasonId: string }) {
         </Button>
       </div>
 
+      <TeamCountSync
+        seasonId={seasonId}
+        teams={(teams ?? []) as any}
+        matches={(matches ?? []) as any}
+      />
+
+
       <div className="grid gap-4 md:grid-cols-2">
         {(teams ?? []).map((t: any) => {
           const slots = currentRoster(spots as any, t.id);
