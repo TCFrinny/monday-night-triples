@@ -35,4 +35,12 @@ describe("standings preseason ordering", () => {
     expect(isPreseasonStandings([row("1 Team", 1), row("2 Team", 2, 1)])).toBe(false);
     expect(isPreseasonStandings([])).toBe(false);
   });
+
+  it("orders all 18 teams naturally with the #N prefix style", () => {
+    const names = Array.from({ length: 18 }, (_, i) => `#${i + 1} TEAM`);
+    const shuffled = [...names].sort();
+    const out = orderStandingsRows(shuffled.map((n, i) => row(n, i + 1)));
+    expect(out.map((r) => r.teams.name)).toEqual(names);
+    expect(out.map((r) => r.rank)).toEqual(names.map((_, i) => i + 1));
+  });
 });
