@@ -5,7 +5,6 @@ import { PageShell } from "@/components/page-shell";
 import { EmptyState, MovementIndicator, ScopeTabs, TeamLink } from "@/components/league/ui";
 import { activeSeasonQuery, standingsQuery, seasonMatchSummaryQuery } from "@/lib/queries";
 import {
-import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
   SCOPE_LABELS,
   formatGamesBehind,
   formatRecordValue,
@@ -14,6 +13,7 @@ import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
   thirdForWeek,
   type StandingsScope,
 } from "@/lib/league";
+import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
 export const Route = createFileRoute("/standings")({
   head: () => ({
