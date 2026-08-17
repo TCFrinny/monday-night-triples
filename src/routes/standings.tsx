@@ -14,6 +14,7 @@ import {
   type StandingsScope,
 } from "@/lib/league";
 import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
+import { orderStandingsRows } from "@/lib/standings-order";
 
 export const Route = createFileRoute("/standings")({
   head: () => ({
@@ -34,7 +35,8 @@ export const Route = createFileRoute("/standings")({
   component: StandingsPage,
 });
 
-function StandingsTable({ rows, title, note }: { rows: any[]; title: string; note?: string }) {
+function StandingsTable({ rows: inputRows, title, note }: { rows: any[]; title: string; note?: string }) {
+  const rows = orderStandingsRows(inputRows as any[]) as any[];
   if (!rows.length) {
     return <EmptyState title={`No ${title.toLowerCase()} yet`} hint="Standings appear once matches are finalized." />;
   }
