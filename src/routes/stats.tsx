@@ -8,6 +8,7 @@ import { LaneData } from "@/components/league/lane-data";
 import {
   activeSeasonQuery,
   bowlerStatsQuery,
+  milestoneEventsQuery,
   seasonMatchSummaryQuery,
   teamStatsQuery,
 } from "@/lib/queries";
@@ -18,6 +19,8 @@ import {
   boardLeaders,
   defaultWeek,
   finalizedWeeks,
+  milestoneBoard,
+  milestoneLeaders,
   weeklyScope,
 } from "@/lib/leaderboards";
 import type { StandingsScope } from "@/lib/league";
