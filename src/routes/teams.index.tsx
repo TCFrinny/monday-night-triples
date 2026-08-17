@@ -7,6 +7,7 @@ import { formatRecord, recordFromPoints, thirdForWeek } from "@/lib/league";
 import { useProjections } from "@/hooks/use-projections";
 import { seasonMatchSummaryQuery } from "@/lib/queries";
 import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
+import { sortTeamsByName } from "@/lib/team-order";
 
 export const Route = createFileRoute("/teams/")({
   head: () => ({
@@ -29,7 +30,8 @@ export const Route = createFileRoute("/teams/")({
 
 function TeamsPage() {
   const { data: season } = useQuery(activeSeasonQuery);
-  const { data: teams } = useQuery(teamsQuery(season?.id));
+  const { data: teamsRaw } = useQuery(teamsQuery(season?.id));
+  const teams = sortTeamsByName((teamsRaw ?? []) as any[]);
   const { data: standings } = useQuery(teamStandingRowsQuery(season?.id));
   const { data: matches } = useQuery(seasonMatchSummaryQuery(season?.id));
   const { teamMap } = useProjections();
@@ -43,7 +45,7 @@ function TeamsPage() {
   const find = (teamId: string, s: string) =>
     (standings ?? []).find((r: any) => r.team_id === teamId && r.scope === s);
 
-  if (!teams?.length) {
+  if (!teams.length) {
     return (
       <PageShell eyebrow="Rosters" title="Teams">
         <EmptyState title="No teams yet" hint="An administrator can add teams and assign three active bowlers each." />
