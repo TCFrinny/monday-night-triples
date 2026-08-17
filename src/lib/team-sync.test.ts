@@ -33,7 +33,7 @@ describe("planTeamSync", () => {
   it("numbers placeholders naturally through 18", () => {
     const plan = planTeamSync({ configuredCount: 18, teams: six, hasFinalizedResults: false });
     expect(plan.creates.map((c) => c.number)).toEqual([7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]);
-    expect(plan.creates[0].name).toBe("#7 TEAM");
+    expect(plan.creates[0]!.name).toBe("#7 TEAM");
     expect(plan.creates.at(-1)!.name).toBe("#18 TEAM");
   });
 
