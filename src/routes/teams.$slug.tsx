@@ -12,17 +12,18 @@ import {
 import { formatPoints, formatRecord, recordFromPoints } from "@/lib/league";
 import { pct } from "@/lib/duckpin";
 import { useProjections } from "@/hooks/use-projections";
+import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
 export const Route = createFileRoute("/teams/$slug")({
   head: () => ({
     meta: [
-      { title: "Team Profile — Monday Night Triples" },
+      { title: `Team Profile — ${DEFAULT_LEAGUE_NAME}` },
       {
         name: "description",
         content:
-          "Roster, roster history, standings snapshots, team bowling statistics and week-by-week results for a Monday Night Triples team.",
+          `Roster, roster history, standings snapshots, team bowling statistics and week-by-week results for a ${DEFAULT_LEAGUE_NAME} team.`,
       },
-      { property: "og:title", content: "Team Profile — Monday Night Triples" },
+      { property: "og:title", content: `Team Profile — ${DEFAULT_LEAGUE_NAME}` },
       {
         property: "og:description",
         content: "Roster history, standings snapshots and team bowling statistics.",

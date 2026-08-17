@@ -6,17 +6,18 @@ import { EmptyState, Linescore, ParticipationTag, Stat, framesFromRows } from "@
 import { activeSeasonQuery, bowlerHistoryQuery, bowlerStatsQuery, bowlersQuery } from "@/lib/queries";
 import { applicableAverage, formatAverage } from "@/lib/league";
 import { pct } from "@/lib/duckpin";
+import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
 export const Route = createFileRoute("/bowlers/$slug")({
   head: () => ({
     meta: [
-      { title: "Bowler Profile — Monday Night Triples" },
+      { title: `Bowler Profile — ${DEFAULT_LEAGUE_NAME}` },
       {
         name: "description",
         content:
-          "Duckpin scoring, mark, first-ball and split statistics plus week-by-week linescores for a Monday Night Triples bowler.",
+          `Duckpin scoring, mark, first-ball and split statistics plus week-by-week linescores for a ${DEFAULT_LEAGUE_NAME} bowler.`,
       },
-      { property: "og:title", content: "Bowler Profile — Monday Night Triples" },
+      { property: "og:title", content: `Bowler Profile — ${DEFAULT_LEAGUE_NAME}` },
       {
         property: "og:description",
         content: "Scoring, marks, first ball and split statistics with full linescores.",

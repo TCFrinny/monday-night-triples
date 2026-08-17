@@ -6,17 +6,18 @@ import { activeSeasonQuery, teamStandingRowsQuery, teamsQuery } from "@/lib/quer
 import { formatRecord, recordFromPoints, thirdForWeek } from "@/lib/league";
 import { useProjections } from "@/hooks/use-projections";
 import { seasonMatchSummaryQuery } from "@/lib/queries";
+import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
 export const Route = createFileRoute("/teams/")({
   head: () => ({
     meta: [
-      { title: "Teams — Monday Night Triples" },
+      { title: `Teams — ${DEFAULT_LEAGUE_NAME}` },
       {
         name: "description",
         content:
           "Every triples team at AMF Dundalk with current-third and full-season rank, team average and the three active rostered bowlers.",
       },
-      { property: "og:title", content: "Teams — Monday Night Triples" },
+      { property: "og:title", content: `Teams — ${DEFAULT_LEAGUE_NAME}` },
       {
         property: "og:description",
         content: "Team directory with rank, points, team average and active rosters.",

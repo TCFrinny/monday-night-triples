@@ -5,17 +5,18 @@ import { PageShell } from "@/components/page-shell";
 import { EmptyState, ScopeTabs } from "@/components/league/ui";
 import { activeSeasonQuery, bowlerStatsQuery, bowlersQuery } from "@/lib/queries";
 import { formatAverage } from "@/lib/league";
+import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
 export const Route = createFileRoute("/bowlers/")({
   head: () => ({
     meta: [
-      { title: "Bowlers — Monday Night Triples" },
+      { title: `Bowlers — ${DEFAULT_LEAGUE_NAME}` },
       {
         name: "description",
         content:
           "Searchable directory of rostered bowlers and the sub pool with current averages, games, high game and high set.",
       },
-      { property: "og:title", content: "Bowlers — Monday Night Triples" },
+      { property: "og:title", content: `Bowlers — ${DEFAULT_LEAGUE_NAME}` },
       {
         property: "og:description",
         content: "Rostered bowlers and sub pool with averages, games, high game and high set.",

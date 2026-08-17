@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Toaster } from "@/components/ui/sonner";
+import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
 
 function NotFoundComponent() {
@@ -81,13 +82,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Monday Night Triples — Duckpin League at AMF Dundalk" },
+      { title: `${DEFAULT_LEAGUE_NAME} — Duckpin League at AMF Dundalk` },
       {
         name: "description",
         content:
-          "Standings, schedule, results and stats for the Monday Night Triples duckpin bowling league at AMF Dundalk.",
+          `Standings, schedule, results and stats for the ${DEFAULT_LEAGUE_NAME} duckpin bowling league at AMF Dundalk.`,
       },
-      { property: "og:site_name", content: "Monday Night Triples" },
+      { property: "og:site_name", content: `${DEFAULT_LEAGUE_NAME}` },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

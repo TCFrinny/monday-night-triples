@@ -21,17 +21,18 @@ import {
   weeklyScope,
 } from "@/lib/leaderboards";
 import type { StandingsScope } from "@/lib/league";
+import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
 export const Route = createFileRoute("/stats")({
   head: () => ({
     meta: [
-      { title: "Stats & Leaders — Monday Night Triples" },
+      { title: `Stats & Leaders — ${DEFAULT_LEAGUE_NAME}` },
       {
         name: "description",
         content:
           "Advanced duckpin leaderboards: averages, marks, consistency (std. dev.), pins lost per game, first five, last five, big opening, big finish and clutch frames for bowlers and teams.",
       },
-      { property: "og:title", content: "Stats & Leaders — Monday Night Triples" },
+      { property: "og:title", content: `Stats & Leaders — ${DEFAULT_LEAGUE_NAME}` },
       {
         property: "og:description",
         content:

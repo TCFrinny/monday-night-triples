@@ -5,6 +5,7 @@ import { PageShell } from "@/components/page-shell";
 import { EmptyState, MovementIndicator, ScopeTabs, TeamLink } from "@/components/league/ui";
 import { activeSeasonQuery, standingsQuery, seasonMatchSummaryQuery } from "@/lib/queries";
 import {
+import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
   SCOPE_LABELS,
   formatGamesBehind,
   formatRecordValue,
@@ -17,13 +18,13 @@ import {
 export const Route = createFileRoute("/standings")({
   head: () => ({
     meta: [
-      { title: "Standings — Monday Night Triples" },
+      { title: `Standings — ${DEFAULT_LEAGUE_NAME}` },
       {
         name: "description",
         content:
-          "Team points and handicap pinfall standings by third and full season for the Monday Night Triples duckpin league at AMF Dundalk.",
+          `Team points and handicap pinfall standings by third and full season for the ${DEFAULT_LEAGUE_NAME} duckpin league at AMF Dundalk.`,
       },
-      { property: "og:title", content: "Standings — Monday Night Triples" },
+      { property: "og:title", content: `Standings — ${DEFAULT_LEAGUE_NAME}` },
       {
         property: "og:description",
         content: "Team points and handicap pinfall standings by third and full season.",

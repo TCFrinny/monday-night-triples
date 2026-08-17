@@ -7,17 +7,18 @@ import { EmptyState, PositionRoundBadge, ScopeTabs, TeamLink } from "@/component
 import { activeSeasonQuery, rosterSpotsQuery, seasonMatchSummaryQuery, weeksQuery } from "@/lib/queries";
 import { rosterForWeek, type RosterSpotRow } from "@/lib/roster";
 import { useProjections } from "@/hooks/use-projections";
+import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
 export const Route = createFileRoute("/schedule")({
   head: () => ({
     meta: [
-      { title: "Schedule — Monday Night Triples" },
+      { title: `Schedule — ${DEFAULT_LEAGUE_NAME}` },
       {
         name: "description",
         content:
-          "Weekly match-ups by lane pair, projected handicaps and position rounds for the Monday Night Triples duckpin league.",
+          `Weekly match-ups by lane pair, projected handicaps and position rounds for the ${DEFAULT_LEAGUE_NAME} duckpin league.`,
       },
-      { property: "og:title", content: "Schedule — Monday Night Triples" },
+      { property: "og:title", content: `Schedule — ${DEFAULT_LEAGUE_NAME}` },
       {
         property: "og:description",
         content: "Weekly match-ups by lane pair, projected handicaps and position rounds.",
