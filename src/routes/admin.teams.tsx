@@ -286,8 +286,9 @@ function TeamManager({ seasonId }: { seasonId: string }) {
     onSuccess: () => {
       setTeamName("");
       toast.success("Team created");
-      qc.invalidateQueries({ queryKey: ["teams"] });
-      qc.invalidateQueries({ queryKey: ["roster-spots"] });
+      // Adding a team rebuilds the standings/team-stats caches DB-side, so
+      // refetch those too.
+      qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
   });
