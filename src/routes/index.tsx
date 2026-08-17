@@ -21,6 +21,7 @@ import {
   thirdForWeek,
 } from "@/lib/league";
 import { DEFAULT_LEAGUE_NAME, resolveLeagueName } from "@/lib/branding";
+import { orderStandingsRows } from "@/lib/standings-order";
 
 export const Route = createFileRoute("/")({
   head: () => ({
