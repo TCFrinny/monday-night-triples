@@ -5,6 +5,14 @@ import { toast } from "sonner";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { sortTeamsByName } from "@/lib/team-order";
+import {
+  buildWeekSlots,
+  hasBye,
+  laneSlots,
+  matchupsPerWeek,
+  parseStartingLane,
+  validateWeekAssignments,
+} from "@/lib/lane-slots";
 import { activeSeasonQuery, rosterSpotsQuery, seasonMatchSummaryQuery, teamsQuery, weeksQuery } from "@/lib/queries";
 import { rosterForWeek } from "@/lib/roster";
 import { isPositionRound, thirdForWeek } from "@/lib/league";
@@ -36,9 +44,11 @@ function AdminSchedule() {
   const [skipDraft, setSkipDraft] = useState("");
   const [skipDates, setSkipDates] = useState<string[]>([]);
   const [weekId, setWeekId] = useState("");
-  const [teamA, setTeamA] = useState("");
-  const [teamB, setTeamB] = useState("");
-  const [lanes, setLanes] = useState("");
+  const [laneDraft, setLaneDraft] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Record<string, { a: string; b: string }>>({});
+  const [byeTeam, setByeTeam] = useState("");
+  const [draftWeekId, setDraftWeekId] = useState("");
+
 
   const weekRows: WeekRow[] = (weeks ?? []).map((w: any) => ({
     id: w.id,
@@ -134,32 +144,145 @@ function AdminSchedule() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // ---- Lane setup -------------------------------------------------------
+  const activeTeams = teams.filter((t: any) => t.is_active !== false);
+  const slotCount = matchupsPerWeek(activeTeams.length);
+  const weekHasBye = hasBye(activeTeams.length);
+  const savedStartingLane = (season as any)?.starting_lane_number ?? null;
+  const laneInput = laneDraft ?? (savedStartingLane != null ? String(savedStartingLane) : "");
+  const parsedLane = parseStartingLane(laneInput);
+  const previewPairs = laneSlots(parsedLane, slotCount);
+  const activePairs = laneSlots(savedStartingLane, slotCount);
 
-  const addMatch = useMutation({
+  const saveLaneSetup = useMutation({
     mutationFn: async () => {
-      if (!weekId || !teamA) throw new Error("Choose a week and a team.");
-      if (teamB && teamA === teamB) throw new Error("A team cannot bowl itself.");
-      const count = (matches ?? []).filter((m: any) => m.weeks.id === weekId).length;
-      const { error } = await supabase.from("matches").insert({
-        week_id: weekId,
-        team_a_id: teamA,
-        team_b_id: teamB || null,
-        is_bye: !teamB,
-        lane_pair: lanes.trim().slice(0, 20) || null,
-        sort_order: count + 1,
-        status: "scheduled",
-      });
+      if (!season) throw new Error("No season.");
+      if (!parsedLane) throw new Error("Enter a positive whole lane number.");
+      const { error } = await supabase
+        .from("seasons")
+        .update({ starting_lane_number: parsedLane })
+        .eq("id", season.id);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      setTeamA("");
-      setTeamB("");
-      setLanes("");
-      toast.success("Matchup added");
+      toast.success("Lane setup saved");
+      setLaneDraft(null);
+      qc.invalidateQueries({ queryKey: ["season", "active"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // ---- Week matchup grid -------------------------------------------------
+  const weekMatches = (matches ?? []).filter((m: any) => m.weeks.id === weekId);
+  const weekPlan = useMemo(
+    () => buildWeekSlots(activePairs, weekMatches as any),
+    [activePairs.join("|"), weekId, matches],
+  );
+  const existingBye = weekMatches.find((m: any) => m.is_bye) ?? null;
+
+  if (weekId && draftWeekId !== weekId) {
+    setDraftWeekId(weekId);
+    const next: Record<string, { a: string; b: string }> = {};
+    for (const s of weekPlan.slots) {
+      next[s.lane_pair] = { a: s.match?.team_a_id ?? "", b: s.match?.team_b_id ?? "" };
+    }
+    setDraft(next);
+    setByeTeam(existingBye?.team_a_id ?? "");
+  }
+
+  const assignments = weekPlan.slots.map((s) => ({
+    lane_pair: s.lane_pair,
+    team_a_id: draft[s.lane_pair]?.a ?? "",
+    team_b_id: draft[s.lane_pair]?.b ?? "",
+    locked: s.locked,
+  }));
+  const weekError = weekId ? validateWeekAssignments(assignments, byeTeam || null) : null;
+
+  const saveWeek = useMutation({
+    mutationFn: async () => {
+      if (!weekId) throw new Error("Choose a week.");
+      if (weekError) throw new Error(weekError);
+      for (const [i, s] of weekPlan.slots.entries()) {
+        if (s.locked) continue;
+        const a = draft[s.lane_pair]?.a ?? "";
+        const b = draft[s.lane_pair]?.b ?? "";
+        if (s.match) {
+          if (!a || !b) {
+            const { error } = await supabase.from("matches").delete().eq("id", s.match.id);
+            if (error) throw new Error(error.message);
+          } else {
+            const { error } = await supabase
+              .from("matches")
+              .update({
+                team_a_id: a,
+                team_b_id: b,
+                is_bye: false,
+                lane_pair: s.lane_pair,
+                sort_order: i + 1,
+              })
+              .eq("id", s.match.id);
+            if (error) throw new Error(error.message);
+          }
+        } else if (a && b) {
+          const { error } = await supabase.from("matches").insert({
+            week_id: weekId,
+            team_a_id: a,
+            team_b_id: b,
+            is_bye: false,
+            lane_pair: s.lane_pair,
+            sort_order: i + 1,
+            status: "scheduled",
+          });
+          if (error) throw new Error(error.message);
+        }
+      }
+      if (weekHasBye) {
+        if (existingBye && existingBye.status !== "final") {
+          if (!byeTeam) {
+            const { error } = await supabase.from("matches").delete().eq("id", existingBye.id);
+            if (error) throw new Error(error.message);
+          } else if (byeTeam !== existingBye.team_a_id) {
+            const { error } = await supabase
+              .from("matches")
+              .update({ team_a_id: byeTeam })
+              .eq("id", existingBye.id);
+            if (error) throw new Error(error.message);
+          }
+        } else if (!existingBye && byeTeam) {
+          const { error } = await supabase.from("matches").insert({
+            week_id: weekId,
+            team_a_id: byeTeam,
+            team_b_id: null,
+            is_bye: true,
+            lane_pair: null,
+            sort_order: weekPlan.slots.length + 1,
+            status: "scheduled",
+          });
+          if (error) throw new Error(error.message);
+        }
+      }
+    },
+    onSuccess: () => {
+      toast.success("Week matchups saved");
+      setDraftWeekId("");
       qc.invalidateQueries({ queryKey: ["season-match-summary"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const remapOrphan = useMutation({
+    mutationFn: async ({ id, lane }: { id: string; lane: string }) => {
+      const { error } = await supabase.from("matches").update({ lane_pair: lane }).eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Lane pair updated");
+      setDraftWeekId("");
+      qc.invalidateQueries({ queryKey: ["season-match-summary"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const removeMatch = useMutation({
     mutationFn: async (id: string) => {
@@ -351,7 +474,58 @@ function AdminSchedule() {
 
 
       <section className="panel p-6">
-        <h2 className="mb-4 font-display text-lg uppercase text-foreground">Matchups</h2>
+        <h2 className="mb-1 font-display text-lg uppercase text-foreground">Lane setup</h2>
+        <p className="mb-4 text-xs text-muted-foreground">
+          Enter the first lane of the first pair once. Every weekly matchup slot then uses
+          consecutive, non-overlapping pairs.
+        </p>
+        <div className="flex flex-wrap items-end gap-6">
+          <div>
+            <p className="font-display text-xs uppercase tracking-[0.14em] text-muted-foreground">
+              Active teams
+            </p>
+            <p className="stat-num text-lg">{activeTeams.length}</p>
+            <p className="text-[11px] text-muted-foreground">Configured: {season.team_count}</p>
+          </div>
+          <div>
+            <p className="font-display text-xs uppercase tracking-[0.14em] text-muted-foreground">
+              Matchups / week
+            </p>
+            <p className="stat-num text-lg">{slotCount}</p>
+            {weekHasBye && <p className="text-[11px] text-gold">+ 1 bye</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="start-lane">Starting lane</Label>
+            <Input
+              id="start-lane"
+              type="number"
+              min={1}
+              className="w-28"
+              value={laneInput}
+              onChange={(e) => setLaneDraft(e.target.value)}
+            />
+          </div>
+          <div>
+            <p className="font-display text-xs uppercase tracking-[0.14em] text-muted-foreground">
+              First pair
+            </p>
+            <p className="stat-num text-lg">{previewPairs[0] ?? "—"}</p>
+          </div>
+          <Button onClick={() => saveLaneSetup.mutate()} disabled={saveLaneSetup.isPending}>
+            Save lane setup
+          </Button>
+        </div>
+        {!parsedLane && laneInput !== "" && (
+          <p className="mt-3 text-sm text-destructive">Starting lane must be a positive whole number.</p>
+        )}
+        <p className="mt-4 text-sm text-muted-foreground">
+          Lane pairs preview:{" "}
+          <span className="text-primary">{previewPairs.join(" · ") || "—"}</span>
+        </p>
+      </section>
+
+      <section className="panel p-6">
+        <h2 className="mb-4 font-display text-lg uppercase text-foreground">Week matchups</h2>
         <div className="mb-5 flex flex-wrap items-end gap-3">
           <select
             value={weekId}
@@ -365,35 +539,142 @@ function AdminSchedule() {
               </option>
             ))}
           </select>
-          <select
-            value={teamA}
-            onChange={(e) => setTeamA(e.target.value)}
-            className="rounded-md border border-border bg-card px-2 py-2 text-sm"
+          <Button
+            onClick={() => saveWeek.mutate()}
+            disabled={!weekId || Boolean(weekError) || saveWeek.isPending || !activePairs.length}
           >
-            <option value="">Team A…</option>
-            {(teams ?? []).map((t: any) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={teamB}
-            onChange={(e) => setTeamB(e.target.value)}
-            className="rounded-md border border-border bg-card px-2 py-2 text-sm"
-          >
-            <option value="">Bye</option>
-            {(teams ?? []).map((t: any) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-          <Input className="w-28" placeholder="Lanes" value={lanes} onChange={(e) => setLanes(e.target.value)} />
-          <Button onClick={() => addMatch.mutate()} disabled={addMatch.isPending}>
-            Add matchup
+            {saveWeek.isPending ? "Saving…" : "Save week matchups"}
           </Button>
         </div>
+
+        {!activePairs.length && (
+          <p className="text-sm text-gold">Save a starting lane above to build the matchup slots.</p>
+        )}
+        {weekError && <p className="mb-3 text-sm text-destructive">{weekError}</p>}
+
+        {!!weekId && !!activePairs.length && (
+          <div className="space-y-2">
+            {weekPlan.slots.map((s) => {
+              const d = draft[s.lane_pair] ?? { a: "", b: "" };
+              const set = (patch: Partial<{ a: string; b: string }>) =>
+                setDraft((prev) => ({ ...prev, [s.lane_pair]: { ...d, ...patch } }));
+              return (
+                <div
+                  key={s.lane_pair}
+                  className="flex flex-wrap items-center gap-3 rounded-md border border-border px-3 py-2 text-sm"
+                >
+                  <span className="stat-num w-20 text-primary">{s.lane_pair}</span>
+                  {s.locked ? (
+                    <span className="flex-1">
+                      {(s.match as any)?.team_a?.name} vs {(s.match as any)?.team_b?.name}{" "}
+                      <span className="ml-2 font-display text-[10px] uppercase tracking-[0.12em] text-gold">
+                        Final · locked
+                      </span>
+                    </span>
+                  ) : (
+                    <>
+                      <select
+                        aria-label={`Lanes ${s.lane_pair} team A`}
+                        value={d.a}
+                        onChange={(e) => set({ a: e.target.value })}
+                        className="rounded-md border border-border bg-card px-2 py-2 text-sm"
+                      >
+                        <option value="">Team A…</option>
+                        {activeTeams.map((t: any) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="text-xs text-muted-foreground">vs</span>
+                      <select
+                        aria-label={`Lanes ${s.lane_pair} team B`}
+                        value={d.b}
+                        onChange={(e) => set({ b: e.target.value })}
+                        className="rounded-md border border-border bg-card px-2 py-2 text-sm"
+                      >
+                        <option value="">Team B…</option>
+                        {activeTeams.map((t: any) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="text-xs uppercase text-muted-foreground">
+                        {s.match ? s.match.status : !d.a && !d.b ? "Empty slot" : "New"}
+                      </span>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+
+            {weekHasBye && (
+              <div className="flex flex-wrap items-center gap-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
+                <span className="w-20 font-display text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                  Bye
+                </span>
+                <select
+                  aria-label="Bye team"
+                  value={byeTeam}
+                  onChange={(e) => setByeTeam(e.target.value)}
+                  disabled={existingBye?.status === "final"}
+                  className="rounded-md border border-border bg-card px-2 py-2 text-sm"
+                >
+                  <option value="">No bye…</option>
+                  {activeTeams.map((t: any) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {!!weekPlan.orphans.length && (
+              <div className="mt-4 rounded-md border border-gold/50 p-3">
+                <p className="mb-2 text-sm text-gold">
+                  {weekPlan.orphans.length} existing matchup(s) sit on lane pairs outside the current
+                  lane setup. Nothing was changed — remap them deliberately below.
+                </p>
+                <ul className="space-y-2">
+                  {weekPlan.orphans.map((m: any) => (
+                    <li key={m.id} className="flex flex-wrap items-center gap-3 text-sm">
+                      <span className="stat-num w-20">{m.lane_pair ?? "—"}</span>
+                      <span className="flex-1">
+                        {m.team_a?.name} vs {m.team_b?.name ?? "Bye"}
+                      </span>
+                      {m.status === "final" ? (
+                        <span className="text-xs uppercase text-gold">Final · locked</span>
+                      ) : (
+                        <select
+                          aria-label={`Remap ${m.lane_pair}`}
+                          defaultValue=""
+                          onChange={(e) =>
+                            e.target.value && remapOrphan.mutate({ id: m.id, lane: e.target.value })
+                          }
+                          className="rounded-md border border-border bg-card px-2 py-2 text-sm"
+                        >
+                          <option value="">Move to…</option>
+                          {activePairs.map((p) => (
+                            <option key={p} value={p}>
+                              {p}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      <section className="panel p-6">
+        <h2 className="mb-4 font-display text-lg uppercase text-foreground">Scheduled matchups</h2>
+
 
         <div className="space-y-4">
           {(weeks ?? []).map((w: any) => {
