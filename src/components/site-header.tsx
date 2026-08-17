@@ -11,6 +11,7 @@ export const navItems = [
   { to: "/teams", label: "Teams" },
   { to: "/bowlers", label: "Bowlers" },
   { to: "/stats", label: "Stats" },
+  { to: "/lane-data", label: "Lane Data" },
 ] as const;
 
 export function SiteHeader() {
