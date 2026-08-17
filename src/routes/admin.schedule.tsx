@@ -164,6 +164,28 @@ function AdminSchedule() {
             <Label htmlFor="start">Week 1 bowling date</Label>
             <Input id="start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="skip">Dates to skip (holidays / closures)</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="skip"
+                type="date"
+                value={skipDraft}
+                onChange={(e) => setSkipDraft(e.target.value)}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (!skipDraft) return;
+                  setSkipDates((d) => normalizeSkipDates([...d, skipDraft]));
+                  setSkipDraft("");
+                }}
+              >
+                Add
+              </Button>
+            </div>
+          </div>
           <Button onClick={() => generate.mutate()} disabled={generate.isPending}>
             Generate {season.total_weeks} weeks
           </Button>
@@ -171,7 +193,121 @@ function AdminSchedule() {
             {(weeks ?? []).length} week{(weeks ?? []).length === 1 ? "" : "s"} created
           </span>
         </div>
+
+        {!!skipDates.length && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {skipDates.map((d) => (
+              <span
+                key={d}
+                className="inline-flex items-center gap-1.5 rounded-full border border-gold/50 px-3 py-1 text-xs text-gold"
+              >
+                {d}
+                <button
+                  type="button"
+                  aria-label={`Remove ${d}`}
+                  onClick={() => setSkipDates((list) => list.filter((x) => x !== d))}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {!!previewRows.length && (
+          <div className="mt-5">
+            <p className="mb-2 font-display text-xs uppercase tracking-[0.14em] text-muted-foreground">
+              Preview · {previewRows.length} weeks
+              {skipDates.length ? ` · ${skipDates.length} date(s) skipped` : ""}
+            </p>
+            <div className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2 lg:grid-cols-4">
+              {previewRows.map((r) => (
+                <div key={r.week_number} className="flex justify-between border-b border-border/50 py-1">
+                  <span className="text-muted-foreground">Week {r.week_number}</span>
+                  <span className="tabular-nums">{r.bowl_date}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
+
+      <section className="panel p-6">
+        <h2 className="mb-1 font-display text-lg uppercase text-foreground">
+          Postpone / shift remaining schedule
+        </h2>
+        <p className="mb-4 text-xs text-muted-foreground">
+          Moves the selected week and every later week's date only. Week numbers, matchups, lanes,
+          scores and rosters are untouched.
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="shift-week">Week to postpone</Label>
+            <select
+              id="shift-week"
+              value={selectedShiftWeek || ""}
+              onChange={(e) => setShiftWeek(Number(e.target.value))}
+              className="rounded-md border border-border bg-card px-2 py-2 text-sm"
+            >
+              <option value="">Week…</option>
+              {weekRows.map((w) => (
+                <option key={w.id} value={w.week_number}>
+                  Week {w.week_number} · {w.bowl_date ?? "no date"}
+                  {finalizedWeekNumbers.includes(w.week_number) ? " (final)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="shift-count">Shift by (weeks)</Label>
+            <Input
+              id="shift-count"
+              type="number"
+              min={1}
+              max={20}
+              className="w-24"
+              value={shiftWeeksCount}
+              onChange={(e) => setShiftWeeksCount(Math.max(1, Number(e.target.value) || 1))}
+            />
+          </div>
+          <Button
+            variant="outline"
+            disabled={Boolean(shiftError) || shift.isPending}
+            onClick={() => {
+              const ok = window.confirm(
+                `Move Week ${selectedShiftWeek} and ${Math.max(0, shiftRows.length - 1)} later week(s) forward by ${shiftWeeksCount} week(s)?`,
+              );
+              if (ok) shift.mutate();
+            }}
+          >
+            {shift.isPending ? "Shifting…" : "Postpone schedule"}
+          </Button>
+        </div>
+
+        {shiftError ? (
+          <p className="mt-4 text-sm text-destructive">{shiftError}</p>
+        ) : (
+          !!shiftRows.length && (
+            <div className="mt-5">
+              <p className="mb-2 font-display text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                {shiftRows.length} week{shiftRows.length === 1 ? "" : "s"} will move
+              </p>
+              <div className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                {shiftRows.map((r) => (
+                  <div key={r.id} className="flex justify-between border-b border-border/50 py-1">
+                    <span className="text-muted-foreground">Week {r.week_number}</span>
+                    <span className="tabular-nums">
+                      {r.from ?? "—"} <span className="text-muted-foreground">→</span>{" "}
+                      <span className="text-primary">{r.to ?? "—"}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        )}
+      </section>
+
 
       <section className="panel p-6">
         <h2 className="mb-4 font-display text-lg uppercase text-foreground">Matchups</h2>
