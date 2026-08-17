@@ -67,12 +67,14 @@ function StandingsTable({ rows: inputRows, title, note }: { rows: any[]; title: 
               return (
                 <tr key={r.id} className="border-b border-border/60 last:border-0 hover:bg-secondary/30">
                   <td className="px-5 py-2.5">
-                    <span className={r.rank === 1 ? "stat-num text-gold" : "stat-num text-foreground"}>
-                      {r.rank}
-                    </span>
-                    <span className="ml-2 text-xs">
-                      <MovementIndicator rank={r.rank} previous={r.previous_rank} />
-                    </span>
+                    <div className="inline-flex items-center gap-2 whitespace-nowrap">
+                      <span className={r.rank === 1 ? "stat-num text-gold" : "stat-num text-foreground"}>
+                        {r.rank}
+                      </span>
+                      <span className="text-xs">
+                        <MovementIndicator rank={r.rank} previous={r.previous_rank} />
+                      </span>
+                    </div>
                   </td>
                   <td className="px-3 py-2.5">
                     <TeamLink team={r.teams} />
