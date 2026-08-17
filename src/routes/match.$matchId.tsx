@@ -14,17 +14,18 @@ import {
 import { matchDetailQuery } from "@/lib/queries";
 import { formatPoints } from "@/lib/league";
 import { resolveGameSnapshot } from "@/lib/results";
+import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
 export const Route = createFileRoute("/match/$matchId")({
   head: () => ({
     meta: [
-      { title: "Match Detail — Monday Night Triples" },
+      { title: `Match Detail — ${DEFAULT_LEAGUE_NAME}` },
       {
         name: "description",
         content:
-          "Full duckpin linescores for both teams, handicap used, game and set points for a Monday Night Triples match.",
+          `Full duckpin linescores for both teams, handicap used, game and set points for a ${DEFAULT_LEAGUE_NAME} match.`,
       },
-      { property: "og:title", content: "Match Detail — Monday Night Triples" },
+      { property: "og:title", content: `Match Detail — ${DEFAULT_LEAGUE_NAME}` },
       {
         property: "og:description",
         content: "Full duckpin linescores, handicap used, game and set points.",

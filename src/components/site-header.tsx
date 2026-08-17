@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Menu, X, Lock } from "lucide-react";
+import { useLeagueName } from "@/hooks/use-league-name";
 
 export const navItems = [
   { to: "/", label: "Home" },
@@ -14,6 +15,7 @@ export const navItems = [
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const leagueName = useLeagueName();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur-xl">
@@ -24,7 +26,7 @@ export function SiteHeader() {
           </span>
           <span className="leading-tight">
             <span className="block font-display text-lg font-semibold uppercase tracking-wide text-foreground">
-              Monday Night Triples
+              {leagueName}
             </span>
             <span className="block text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
               AMF Dundalk

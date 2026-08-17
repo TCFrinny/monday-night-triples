@@ -20,20 +20,21 @@ import {
   scopeForThird,
   thirdForWeek,
 } from "@/lib/league";
+import { DEFAULT_LEAGUE_NAME, resolveLeagueName } from "@/lib/branding";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Monday Night Triples — Duckpin League at AMF Dundalk" },
+      { title: `${DEFAULT_LEAGUE_NAME} — Duckpin League at AMF Dundalk` },
       {
         name: "description",
         content:
-          "Official home of the Monday Night Triples duckpin league at AMF Dundalk: live standings, weekly schedule, results, team rosters and bowler statistics.",
+          `Official home of the ${DEFAULT_LEAGUE_NAME} duckpin league at AMF Dundalk: live standings, weekly schedule, results, team rosters and bowler statistics.`,
       },
-      { property: "og:title", content: "Monday Night Triples — Duckpin League at AMF Dundalk" },
+      { property: "og:title", content: `${DEFAULT_LEAGUE_NAME} — Duckpin League at AMF Dundalk` },
       {
         property: "og:description",
-        content: "Standings, schedule, results and duckpin statistics for the Monday Night Triples league.",
+        content: `Standings, schedule, results and duckpin statistics for the ${DEFAULT_LEAGUE_NAME} league.`,
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const { data: season } = useQuery(activeSeasonQuery);
+  const leagueName = resolveLeagueName(season);
   const { data: weeks } = useQuery(weeksQuery(season?.id));
   const { data: matches } = useQuery(seasonMatchSummaryQuery(season?.id));
   const { data: results } = useQuery(recentResultsQuery(season?.id));
@@ -68,7 +70,7 @@ function HomePage() {
 
   if (!season) {
     return (
-      <PageShell eyebrow="AMF Dundalk" title="Monday Night Triples">
+      <PageShell eyebrow="AMF Dundalk" title={leagueName}>
         <EmptyState
           title="No active season"
           hint="An administrator can create a season, add teams and generate the schedule from the Admin area."
@@ -80,7 +82,7 @@ function HomePage() {
   return (
     <PageShell
       eyebrow={`AMF Dundalk · ${season.season_name}`}
-      title="Monday Night Triples"
+      title={leagueName}
       description="Three-person duckpin teams, 80% team handicap, seven points a week. Everything below updates the moment a sheet is finalized."
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

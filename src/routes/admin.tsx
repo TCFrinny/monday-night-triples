@@ -6,17 +6,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Admin — Monday Night Triples" },
+      { title: `Admin — ${DEFAULT_LEAGUE_NAME}` },
       {
         name: "description",
-        content: "League administration for Monday Night Triples: season setup, rosters, schedule and score entry.",
+        content: `League administration for ${DEFAULT_LEAGUE_NAME}: season setup, rosters, schedule and score entry.`,
       },
-      { property: "og:title", content: "Admin — Monday Night Triples" },
+      { property: "og:title", content: `Admin — ${DEFAULT_LEAGUE_NAME}` },
       { property: "og:description", content: "Season setup, rosters, schedule and duckpin score entry." },
       { name: "robots", content: "noindex" },
     ],

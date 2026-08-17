@@ -11,18 +11,19 @@ import {
 } from "@/lib/queries";
 import { formatPoints } from "@/lib/league";
 import { resolveGameSnapshot } from "@/lib/results";
+import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
 
 export const Route = createFileRoute("/results")({
   head: () => ({
     meta: [
-      { title: "Results — Monday Night Triples" },
+      { title: `Results — ${DEFAULT_LEAGUE_NAME}` },
       {
         name: "description",
         content:
           "Weekly duckpin results by lane pair with scratch and handicap totals, actual handicap used and the 7-point breakdown.",
       },
-      { property: "og:title", content: "Results — Monday Night Triples" },
+      { property: "og:title", content: `Results — ${DEFAULT_LEAGUE_NAME}` },
       {
         property: "og:description",
         content: "Weekly duckpin results with scratch and handicap totals and the 7-point breakdown.",

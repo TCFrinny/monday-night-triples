@@ -14,6 +14,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Toaster } from "@/components/ui/sonner";
+import { DEFAULT_LEAGUE_NAME, brandText } from "@/lib/branding";
+import { useLeagueName } from "@/hooks/use-league-name";
 
 
 function NotFoundComponent() {
@@ -81,13 +83,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Monday Night Triples — Duckpin League at AMF Dundalk" },
+      { title: `${DEFAULT_LEAGUE_NAME} — Duckpin League at AMF Dundalk` },
       {
         name: "description",
         content:
-          "Standings, schedule, results and stats for the Monday Night Triples duckpin bowling league at AMF Dundalk.",
+          `Standings, schedule, results and stats for the ${DEFAULT_LEAGUE_NAME} duckpin bowling league at AMF Dundalk.`,
       },
-      { property: "og:site_name", content: "Monday Night Triples" },
+      { property: "og:site_name", content: `${DEFAULT_LEAGUE_NAME}` },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -126,11 +128,34 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function BrandingSync() {
+  const leagueName = useLeagueName();
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.title = brandText(document.title, leagueName);
+    const selectors = [
+      'meta[name="description"]',
+      'meta[property="og:title"]',
+      'meta[property="og:description"]',
+      'meta[property="og:site_name"]',
+    ];
+    for (const sel of selectors) {
+      document.querySelectorAll<HTMLMetaElement>(sel).forEach((el) => {
+        el.content = brandText(el.content, leagueName);
+      });
+    }
+  }, [leagueName]);
+
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
+      <BrandingSync />
       <div className="flex min-h-screen flex-col">
         <SiteHeader />
         <main className="flex-1">
