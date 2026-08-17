@@ -71,6 +71,52 @@ function AdminSchedule() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const weekRows: WeekRow[] = (weeks ?? []).map((w: any) => ({
+    id: w.id,
+    week_number: w.week_number,
+    bowl_date: w.bowl_date ?? null,
+  }));
+  const finalizedWeekNumbers = Array.from(
+    new Set(
+      (matches ?? [])
+        .filter((m: any) => m.status === "final")
+        .map((m: any) => m.weeks.week_number as number),
+    ),
+  );
+  const defaultShiftWeek =
+    weekRows.find((w) => !finalizedWeekNumbers.includes(w.week_number))?.week_number ?? 0;
+  const [shiftWeek, setShiftWeek] = useState<number | null>(null);
+  const [shiftWeeksCount, setShiftWeeksCount] = useState(1);
+  const selectedShiftWeek = shiftWeek ?? defaultShiftWeek;
+  const shiftDays = shiftWeeksCount * 7;
+  const shiftRows = selectedShiftWeek
+    ? shiftPreview(weekRows, selectedShiftWeek, shiftDays)
+    : [];
+  const shiftError = validateShift({
+    weeks: weekRows,
+    finalizedWeekNumbers,
+    fromWeekNumber: selectedShiftWeek,
+    days: shiftDays,
+  });
+
+  const shift = useMutation({
+    mutationFn: async () => {
+      if (!season) throw new Error("No season.");
+      if (shiftError) throw new Error(shiftError);
+      const { error } = await supabase.rpc("shift_schedule_dates", {
+        p_season_id: season.id,
+        p_from_week: selectedShiftWeek,
+        p_days: shiftDays,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success(`Week ${selectedShiftWeek} and later moved by ${shiftWeeksCount} week(s)`);
+      qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const addMatch = useMutation({
     mutationFn: async () => {
