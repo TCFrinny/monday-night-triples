@@ -316,3 +316,52 @@ export const laneStatsQuery = (seasonId: string | undefined, scope: string) =>
           .order("lane_sort"),
       ),
   });
+
+/* ---------------------------------------------------------------------------
+ * Milestone performance events
+ *
+ * Individual/team high game and high set cards list actual performances, so
+ * they read event views (one row per game / set) rather than the cached
+ * one-max-per-entity rows. Scope filtering happens database-side.
+ * ------------------------------------------------------------------------ */
+
+export type MilestoneEventKind = "bowler_game" | "bowler_set" | "team_game" | "team_set";
+
+const EVENT_VIEWS: Record<MilestoneEventKind, string> = {
+  bowler_game: "v_bowler_game_events",
+  bowler_set: "v_bowler_set_events",
+  team_game: "v_team_game_events",
+  team_set: "v_team_set_events",
+};
+
+/** Translate a leaderboard scope into a filter on the event views. */
+export function eventScopeFilter(scope: string): { third?: number; week?: number } {
+  const week = /^week_(\d+)$/.exec(scope);
+  if (week) return { week: Number(week[1]) };
+  const third = /^third_(\d+)$/.exec(scope);
+  if (third) return { third: Number(third[1]) };
+  return {};
+}
+
+export const milestoneEventsQuery = (
+  kind: MilestoneEventKind,
+  seasonId: string | undefined,
+  scope: string,
+) =>
+  queryOptions({
+    queryKey: ["milestone-events", kind, seasonId, scope],
+    enabled: Boolean(seasonId) && scope !== "__none__",
+    queryFn: async () => {
+      const { third, week } = eventScopeFilter(scope);
+      let q = (supabase as any)
+        .from(EVENT_VIEWS[kind])
+        .select("*")
+        .eq("season_id", seasonId!)
+        .order("score", { ascending: false })
+        .order("event_id", { ascending: true })
+        .limit(500);
+      if (third !== undefined) q = q.eq("third", third);
+      if (week !== undefined) q = q.eq("week_number", week);
+      return unwrap<any[]>(q);
+    },
+  });

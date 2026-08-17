@@ -8,6 +8,7 @@ import { LaneData } from "@/components/league/lane-data";
 import {
   activeSeasonQuery,
   bowlerStatsQuery,
+  milestoneEventsQuery,
   seasonMatchSummaryQuery,
   teamStatsQuery,
 } from "@/lib/queries";
@@ -18,6 +19,8 @@ import {
   boardLeaders,
   defaultWeek,
   finalizedWeeks,
+  milestoneBoard,
+  milestoneLeaders,
   weeklyScope,
 } from "@/lib/leaderboards";
 import type { StandingsScope } from "@/lib/league";
@@ -71,6 +74,15 @@ function StatsPage() {
   // Weekly individual rankings include substitutes who actually bowled;
   // season and third boards keep excluding them.
   const includeSubs = weekly && mode === "bowlers";
+
+  // High Game / High Set cards list actual performances, so they read the
+  // event views instead of the one-max-per-entity cache rows.
+  const gameKind = mode === "bowlers" ? "bowler_game" : "team_game";
+  const setKind = mode === "bowlers" ? "bowler_set" : "team_set";
+  const { data: gameEvents } = useQuery(milestoneEventsQuery(gameKind, season?.id, activeScope));
+  const { data: setEvents } = useQuery(milestoneEventsQuery(setKind, season?.id, activeScope));
+  const eventsFor = (kind: string): any[] =>
+    (kind === gameKind ? gameEvents : kind === setKind ? setEvents : []) ?? [];
 
 
 
@@ -140,7 +152,66 @@ function StatsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {boards.map((board) => {
+            const ms = milestoneBoard(board.key);
+            if (ms) {
+              const events = milestoneLeaders(ms, eventsFor(ms.kind) as any, { includeSubs });
+              return (
+                <div key={board.key} className="panel p-5">
+                  <h2 className="font-display text-base uppercase tracking-wide text-foreground">
+                    {board.title}
+                  </h2>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Top 5, plus every {ms.threshold}+ performance in this scope.
+                  </p>
+                  <ol className="mt-3 space-y-1.5 text-sm">
+                    {events.map((e: any, i: number) => (
+                      <li key={e.event_id} className="flex items-center gap-2">
+                        <span
+                          className={
+                            i === 0 ? "stat-num w-5 text-gold" : "stat-num w-5 text-muted-foreground"
+                          }
+                        >
+                          {i + 1}
+                        </span>
+                        {ms.entity === "bowler" ? (
+                          <Link
+                            to="/bowlers/$slug"
+                            params={{ slug: e.slug ?? "" }}
+                            className="truncate text-foreground hover:text-primary hover:underline"
+                          >
+                            {e.full_name ?? "—"}
+                          </Link>
+                        ) : (
+                          <Link
+                            to="/teams/$slug"
+                            params={{ slug: e.slug ?? "" }}
+                            className="truncate text-foreground hover:text-primary hover:underline"
+                          >
+                            {e.name ?? "—"}
+                          </Link>
+                        )}
+                        {!weekly && e.week_number != null && (
+                          <span className="shrink-0 text-[11px] text-muted-foreground">
+                            Week {e.week_number}
+                          </span>
+                        )}
+                        <span className="ml-auto flex items-center gap-1.5">
+                          {Number(e.score) >= ms.threshold && (
+                            <span className="rounded-sm bg-primary/15 px-1 text-[10px] uppercase tracking-wide text-primary">
+                              {ms.threshold}+
+                            </span>
+                          )}
+                          <span className="stat-num text-primary">{e.score}</span>
+                        </span>
+                      </li>
+                    ))}
+                    {!events.length && <li className="text-xs text-muted-foreground">No data yet.</li>}
+                  </ol>
+                </div>
+              );
+            }
             const eligible = boardLeaders(board, rows, 5, { includeSubs });
+
 
             return (
               <div key={board.key} className="panel p-5">

@@ -18,7 +18,12 @@ import {
   segmentAverage,
   teamGameSegmentTotals,
   teamSegmentAverage,
+  topFivePlusMilestones,
+  MILESTONE_BOARDS,
+  milestoneBoard,
+  milestoneLeaders,
 } from "./leaderboards";
+import { eventScopeFilter } from "./queries";
 
 const bowlerRow = (name: string, is_sub: boolean, average: number) => ({
   id: name,
@@ -424,3 +429,102 @@ describe("weekly leaderboards", () => {
 function zeroed(board: any) {
   return { pins_lost: 0, pins_lost_per_game: 0, score_stddev: 0, opens: 0 };
 }
+
+describe("milestone performance cards", () => {
+  const ev = (id: string, score: number, over: Record<string, any> = {}) => ({
+    event_id: id,
+    score,
+    week_number: 1,
+    full_name: "Ray",
+    slug: "ray",
+    is_sub: false,
+    ...over,
+  });
+
+  it("shows all 7 events when 7 clear the threshold", () => {
+    const events = Array.from({ length: 7 }, (_, i) => ev(`g${i}`, 200 + i));
+    expect(topFivePlusMilestones(events, 200)).toHaveLength(7);
+  });
+
+  it("still shows the normal top 5 when only 3 clear the threshold", () => {
+    const events = [
+      ev("a", 250),
+      ev("b", 210),
+      ev("c", 200),
+      ev("d", 150),
+      ev("e", 140),
+      ev("f", 130),
+    ];
+    const out = topFivePlusMilestones(events, 200);
+    expect(out).toHaveLength(5);
+    expect(out.map((e) => e.event_id)).toEqual(["a", "b", "c", "d", "e"]);
+  });
+
+  it("exact threshold scores qualify (200 / 500 / 1500)", () => {
+    for (const t of [200, 500, 1500]) {
+      const events = [
+        ...Array.from({ length: 5 }, (_, i) => ev(`top${i}`, t + 100 + i)),
+        ev("exact", t),
+        ev("below", t - 1),
+      ];
+      const out = topFivePlusMilestones(events, t);
+      expect(out.map((e) => e.event_id)).toContain("exact");
+      expect(out.map((e) => e.event_id)).not.toContain("below");
+    }
+  });
+
+  it("lets the same bowler appear twice for distinct events but dedupes one event", () => {
+    const events = [
+      ...Array.from({ length: 5 }, (_, i) => ev(`o${i}`, 300 + i, { full_name: "Other" })),
+      ev("x1", 210),
+      ev("x2", 205),
+      ev("x1", 210),
+    ];
+    const out = topFivePlusMilestones(events, 200);
+    expect(out.filter((e) => e['full_name'] === "Ray")).toHaveLength(2);
+    expect(out.filter((e) => e.event_id === "x1")).toHaveLength(1);
+  });
+
+  it("is deterministic on ties", () => {
+    const events = [ev("b", 200), ev("a", 200), ev("c", 200)];
+    expect(topFivePlusMilestones(events, 200).map((e) => e.event_id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("configures the four special cards with the requested thresholds", () => {
+    expect(MILESTONE_BOARDS.map((b) => [b.key, b.threshold, b.kind])).toEqual([
+      ["hg", 200, "bowler_game"],
+      ["hs", 500, "bowler_set"],
+      ["thg", 500, "team_game"],
+      ["ths", 1500, "team_set"],
+    ]);
+    expect(milestoneBoard("avg")).toBeUndefined();
+  });
+
+  it("excludes subs on season/third individual cards and keeps them weekly", () => {
+    const events = [ev("r", 210), ev("s", 260, { full_name: "Sub Sam", is_sub: true })];
+    const b = milestoneBoard("hg")!;
+    expect(milestoneLeaders(b, events).map((e) => e['full_name'])).toEqual(["Ray"]);
+    expect(milestoneLeaders(b, events, { includeSubs: true }).map((e) => e['full_name'])).toEqual([
+      "Sub Sam",
+      "Ray",
+    ]);
+  });
+
+  it("keeps sub-thrown performance on team cards", () => {
+    const events = [ev("t1", 520, { name: "Pin Pals", is_sub: true })];
+    expect(milestoneLeaders(milestoneBoard("thg")!, events)).toHaveLength(1);
+  });
+
+  it("leaves every other card on the normal top 5", () => {
+    const rows = Array.from({ length: 8 }, (_, i) => advBowler(`B${i}`, { average: 300 - i }));
+    expect(boardLeaders(board("avg"), rows)).toHaveLength(5);
+  });
+});
+
+describe("event scope filters", () => {
+  it("maps leaderboard scopes onto the event views", () => {
+    expect(eventScopeFilter("full")).toEqual({});
+    expect(eventScopeFilter("third_2")).toEqual({ third: 2 });
+    expect(eventScopeFilter("week_7")).toEqual({ week: 7 });
+  });
+});

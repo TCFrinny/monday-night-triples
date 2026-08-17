@@ -377,6 +377,13 @@ export type Database = {
             foreignKeyName: "frames_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
+            referencedRelation: "v_bowler_game_events"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "frames_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
             referencedRelation: "v_game_context"
             referencedColumns: ["game_id"]
           },
@@ -1060,6 +1067,71 @@ export type Database = {
       }
     }
     Views: {
+      v_bowler_game_events: {
+        Row: {
+          bowler_id: string | null
+          event_id: string | null
+          full_name: string | null
+          is_sub: boolean | null
+          score: number | null
+          season_id: string | null
+          slug: string | null
+          third: number | null
+          week_number: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_lineups_bowler_id_fkey"
+            columns: ["bowler_id"]
+            isOneToOne: false
+            referencedRelation: "bowlers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weeks_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_bowler_set_events: {
+        Row: {
+          bowler_id: string | null
+          event_id: string | null
+          full_name: string | null
+          is_sub: boolean | null
+          score: number | null
+          season_id: string | null
+          slug: string | null
+          third: number | null
+          week_number: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bowler_games_lineup_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "match_lineups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_lineups_bowler_id_fkey"
+            columns: ["bowler_id"]
+            isOneToOne: false
+            referencedRelation: "bowlers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weeks_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_game_context: {
         Row: {
           applicable_average: number | null
@@ -1126,6 +1198,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_team_game_events: {
+        Row: {
+          event_id: string | null
+          game_number: number | null
+          name: string | null
+          score: number | null
+          season_id: string | null
+          slug: string | null
+          team_id: string | null
+          third: number | null
+          week_number: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_lineups_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weeks_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_team_set_events: {
+        Row: {
+          event_id: string | null
+          name: string | null
+          score: number | null
+          season_id: string | null
+          slug: string | null
+          team_id: string | null
+          third: number | null
+          week_number: number | null
+        }
+        Relationships: []
       }
     }
     Functions: {

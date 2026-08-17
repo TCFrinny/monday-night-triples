@@ -558,3 +558,76 @@ export function highHdcpGame(games: TeamGameTotal[]) {
   if (!games.length) return 0;
   return Math.max(...games.map(teamGameHdcpTotal));
 }
+
+/* ---------------------------------------------------------------------------
+ * Milestone cards (High Game / High Set)
+ *
+ * These four cards list actual performances, not one cached maximum per
+ * bowler/team, so the same bowler can appear twice for two distinct games.
+ * ------------------------------------------------------------------------ */
+
+export interface PerformanceEvent {
+  event_id: string;
+  score: number;
+  week_number?: number | null;
+  is_sub?: boolean | null;
+  [k: string]: any;
+}
+
+/** Top 5 performances, plus every additional event at or above `threshold`.
+ *  Events are deduplicated by `event_id` only — never by bowler or team. */
+export function topFivePlusMilestones<T extends PerformanceEvent>(
+  events: T[],
+  threshold: number,
+  limit = 5,
+): T[] {
+  const seen = new Set<string>();
+  const sorted = events
+    .filter((e) => {
+      if (seen.has(e.event_id)) return false;
+      seen.add(e.event_id);
+      return true;
+    })
+    .sort((a, b) => Number(b.score) - Number(a.score) || String(a.event_id).localeCompare(String(b.event_id)));
+  const kept = sorted.slice(0, limit);
+  for (const e of sorted.slice(limit)) if (Number(e.score) >= threshold) kept.push(e);
+  return kept;
+}
+
+export interface MilestoneBoard {
+  key: string;
+  title: string;
+  kind: "bowler_game" | "bowler_set" | "team_game" | "team_set";
+  threshold: number;
+  entity: "bowler" | "team";
+}
+
+/** Boards on the stats page that render performance events instead of cache rows. */
+export const MILESTONE_BOARDS: MilestoneBoard[] = [
+  { key: "hg", title: "High Game", kind: "bowler_game", threshold: 200, entity: "bowler" },
+  { key: "hs", title: "High Set", kind: "bowler_set", threshold: 500, entity: "bowler" },
+  {
+    key: "thg",
+    title: "Team High Scratch Game",
+    kind: "team_game",
+    threshold: 500,
+    entity: "team",
+  },
+  { key: "ths", title: "Team High Scratch Set", kind: "team_set", threshold: 1500, entity: "team" },
+];
+
+export const milestoneBoard = (key: string) => MILESTONE_BOARDS.find((b) => b.key === key);
+
+/** Events eligible for a milestone card, already ranked and expanded.
+ *  Individual boards drop substitutes unless the weekly scope opts in. */
+export function milestoneLeaders(
+  board: MilestoneBoard,
+  events: PerformanceEvent[],
+  opts: { includeSubs?: boolean } = {},
+) {
+  const pool =
+    board.entity === "bowler" && !opts.includeSubs
+      ? events.filter((e) => e.is_sub !== true)
+      : events;
+  return topFivePlusMilestones(pool, board.threshold);
+}
