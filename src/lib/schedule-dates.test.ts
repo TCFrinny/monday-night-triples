@@ -1,12 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  addDays,
-  generateWeekDates,
-  normalizeSkipDates,
-  shiftPreview,
-  validateShift,
-  type WeekRow,
-} from "./schedule-dates";
+import { addDays, generateWeekDates, normalizeSkipDates, planWeekDates, shiftPreview, type WeekRow, validateShift } from "./schedule-dates";
 
 const dates = (rows: { bowl_date: string }[]) => rows.map((r) => r.bowl_date);
 
@@ -125,5 +118,85 @@ describe("validateShift", () => {
     expect(validateShift({ weeks, finalizedWeekNumbers: [], fromWeekNumber: 5, days: 0 })).toMatch(
       /how far/,
     );
+  });
+});
+
+describe("planWeekDates (regenerating dates over an existing schedule)", () => {
+  const thirdFor = (n: number) => (n <= 12 ? 1 : n <= 24 ? 2 : 3);
+  const posFor = (n: number) => [12, 24, 36].includes(n);
+  const existing36 = Array.from({ length: 36 }, (_, i) => ({
+    id: `w${i + 1}`,
+    week_number: i + 1,
+    bowl_date: addDays("2026-07-31", i * 7),
+  }));
+
+  it("updates existing week rows in place instead of skipping them", () => {
+    const generated = generateWeekDates("2026-09-07", 36, []);
+    const plan = planWeekDates({ existing: existing36, generated, thirdFor, isPositionRoundFor: posFor });
+    expect(plan.inserts).toHaveLength(0);
+    expect(plan.updates).toHaveLength(36);
+    expect(plan.rows[0]).toMatchObject({ week_number: 1, bowl_date: "2026-09-07", action: "update", id: "w1", from: "2026-07-31" });
+    expect(plan.rows.every((r) => r.id)).toBe(true);
+  });
+
+  it("inserts only genuinely missing weeks and keeps ids for the rest", () => {
+    const plan = planWeekDates({
+      existing: existing36.slice(0, 4),
+      generated: generateWeekDates("2026-09-07", 36, []),
+      thirdFor,
+      isPositionRoundFor: posFor,
+    });
+    expect(plan.updates).toHaveLength(4);
+    expect(plan.inserts).toHaveLength(32);
+    expect(plan.updates.map((r) => r.id)).toEqual(["w1", "w2", "w3", "w4"]);
+  });
+
+  it("honours skip dates when regenerating", () => {
+    const plan = planWeekDates({
+      existing: existing36,
+      generated: generateWeekDates("2026-09-07", 36, ["2026-09-21"]),
+      thirdFor,
+      isPositionRoundFor: posFor,
+    });
+    expect(plan.rows.slice(0, 4).map((r) => r.bowl_date)).toEqual([
+      "2026-09-07",
+      "2026-09-14",
+      "2026-09-28",
+      "2026-10-05",
+    ]);
+    expect(plan.rows.some((r) => r.bowl_date === "2026-09-21")).toBe(false);
+  });
+
+  it("protects finalized weeks and regenerates the rest", () => {
+    const plan = planWeekDates({
+      existing: existing36,
+      generated: generateWeekDates("2026-09-07", 36, []),
+      finalizedWeekNumbers: [1, 2],
+      thirdFor,
+      isPositionRoundFor: posFor,
+    });
+    expect(plan.lockedWeekNumbers).toEqual([1, 2]);
+    expect(plan.rows.some((r) => r.week_number <= 2)).toBe(false);
+    expect(plan.rows[0]!.week_number).toBe(3);
+  });
+
+  it("reports extra weeks beyond total_weeks without deleting them", () => {
+    const plan = planWeekDates({
+      existing: [...existing36, { id: "w37", week_number: 37, bowl_date: "2027-05-17" }],
+      generated: generateWeekDates("2026-09-07", 36, []),
+      thirdFor,
+      isPositionRoundFor: posFor,
+    });
+    expect(plan.extraWeekNumbers).toEqual([37]);
+    expect(plan.rows).toHaveLength(36);
+  });
+
+  it("marks matching dates unchanged and assigns third / position round", () => {
+    const generated = generateWeekDates("2026-07-31", 36, []);
+    const plan = planWeekDates({ existing: existing36, generated, thirdFor, isPositionRoundFor: posFor });
+    expect(plan.updates).toHaveLength(0);
+    expect(plan.unchanged).toHaveLength(36);
+    expect(plan.rows[11]).toMatchObject({ week_number: 12, third: 1, is_position_round: true });
+    expect(plan.rows[24]).toMatchObject({ week_number: 25, third: 3, is_position_round: false });
   });
 });

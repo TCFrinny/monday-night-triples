@@ -1127,6 +1127,10 @@ export type Database = {
     }
     Functions: {
       admin_exists: { Args: never; Returns: boolean }
+      apply_week_dates: {
+        Args: { p_rows: Json; p_season_id: string }
+        Returns: Json
+      }
       bootstrap_first_admin: { Args: never; Returns: boolean }
       has_role: {
         Args: {
