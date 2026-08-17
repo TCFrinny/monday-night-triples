@@ -199,3 +199,27 @@ export function planWeekDates({
     extraWeekNumbers,
   };
 }
+
+/**
+ * Formats a plain `YYYY-MM-DD` calendar date without any timezone shift.
+ * `new Date("2026-08-31")` parses as UTC midnight and renders as Aug 30 in
+ * US timezones; this formatter pins the value to UTC so the calendar date
+ * displayed always matches the stored date.
+ */
+export function formatDateOnly(
+  iso: string | null | undefined,
+  options: Intl.DateTimeFormatOptions = { dateStyle: "medium" },
+  locale?: string,
+): string {
+  if (!iso) return "";
+  const trimmed = iso.trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return "";
+  return new Intl.DateTimeFormat(locale, { ...options, timeZone: "UTC" }).format(
+    parseISODate(trimmed),
+  );
+}
+
+/** Long weekday + date, e.g. "Monday, August 31, 2026". */
+export function formatDateOnlyLong(iso: string | null | undefined, locale?: string): string {
+  return formatDateOnly(iso, { dateStyle: "full" }, locale);
+}
