@@ -19,6 +19,7 @@ import {
 } from "@/lib/roster";
 import { formatAverage, slugify } from "@/lib/league";
 import { renameBowler, renameTeam, type NamedRow } from "@/lib/rename";
+import { matchesPerWeek, planTeamSync } from "@/lib/team-sync";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -438,3 +439,92 @@ function TeamManager({ seasonId }: { seasonId: string }) {
   );
 }
 
+
+/**
+ * Season `team_count` is configuration only — it never created team rows.
+ * This panel makes the gap explicit and lets an admin create safe, editable
+ * numbered placeholders for the missing slots. Existing teams are never
+ * touched, and a decreased count never deletes anything.
+ */
+function TeamCountSync({
+  seasonId,
+  teams,
+  matches,
+}: {
+  seasonId: string;
+  teams: Array<{ id: string; name: string }>;
+  matches: Array<{ status: string }> | null;
+}) {
+  const qc = useQueryClient();
+  const { data: season } = useQuery(activeSeasonQuery);
+  const hasFinalizedResults = (matches ?? []).some((m: any) => m.status === "final");
+  const plan = planTeamSync({
+    configuredCount: season?.team_count ?? 0,
+    teams: teams.map((t) => ({ id: t.id, name: t.name })),
+    hasFinalizedResults,
+  });
+  const { matches: perWeek, byes } = matchesPerWeek(plan.configured);
+
+  const sync = useMutation({
+    mutationFn: async () => {
+      if (!plan.creates.length) throw new Error("Nothing to create.");
+      const { error } = await supabase.from("teams").insert(
+        plan.creates.map((c) => ({
+          season_id: seasonId,
+          name: c.name,
+          slug: slugify(c.name),
+        })),
+      );
+      if (error) throw new Error(error.message);
+      return plan.creates.length;
+    },
+    onSuccess: (n) => {
+      toast.success(`${n} placeholder team(s) created — rename them inline below.`);
+      qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="mb-6 rounded-md border border-border bg-muted/20 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm">
+          <span className="font-display uppercase tracking-[0.12em] text-foreground">
+            Sync teams to team count
+          </span>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Configured {plan.configured} · actual {plan.actual} · {perWeek} match
+            {perWeek === 1 ? "" : "es"} per week{byes ? " + 1 bye" : ""}.
+          </p>
+        </div>
+        {plan.creates.length > 0 && (
+          <Button onClick={() => sync.mutate()} disabled={sync.isPending}>
+            {sync.isPending ? "Creating…" : `Create ${plan.creates.length} placeholder team(s)`}
+          </Button>
+        )}
+      </div>
+
+      {plan.blockedReason && (
+        <p className="mt-3 text-xs text-destructive">{plan.blockedReason}</p>
+      )}
+
+      {plan.isDecrease && (
+        <p className="mt-3 text-xs text-destructive">
+          Team count is lower than the number of team records ({plan.surplus} extra). Nothing is
+          deleted automatically — deactivate or remove the surplus teams deliberately.
+        </p>
+      )}
+
+      {plan.creates.length > 0 && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          Will create: {plan.creates.map((c) => c.name).join(", ")}. Existing teams keep their ids,
+          slugs, rosters and results.
+        </p>
+      )}
+
+      {!plan.blockedReason && !plan.isDecrease && plan.creates.length === 0 && (
+        <p className="mt-3 text-xs text-muted-foreground">Team records match the configured count.</p>
+      )}
+    </div>
+  );
+}
