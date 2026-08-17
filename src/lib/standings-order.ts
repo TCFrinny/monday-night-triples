@@ -11,7 +11,7 @@
 
 const collator = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
 
-export function naturalCompare(a: string, b: string): boolean | number {
+export function naturalCompare(a: string, b: string): number {
   return collator.compare(a ?? "", b ?? "");
 }
 
