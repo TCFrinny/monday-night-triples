@@ -114,3 +114,88 @@ export function validateShift({
   }
   return null;
 }
+
+export interface WeekPlanInput {
+  /** Existing week rows for the season. */
+  existing: readonly WeekRow[];
+  /** Desired week_number -> bowl_date mapping (from generateWeekDates). */
+  generated: readonly GeneratedWeekDate[];
+  /** Week numbers that already contain at least one finalized match. */
+  finalizedWeekNumbers?: readonly number[];
+  thirdFor: (weekNumber: number) => number;
+  isPositionRoundFor: (weekNumber: number) => boolean;
+}
+
+export interface PlannedWeek {
+  week_number: number;
+  bowl_date: string;
+  third: number;
+  is_position_round: boolean;
+  /** "insert" = new row, "update" = existing row's date rewritten in place. */
+  action: "insert" | "update" | "unchanged";
+  id?: string;
+  from?: string | null;
+}
+
+export interface WeekPlan {
+  /** Rows to write (inserts + updates), in week order. */
+  rows: PlannedWeek[];
+  inserts: PlannedWeek[];
+  updates: PlannedWeek[];
+  unchanged: PlannedWeek[];
+  /** Finalized weeks whose historical dates are preserved. */
+  lockedWeekNumbers: number[];
+  /** Existing week rows beyond the configured total_weeks; never deleted. */
+  extraWeekNumbers: number[];
+}
+
+/**
+ * Builds the apply plan for regenerating week dates over an existing schedule.
+ * Existing week rows are UPDATED in place (ids preserved); only genuinely
+ * missing week numbers are inserted. Weeks with finalized results keep their
+ * historical dates and are reported as locked.
+ */
+export function planWeekDates({
+  existing,
+  generated,
+  finalizedWeekNumbers = [],
+  thirdFor,
+  isPositionRoundFor,
+}: WeekPlanInput): WeekPlan {
+  const finalized = new Set(finalizedWeekNumbers);
+  const byNumber = new Map(existing.map((w) => [w.week_number, w]));
+  const rows: PlannedWeek[] = [];
+  const locked: number[] = [];
+
+  for (const g of generated) {
+    if (finalized.has(g.week_number)) {
+      locked.push(g.week_number);
+      continue;
+    }
+    const current = byNumber.get(g.week_number);
+    const planned: PlannedWeek = {
+      week_number: g.week_number,
+      bowl_date: g.bowl_date,
+      third: thirdFor(g.week_number),
+      is_position_round: isPositionRoundFor(g.week_number),
+      action: !current ? "insert" : current.bowl_date === g.bowl_date ? "unchanged" : "update",
+      ...(current ? { id: current.id, from: current.bowl_date } : {}),
+    };
+    rows.push(planned);
+  }
+
+  const totalWeeks = generated.length;
+  const extraWeekNumbers = existing
+    .filter((w) => w.week_number > totalWeeks)
+    .map((w) => w.week_number)
+    .sort((a, b) => a - b);
+
+  return {
+    rows,
+    inserts: rows.filter((r) => r.action === "insert"),
+    updates: rows.filter((r) => r.action === "update"),
+    unchanged: rows.filter((r) => r.action === "unchanged"),
+    lockedWeekNumbers: locked.sort((a, b) => a - b),
+    extraWeekNumbers,
+  };
+}
