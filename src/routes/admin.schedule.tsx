@@ -136,32 +136,145 @@ function AdminSchedule() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // ---- Lane setup -------------------------------------------------------
+  const activeTeams = teams.filter((t: any) => t.is_active !== false);
+  const slotCount = matchupsPerWeek(activeTeams.length);
+  const weekHasBye = hasBye(activeTeams.length);
+  const savedStartingLane = (season as any)?.starting_lane_number ?? null;
+  const laneInput = laneDraft ?? (savedStartingLane != null ? String(savedStartingLane) : "");
+  const parsedLane = parseStartingLane(laneInput);
+  const previewPairs = laneSlots(parsedLane, slotCount);
+  const activePairs = laneSlots(savedStartingLane, slotCount);
 
-  const addMatch = useMutation({
+  const saveLaneSetup = useMutation({
     mutationFn: async () => {
-      if (!weekId || !teamA) throw new Error("Choose a week and a team.");
-      if (teamB && teamA === teamB) throw new Error("A team cannot bowl itself.");
-      const count = (matches ?? []).filter((m: any) => m.weeks.id === weekId).length;
-      const { error } = await supabase.from("matches").insert({
-        week_id: weekId,
-        team_a_id: teamA,
-        team_b_id: teamB || null,
-        is_bye: !teamB,
-        lane_pair: lanes.trim().slice(0, 20) || null,
-        sort_order: count + 1,
-        status: "scheduled",
-      });
+      if (!season) throw new Error("No season.");
+      if (!parsedLane) throw new Error("Enter a positive whole lane number.");
+      const { error } = await supabase
+        .from("seasons")
+        .update({ starting_lane_number: parsedLane })
+        .eq("id", season.id);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      setTeamA("");
-      setTeamB("");
-      setLanes("");
-      toast.success("Matchup added");
+      toast.success("Lane setup saved");
+      setLaneDraft(null);
+      qc.invalidateQueries({ queryKey: ["season", "active"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // ---- Week matchup grid -------------------------------------------------
+  const weekMatches = (matches ?? []).filter((m: any) => m.weeks.id === weekId);
+  const plan = useMemo(
+    () => buildWeekSlots(activePairs, weekMatches as any),
+    [activePairs.join("|"), weekId, matches],
+  );
+  const existingBye = weekMatches.find((m: any) => m.is_bye) ?? null;
+
+  if (weekId && draftWeekId !== weekId) {
+    setDraftWeekId(weekId);
+    const next: Record<string, { a: string; b: string }> = {};
+    for (const s of plan.slots) {
+      next[s.lane_pair] = { a: s.match?.team_a_id ?? "", b: s.match?.team_b_id ?? "" };
+    }
+    setDraft(next);
+    setByeTeam(existingBye?.team_a_id ?? "");
+  }
+
+  const assignments = plan.slots.map((s) => ({
+    lane_pair: s.lane_pair,
+    team_a_id: draft[s.lane_pair]?.a ?? "",
+    team_b_id: draft[s.lane_pair]?.b ?? "",
+    locked: s.locked,
+  }));
+  const weekError = weekId ? validateWeekAssignments(assignments, byeTeam || null) : null;
+
+  const saveWeek = useMutation({
+    mutationFn: async () => {
+      if (!weekId) throw new Error("Choose a week.");
+      if (weekError) throw new Error(weekError);
+      for (const [i, s] of plan.slots.entries()) {
+        if (s.locked) continue;
+        const a = draft[s.lane_pair]?.a ?? "";
+        const b = draft[s.lane_pair]?.b ?? "";
+        if (s.match) {
+          if (!a || !b) {
+            const { error } = await supabase.from("matches").delete().eq("id", s.match.id);
+            if (error) throw new Error(error.message);
+          } else {
+            const { error } = await supabase
+              .from("matches")
+              .update({
+                team_a_id: a,
+                team_b_id: b,
+                is_bye: false,
+                lane_pair: s.lane_pair,
+                sort_order: i + 1,
+              })
+              .eq("id", s.match.id);
+            if (error) throw new Error(error.message);
+          }
+        } else if (a && b) {
+          const { error } = await supabase.from("matches").insert({
+            week_id: weekId,
+            team_a_id: a,
+            team_b_id: b,
+            is_bye: false,
+            lane_pair: s.lane_pair,
+            sort_order: i + 1,
+            status: "scheduled",
+          });
+          if (error) throw new Error(error.message);
+        }
+      }
+      if (weekHasBye) {
+        if (existingBye && existingBye.status !== "final") {
+          if (!byeTeam) {
+            const { error } = await supabase.from("matches").delete().eq("id", existingBye.id);
+            if (error) throw new Error(error.message);
+          } else if (byeTeam !== existingBye.team_a_id) {
+            const { error } = await supabase
+              .from("matches")
+              .update({ team_a_id: byeTeam })
+              .eq("id", existingBye.id);
+            if (error) throw new Error(error.message);
+          }
+        } else if (!existingBye && byeTeam) {
+          const { error } = await supabase.from("matches").insert({
+            week_id: weekId,
+            team_a_id: byeTeam,
+            team_b_id: null,
+            is_bye: true,
+            lane_pair: null,
+            sort_order: plan.slots.length + 1,
+            status: "scheduled",
+          });
+          if (error) throw new Error(error.message);
+        }
+      }
+    },
+    onSuccess: () => {
+      toast.success("Week matchups saved");
+      setDraftWeekId("");
       qc.invalidateQueries({ queryKey: ["season-match-summary"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const remapOrphan = useMutation({
+    mutationFn: async ({ id, lane }: { id: string; lane: string }) => {
+      const { error } = await supabase.from("matches").update({ lane_pair: lane }).eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Lane pair updated");
+      setDraftWeekId("");
+      qc.invalidateQueries({ queryKey: ["season-match-summary"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const removeMatch = useMutation({
     mutationFn: async (id: string) => {
