@@ -75,6 +75,15 @@ function StatsPage() {
   // season and third boards keep excluding them.
   const includeSubs = weekly && mode === "bowlers";
 
+  // High Game / High Set cards list actual performances, so they read the
+  // event views instead of the one-max-per-entity cache rows.
+  const gameKind = mode === "bowlers" ? "bowler_game" : "team_game";
+  const setKind = mode === "bowlers" ? "bowler_set" : "team_set";
+  const { data: gameEvents } = useQuery(milestoneEventsQuery(gameKind, season?.id, activeScope));
+  const { data: setEvents } = useQuery(milestoneEventsQuery(setKind, season?.id, activeScope));
+  const eventsFor = (kind: string): any[] =>
+    (kind === gameKind ? gameEvents : kind === setKind ? setEvents : []) ?? [];
+
 
 
 
