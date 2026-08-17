@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as LaneDataRouteImport } from './routes/lane-data'
 import { Route as ResultsRouteImport } from './routes/results'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as StandingsRouteImport } from './routes/standings'
@@ -34,6 +35,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LaneDataRoute = LaneDataRouteImport.update({
+  id: '/lane-data',
+  path: '/lane-data',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResultsRoute = ResultsRouteImport.update({
@@ -110,6 +116,7 @@ const AdminEntryMatchIdRoute = AdminEntryMatchIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/lane-data': typeof LaneDataRoute
   '/results': typeof ResultsRoute
   '/schedule': typeof ScheduleRoute
   '/standings': typeof StandingsRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/lane-data': typeof LaneDataRoute
   '/results': typeof ResultsRoute
   '/schedule': typeof ScheduleRoute
   '/standings': typeof StandingsRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/lane-data': typeof LaneDataRoute
   '/results': typeof ResultsRoute
   '/schedule': typeof ScheduleRoute
   '/standings': typeof StandingsRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/lane-data'
     | '/results'
     | '/schedule'
     | '/standings'
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/lane-data'
     | '/results'
     | '/schedule'
     | '/standings'
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/lane-data'
     | '/results'
     | '/schedule'
     | '/standings'
@@ -220,6 +232,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  LaneDataRoute: typeof LaneDataRoute
   ResultsRoute: typeof ResultsRoute
   ScheduleRoute: typeof ScheduleRoute
   StandingsRoute: typeof StandingsRoute
@@ -245,6 +258,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lane-data': {
+      id: '/lane-data'
+      path: '/lane-data'
+      fullPath: '/lane-data'
+      preLoaderRoute: typeof LaneDataRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/results': {
@@ -369,6 +389,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  LaneDataRoute: LaneDataRoute,
   ResultsRoute: ResultsRoute,
   ScheduleRoute: ScheduleRoute,
   StandingsRoute: StandingsRoute,
