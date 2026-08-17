@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { sortTeamsByName } from "@/lib/team-order";
 import { activeSeasonQuery, rosterSpotsQuery, seasonMatchSummaryQuery, teamsQuery, weeksQuery } from "@/lib/queries";
 import { rosterForWeek } from "@/lib/roster";
 import { isPositionRound, thirdForWeek } from "@/lib/league";
@@ -27,7 +28,8 @@ function AdminSchedule() {
   const qc = useQueryClient();
   const { data: season } = useQuery(activeSeasonQuery);
   const { data: weeks } = useQuery(weeksQuery(season?.id));
-  const { data: teams } = useQuery(teamsQuery(season?.id));
+  const { data: teamsRaw } = useQuery(teamsQuery(season?.id));
+  const teams = sortTeamsByName((teamsRaw ?? []) as any[]);
   const { data: matches } = useQuery(seasonMatchSummaryQuery(season?.id));
   const { data: spots } = useQuery(rosterSpotsQuery(season?.id));
   const [startDate, setStartDate] = useState("");

@@ -20,6 +20,7 @@ import {
 import { formatAverage, slugify } from "@/lib/league";
 import { renameBowler, renameTeam, type NamedRow } from "@/lib/rename";
 import { matchesPerWeek, planTeamSync } from "@/lib/team-sync";
+import { sortTeamsByName } from "@/lib/team-order";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -260,7 +261,10 @@ function BowlerManager({ seasonId }: { seasonId: string }) {
 
 function TeamManager({ seasonId }: { seasonId: string }) {
   const qc = useQueryClient();
-  const { data: teams } = useQuery(teamsQuery(seasonId));
+  const { data: teamsRaw } = useQuery(teamsQuery(seasonId));
+  // Team cards follow natural team-number order (#1, #2, … #18), not the
+  // lexical order the database returns.
+  const teams = sortTeamsByName((teamsRaw ?? []) as any[]);
   const { data: bowlers } = useQuery(bowlersQuery(seasonId));
   const { data: spots } = useQuery(rosterSpotsQuery(seasonId));
   const { data: weeks } = useQuery(weeksQuery(seasonId));
