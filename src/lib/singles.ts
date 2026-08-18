@@ -127,7 +127,6 @@ export function resolveSinglesSide<T extends TriplesLineupLike>(
   const l = lineupForParticipant(lineups, scheduledBowlerId);
   if (!l) return null;
   const avg = Number(l.applicable_average) || 0;
-  const actual = l.bowler_id ?? (l.participation === "blind" ? scheduledBowlerId : null);
   return {
     scheduledBowlerId,
     actualBowlerId: l.bowler_id,
@@ -135,7 +134,6 @@ export function resolveSinglesSide<T extends TriplesLineupLike>(
     isBlind: l.participation === "blind",
     applicableAverage: avg,
     handicap: singlesHandicap(avg, base, percent),
-    ...(actual ? {} : {}),
   };
 }
 
