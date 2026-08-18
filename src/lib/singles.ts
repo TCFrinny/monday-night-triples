@@ -1,5 +1,5 @@
 /**
- * Monday Night Triples — INTERNAL SINGLES competition.
+ * INTERNAL SINGLES competition rules.
  *
  * Singles is an overlay on the existing Triples season: it borrows the league
  * weeks, the enrolled bowlers and — crucially — the scores entered once in
