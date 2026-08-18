@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as LaneDataRouteImport } from './routes/lane-data'
 import { Route as ResultsRouteImport } from './routes/results'
 import { Route as ScheduleRouteImport } from './routes/schedule'
+import { Route as SinglesRouteImport } from './routes/singles'
 import { Route as StandingsRouteImport } from './routes/standings'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -50,6 +51,11 @@ const ResultsRoute = ResultsRouteImport.update({
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SinglesRoute = SinglesRouteImport.update({
+  id: '/singles',
+  path: '/singles',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StandingsRoute = StandingsRouteImport.update({
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/lane-data': typeof LaneDataRoute
   '/results': typeof ResultsRoute
   '/schedule': typeof ScheduleRoute
+  '/singles': typeof SinglesRoute
   '/standings': typeof StandingsRoute
   '/stats': typeof StatsRoute
   '/admin/schedule': typeof AdminScheduleRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/lane-data': typeof LaneDataRoute
   '/results': typeof ResultsRoute
   '/schedule': typeof ScheduleRoute
+  '/singles': typeof SinglesRoute
   '/standings': typeof StandingsRoute
   '/stats': typeof StatsRoute
   '/admin/schedule': typeof AdminScheduleRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/lane-data': typeof LaneDataRoute
   '/results': typeof ResultsRoute
   '/schedule': typeof ScheduleRoute
+  '/singles': typeof SinglesRoute
   '/standings': typeof StandingsRoute
   '/stats': typeof StatsRoute
   '/admin/schedule': typeof AdminScheduleRoute
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
     | '/lane-data'
     | '/results'
     | '/schedule'
+    | '/singles'
     | '/standings'
     | '/stats'
     | '/admin/schedule'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/lane-data'
     | '/results'
     | '/schedule'
+    | '/singles'
     | '/standings'
     | '/stats'
     | '/admin/schedule'
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/lane-data'
     | '/results'
     | '/schedule'
+    | '/singles'
     | '/standings'
     | '/stats'
     | '/admin/schedule'
@@ -235,6 +247,7 @@ export interface RootRouteChildren {
   LaneDataRoute: typeof LaneDataRoute
   ResultsRoute: typeof ResultsRoute
   ScheduleRoute: typeof ScheduleRoute
+  SinglesRoute: typeof SinglesRoute
   StandingsRoute: typeof StandingsRoute
   StatsRoute: typeof StatsRoute
   BowlersSlugRoute: typeof BowlersSlugRoute
@@ -279,6 +292,13 @@ declare module '@tanstack/react-router' {
       path: '/schedule'
       fullPath: '/schedule'
       preLoaderRoute: typeof ScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/singles': {
+      id: '/singles'
+      path: '/singles'
+      fullPath: '/singles'
+      preLoaderRoute: typeof SinglesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/standings': {
@@ -392,6 +412,7 @@ const rootRouteChildren: RootRouteChildren = {
   LaneDataRoute: LaneDataRoute,
   ResultsRoute: ResultsRoute,
   ScheduleRoute: ScheduleRoute,
+  SinglesRoute: SinglesRoute,
   StandingsRoute: StandingsRoute,
   StatsRoute: StatsRoute,
   BowlersSlugRoute: BowlersSlugRoute,
