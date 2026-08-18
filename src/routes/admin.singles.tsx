@@ -136,7 +136,7 @@ function AdminSingles() {
         if (!weekId) continue;
         w.pairings.forEach((p, i) => {
           rows.push({
-            season_id: seasonId,
+            season_id: seasonId!,
             week_id: weekId,
             sort_order: i + 1,
             bowler_a_id: p.a,
@@ -183,7 +183,7 @@ function AdminSingles() {
       const weekId = weekIdOf(weekNumber);
       if (!weekId) throw new Error("Week not found.");
       const rows = positionRoundPairings(order).map((p, i) => ({
-        season_id: seasonId,
+        season_id: seasonId!,
         week_id: weekId,
         sort_order: i + 1,
         bowler_a_id: p.a,
