@@ -188,7 +188,8 @@ describe("position rounds", () => {
   });
   it("gives the last standings bowler a bye when odd", () => {
     const p = positionRoundPairings(["p1", "p2", "p3"]);
-    expect(p[2]).toEqual({ a: "p3", b: null });
+    expect(p).toHaveLength(2);
+    expect(p[1]).toEqual({ a: "p3", b: null });
   });
 });
 
@@ -208,8 +209,8 @@ describe("recomputation from corrected Triples scores", () => {
     const matchId = "singles-match-1";
     const hA = singlesHandicap(100);
     const hB = singlesHandicap(130);
-    const before = singlesMatchPoints(adjustedScores([100, 100, 100], hA), adjustedScores([120, 120, 120], hB));
-    const corrected = singlesMatchPoints(adjustedScores([160, 160, 160], hA), adjustedScores([120, 120, 120], hB));
+    const before = singlesMatchPoints(adjustedScores([80, 80, 80], hA), adjustedScores([150, 150, 150], hB));
+    const corrected = singlesMatchPoints(adjustedScores([160, 160, 160], hA), adjustedScores([150, 150, 150], hB));
     expect(before.totalA).not.toBe(corrected.totalA);
     expect(matchId).toBe("singles-match-1");
   });
