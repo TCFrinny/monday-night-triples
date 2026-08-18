@@ -10,6 +10,7 @@ export const navItems = [
   { to: "/results", label: "Results" },
   { to: "/teams", label: "Teams" },
   { to: "/bowlers", label: "Bowlers" },
+  { to: "/singles", label: "Singles" },
   { to: "/stats", label: "Stats" },
   { to: "/lane-data", label: "Lane Data" },
 ] as const;
