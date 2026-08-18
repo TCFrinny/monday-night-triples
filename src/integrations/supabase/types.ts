@@ -764,6 +764,345 @@ export type Database = {
         }
         Relationships: []
       }
+      singles_config: {
+        Row: {
+          active_weeks: number[]
+          created_at: string
+          handicap_base: number
+          handicap_percent: number
+          is_enabled: boolean
+          position_weeks: number[]
+          required_week_count: number
+          season_id: string
+          updated_at: string
+        }
+        Insert: {
+          active_weeks?: number[]
+          created_at?: string
+          handicap_base?: number
+          handicap_percent?: number
+          is_enabled?: boolean
+          position_weeks?: number[]
+          required_week_count?: number
+          season_id: string
+          updated_at?: string
+        }
+        Update: {
+          active_weeks?: number[]
+          created_at?: string
+          handicap_base?: number
+          handicap_percent?: number
+          is_enabled?: boolean
+          position_weeks?: number[]
+          required_week_count?: number
+          season_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "singles_config_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: true
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      singles_matches: {
+        Row: {
+          bowler_a_id: string
+          bowler_b_id: string | null
+          created_at: string
+          id: string
+          is_bye: boolean
+          is_position_round: boolean
+          season_id: string
+          sort_order: number
+          updated_at: string
+          week_id: string
+        }
+        Insert: {
+          bowler_a_id: string
+          bowler_b_id?: string | null
+          created_at?: string
+          id?: string
+          is_bye?: boolean
+          is_position_round?: boolean
+          season_id: string
+          sort_order?: number
+          updated_at?: string
+          week_id: string
+        }
+        Update: {
+          bowler_a_id?: string
+          bowler_b_id?: string | null
+          created_at?: string
+          id?: string
+          is_bye?: boolean
+          is_position_round?: boolean
+          season_id?: string
+          sort_order?: number
+          updated_at?: string
+          week_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "singles_matches_bowler_a_id_fkey"
+            columns: ["bowler_a_id"]
+            isOneToOne: false
+            referencedRelation: "bowlers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "singles_matches_bowler_b_id_fkey"
+            columns: ["bowler_b_id"]
+            isOneToOne: false
+            referencedRelation: "bowlers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "singles_matches_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "singles_matches_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      singles_participants: {
+        Row: {
+          bowler_id: string
+          created_at: string
+          id: string
+          season_id: string
+        }
+        Insert: {
+          bowler_id: string
+          created_at?: string
+          id?: string
+          season_id: string
+        }
+        Update: {
+          bowler_id?: string
+          created_at?: string
+          id?: string
+          season_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "singles_participants_bowler_id_fkey"
+            columns: ["bowler_id"]
+            isOneToOne: false
+            referencedRelation: "bowlers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "singles_participants_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      singles_results: {
+        Row: {
+          a_actual_bowler_id: string | null
+          a_adjusted: number[]
+          a_applicable_average: number
+          a_bowler_id: string
+          a_handicap: number
+          a_is_blind: boolean
+          a_is_sub: boolean
+          a_points: number
+          a_scratch: number[]
+          b_actual_bowler_id: string | null
+          b_adjusted: number[]
+          b_applicable_average: number
+          b_bowler_id: string
+          b_handicap: number
+          b_is_blind: boolean
+          b_is_sub: boolean
+          b_points: number
+          b_scratch: number[]
+          computed_at: string
+          id: string
+          season_id: string
+          singles_match_id: string
+          week_id: string
+        }
+        Insert: {
+          a_actual_bowler_id?: string | null
+          a_adjusted?: number[]
+          a_applicable_average?: number
+          a_bowler_id: string
+          a_handicap?: number
+          a_is_blind?: boolean
+          a_is_sub?: boolean
+          a_points?: number
+          a_scratch?: number[]
+          b_actual_bowler_id?: string | null
+          b_adjusted?: number[]
+          b_applicable_average?: number
+          b_bowler_id: string
+          b_handicap?: number
+          b_is_blind?: boolean
+          b_is_sub?: boolean
+          b_points?: number
+          b_scratch?: number[]
+          computed_at?: string
+          id?: string
+          season_id: string
+          singles_match_id: string
+          week_id: string
+        }
+        Update: {
+          a_actual_bowler_id?: string | null
+          a_adjusted?: number[]
+          a_applicable_average?: number
+          a_bowler_id?: string
+          a_handicap?: number
+          a_is_blind?: boolean
+          a_is_sub?: boolean
+          a_points?: number
+          a_scratch?: number[]
+          b_actual_bowler_id?: string | null
+          b_adjusted?: number[]
+          b_applicable_average?: number
+          b_bowler_id?: string
+          b_handicap?: number
+          b_is_blind?: boolean
+          b_is_sub?: boolean
+          b_points?: number
+          b_scratch?: number[]
+          computed_at?: string
+          id?: string
+          season_id?: string
+          singles_match_id?: string
+          week_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "singles_results_a_actual_bowler_id_fkey"
+            columns: ["a_actual_bowler_id"]
+            isOneToOne: false
+            referencedRelation: "bowlers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "singles_results_a_bowler_id_fkey"
+            columns: ["a_bowler_id"]
+            isOneToOne: false
+            referencedRelation: "bowlers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "singles_results_b_actual_bowler_id_fkey"
+            columns: ["b_actual_bowler_id"]
+            isOneToOne: false
+            referencedRelation: "bowlers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "singles_results_b_bowler_id_fkey"
+            columns: ["b_bowler_id"]
+            isOneToOne: false
+            referencedRelation: "bowlers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "singles_results_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "singles_results_singles_match_id_fkey"
+            columns: ["singles_match_id"]
+            isOneToOne: true
+            referencedRelation: "singles_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "singles_results_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      singles_standings_cache: {
+        Row: {
+          bowler_id: string
+          game_losses: number
+          game_ties: number
+          game_wins: number
+          games: number
+          id: string
+          matches_played: number
+          pinfall: number
+          points: number
+          rank: number
+          scratch_pinfall: number
+          season_id: string
+          updated_at: string
+        }
+        Insert: {
+          bowler_id: string
+          game_losses?: number
+          game_ties?: number
+          game_wins?: number
+          games?: number
+          id?: string
+          matches_played?: number
+          pinfall?: number
+          points?: number
+          rank?: number
+          scratch_pinfall?: number
+          season_id: string
+          updated_at?: string
+        }
+        Update: {
+          bowler_id?: string
+          game_losses?: number
+          game_ties?: number
+          game_wins?: number
+          games?: number
+          id?: string
+          matches_played?: number
+          pinfall?: number
+          points?: number
+          rank?: number
+          scratch_pinfall?: number
+          season_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "singles_standings_cache_bowler_id_fkey"
+            columns: ["bowler_id"]
+            isOneToOne: false
+            referencedRelation: "bowlers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "singles_standings_cache_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_standings_cache: {
         Row: {
           hdcp_pinfall: number
@@ -1268,9 +1607,27 @@ export type Database = {
         Args: { p_season_id: string }
         Returns: undefined
       }
+      refresh_singles: { Args: { p_season_id: string }; Returns: undefined }
+      refresh_singles_impl: {
+        Args: { p_season_id: string }
+        Returns: undefined
+      }
       shift_schedule_dates: {
         Args: { p_days: number; p_from_week: number; p_season_id: string }
         Returns: number
+      }
+      singles_side_scores: {
+        Args: { p_bowler: string; p_week_id: string }
+        Returns: {
+          actual_bowler_id: string
+          applicable_average: number
+          g1: number
+          g2: number
+          g3: number
+          games: number
+          is_blind: boolean
+          is_sub: boolean
+        }[]
       }
     }
     Enums: {

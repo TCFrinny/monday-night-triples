@@ -25,11 +25,12 @@ export const Route = createFileRoute("/admin")({
   component: AdminLayout,
 });
 
-const TABS: { to: "/admin" | "/admin/teams" | "/admin/schedule" | "/admin/entry"; label: string; exact?: boolean }[] = [
+const TABS: { to: "/admin" | "/admin/teams" | "/admin/schedule" | "/admin/entry" | "/admin/singles"; label: string; exact?: boolean }[] = [
   { to: "/admin", label: "Overview", exact: true },
   { to: "/admin/teams", label: "Teams & Bowlers" },
   { to: "/admin/schedule", label: "Schedule" },
   { to: "/admin/entry", label: "Score Entry" },
+  { to: "/admin/singles", label: "Singles" },
 ];
 
 function AdminLayout() {

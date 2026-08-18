@@ -365,3 +365,90 @@ export const milestoneEventsQuery = (
       return unwrap<any[]>(q);
     },
   });
+
+/* ---------------------------------------------------------------------------
+ * SINGLES — internal secondary competition riding on the Triples weeks.
+ * ------------------------------------------------------------------------ */
+
+export interface SinglesConfigRow {
+  season_id: string;
+  is_enabled: boolean;
+  active_weeks: number[];
+  position_weeks: number[];
+  required_week_count: number;
+  handicap_base: number;
+  handicap_percent: number;
+}
+
+export const singlesConfigQuery = (seasonId: string | undefined) =>
+  queryOptions({
+    queryKey: ["singles-config", seasonId],
+    enabled: Boolean(seasonId),
+    queryFn: async (): Promise<SinglesConfigRow | null> => {
+      const { data, error } = await supabase
+        .from("singles_config")
+        .select("*")
+        .eq("season_id", seasonId!)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return (data as SinglesConfigRow | null) ?? null;
+    },
+  });
+
+export const singlesParticipantsQuery = (seasonId: string | undefined) =>
+  queryOptions({
+    queryKey: ["singles-participants", seasonId],
+    enabled: Boolean(seasonId),
+    queryFn: async () =>
+      unwrap<any[]>(
+        supabase
+          .from("singles_participants")
+          .select("id, season_id, bowler_id, bowlers(id, full_name, slug, is_sub, entry_average)")
+          .eq("season_id", seasonId!),
+      ),
+  });
+
+export const singlesMatchesQuery = (seasonId: string | undefined) =>
+  queryOptions({
+    queryKey: ["singles-matches", seasonId],
+    enabled: Boolean(seasonId),
+    queryFn: async () =>
+      unwrap<any[]>(
+        supabase
+          .from("singles_matches")
+          .select(
+            "*, weeks(id, week_number, bowl_date), a:bowlers!singles_matches_bowler_a_id_fkey(id, full_name, slug), b:bowlers!singles_matches_bowler_b_id_fkey(id, full_name, slug)",
+          )
+          .eq("season_id", seasonId!)
+          .order("sort_order"),
+      ),
+  });
+
+export const singlesResultsQuery = (seasonId: string | undefined) =>
+  queryOptions({
+    queryKey: ["singles-results", seasonId],
+    enabled: Boolean(seasonId),
+    queryFn: async () =>
+      unwrap<any[]>(
+        supabase
+          .from("singles_results")
+          .select(
+            "*, weeks(id, week_number, bowl_date), a:bowlers!singles_results_a_bowler_id_fkey(id, full_name, slug), b:bowlers!singles_results_b_bowler_id_fkey(id, full_name, slug), a_actual:bowlers!singles_results_a_actual_bowler_id_fkey(id, full_name, slug), b_actual:bowlers!singles_results_b_actual_bowler_id_fkey(id, full_name, slug)",
+          )
+          .eq("season_id", seasonId!),
+      ),
+  });
+
+export const singlesStandingsQuery = (seasonId: string | undefined) =>
+  queryOptions({
+    queryKey: ["singles-standings", seasonId],
+    enabled: Boolean(seasonId),
+    queryFn: async () =>
+      unwrap<any[]>(
+        supabase
+          .from("singles_standings_cache")
+          .select("*, bowlers(id, full_name, slug)")
+          .eq("season_id", seasonId!)
+          .order("rank"),
+      ),
+  });

@@ -14,10 +14,12 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as LaneDataRouteImport } from './routes/lane-data'
 import { Route as ResultsRouteImport } from './routes/results'
 import { Route as ScheduleRouteImport } from './routes/schedule'
+import { Route as SinglesRouteImport } from './routes/singles'
 import { Route as StandingsRouteImport } from './routes/standings'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminScheduleRouteImport } from './routes/admin.schedule'
+import { Route as AdminSinglesRouteImport } from './routes/admin.singles'
 import { Route as AdminTeamsRouteImport } from './routes/admin.teams'
 import { Route as BowlersIndexRouteImport } from './routes/bowlers.index'
 import { Route as BowlersSlugRouteImport } from './routes/bowlers.$slug'
@@ -52,6 +54,11 @@ const ScheduleRoute = ScheduleRouteImport.update({
   path: '/schedule',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SinglesRoute = SinglesRouteImport.update({
+  id: '/singles',
+  path: '/singles',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StandingsRoute = StandingsRouteImport.update({
   id: '/standings',
   path: '/standings',
@@ -70,6 +77,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminScheduleRoute = AdminScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSinglesRoute = AdminSinglesRouteImport.update({
+  id: '/singles',
+  path: '/singles',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminTeamsRoute = AdminTeamsRouteImport.update({
@@ -119,9 +131,11 @@ export interface FileRoutesByFullPath {
   '/lane-data': typeof LaneDataRoute
   '/results': typeof ResultsRoute
   '/schedule': typeof ScheduleRoute
+  '/singles': typeof SinglesRoute
   '/standings': typeof StandingsRoute
   '/stats': typeof StatsRoute
   '/admin/schedule': typeof AdminScheduleRoute
+  '/admin/singles': typeof AdminSinglesRoute
   '/admin/teams': typeof AdminTeamsRoute
   '/bowlers/$slug': typeof BowlersSlugRoute
   '/match/$matchId': typeof MatchMatchIdRoute
@@ -137,9 +151,11 @@ export interface FileRoutesByTo {
   '/lane-data': typeof LaneDataRoute
   '/results': typeof ResultsRoute
   '/schedule': typeof ScheduleRoute
+  '/singles': typeof SinglesRoute
   '/standings': typeof StandingsRoute
   '/stats': typeof StatsRoute
   '/admin/schedule': typeof AdminScheduleRoute
+  '/admin/singles': typeof AdminSinglesRoute
   '/admin/teams': typeof AdminTeamsRoute
   '/bowlers/$slug': typeof BowlersSlugRoute
   '/match/$matchId': typeof MatchMatchIdRoute
@@ -157,9 +173,11 @@ export interface FileRoutesById {
   '/lane-data': typeof LaneDataRoute
   '/results': typeof ResultsRoute
   '/schedule': typeof ScheduleRoute
+  '/singles': typeof SinglesRoute
   '/standings': typeof StandingsRoute
   '/stats': typeof StatsRoute
   '/admin/schedule': typeof AdminScheduleRoute
+  '/admin/singles': typeof AdminSinglesRoute
   '/admin/teams': typeof AdminTeamsRoute
   '/bowlers/$slug': typeof BowlersSlugRoute
   '/match/$matchId': typeof MatchMatchIdRoute
@@ -178,9 +196,11 @@ export interface FileRouteTypes {
     | '/lane-data'
     | '/results'
     | '/schedule'
+    | '/singles'
     | '/standings'
     | '/stats'
     | '/admin/schedule'
+    | '/admin/singles'
     | '/admin/teams'
     | '/bowlers/$slug'
     | '/match/$matchId'
@@ -196,9 +216,11 @@ export interface FileRouteTypes {
     | '/lane-data'
     | '/results'
     | '/schedule'
+    | '/singles'
     | '/standings'
     | '/stats'
     | '/admin/schedule'
+    | '/admin/singles'
     | '/admin/teams'
     | '/bowlers/$slug'
     | '/match/$matchId'
@@ -215,9 +237,11 @@ export interface FileRouteTypes {
     | '/lane-data'
     | '/results'
     | '/schedule'
+    | '/singles'
     | '/standings'
     | '/stats'
     | '/admin/schedule'
+    | '/admin/singles'
     | '/admin/teams'
     | '/bowlers/$slug'
     | '/match/$matchId'
@@ -235,6 +259,7 @@ export interface RootRouteChildren {
   LaneDataRoute: typeof LaneDataRoute
   ResultsRoute: typeof ResultsRoute
   ScheduleRoute: typeof ScheduleRoute
+  SinglesRoute: typeof SinglesRoute
   StandingsRoute: typeof StandingsRoute
   StatsRoute: typeof StatsRoute
   BowlersSlugRoute: typeof BowlersSlugRoute
@@ -281,6 +306,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScheduleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/singles': {
+      id: '/singles'
+      path: '/singles'
+      fullPath: '/singles'
+      preLoaderRoute: typeof SinglesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/standings': {
       id: '/standings'
       path: '/standings'
@@ -307,6 +339,13 @@ declare module '@tanstack/react-router' {
       path: '/schedule'
       fullPath: '/admin/schedule'
       preLoaderRoute: typeof AdminScheduleRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/singles': {
+      id: '/admin/singles'
+      path: '/singles'
+      fullPath: '/admin/singles'
+      preLoaderRoute: typeof AdminSinglesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/teams': {
@@ -370,6 +409,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminScheduleRoute: typeof AdminScheduleRoute
+  AdminSinglesRoute: typeof AdminSinglesRoute
   AdminTeamsRoute: typeof AdminTeamsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminEntryMatchIdRoute: typeof AdminEntryMatchIdRoute
@@ -378,6 +418,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminScheduleRoute: AdminScheduleRoute,
+  AdminSinglesRoute: AdminSinglesRoute,
   AdminTeamsRoute: AdminTeamsRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminEntryMatchIdRoute: AdminEntryMatchIdRoute,
@@ -392,6 +433,7 @@ const rootRouteChildren: RootRouteChildren = {
   LaneDataRoute: LaneDataRoute,
   ResultsRoute: ResultsRoute,
   ScheduleRoute: ScheduleRoute,
+  SinglesRoute: SinglesRoute,
   StandingsRoute: StandingsRoute,
   StatsRoute: StatsRoute,
   BowlersSlugRoute: BowlersSlugRoute,
