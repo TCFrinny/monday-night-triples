@@ -5,9 +5,12 @@ import {
   laneSlots,
   lanePairLabel,
   matchupsPerWeek,
+  parseLanePair,
   parseStartingLane,
+  validateActualLanes,
   validateWeekAssignments,
 } from "./lane-slots";
+
 
 describe("lane slots", () => {
   it("18 teams produce 9 pairs starting at 25", () => {
