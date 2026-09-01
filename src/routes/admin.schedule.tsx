@@ -581,21 +581,95 @@ function AdminSchedule() {
         {!!weekId && !!activePairs.length && (
           <div className="space-y-2">
             {weekPlan.slots.map((s) => {
-              const d = draft[s.lane_pair] ?? { a: "", b: "" };
-              const set = (patch: Partial<{ a: string; b: string }>) =>
+              const d = draft[s.lane_pair] ?? { a: "", b: "", lane: s.actual_lane_pair };
+              const set = (patch: Partial<{ a: string; b: string; lane: string }>) =>
                 setDraft((prev) => ({ ...prev, [s.lane_pair]: { ...d, ...patch } }));
+              const laneValue = d.lane ?? s.actual_lane_pair;
+              const parsedLanePair = parseLanePair(laneValue);
+              const isOverride = Boolean(parsedLanePair) && parsedLanePair !== s.lane_pair;
+              const laneInvalid = laneValue.trim() !== "" && !parsedLanePair;
+              const finalizedLaneChanged = s.locked && parsedLanePair !== s.actual_lane_pair;
               return (
                 <div
                   key={s.lane_pair}
-                  className="flex flex-wrap items-center gap-3 rounded-md border border-border px-3 py-2 text-sm"
+                  className={`flex flex-wrap items-center gap-3 rounded-md border px-3 py-2 text-sm ${
+                    isOverride ? "border-gold/60 bg-gold/5" : "border-border"
+                  }`}
                 >
-                  <span className="stat-num w-20 text-primary">{s.lane_pair}</span>
+                  <span className="w-24 shrink-0">
+                    <span className="block font-display text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                      Default
+                    </span>
+                    <span className="stat-num text-primary">{s.lane_pair}</span>
+                  </span>
+                  <div className="shrink-0 space-y-0.5">
+                    <span className="block font-display text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                      Actual lanes
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        aria-label={`Actual lane pair for default ${s.lane_pair}`}
+                        className="w-24"
+                        value={laneValue}
+                        placeholder={s.lane_pair}
+                        onChange={(e) => set({ lane: e.target.value })}
+                        onBlur={() => {
+                          const p = parseLanePair(laneValue);
+                          if (p && p !== laneValue) set({ lane: p });
+                        }}
+                      />
+                      {isOverride && (
+                        <span className="font-display text-[10px] uppercase tracking-[0.12em] text-gold">
+                          Override
+                        </span>
+                      )}
+                      {laneValue !== s.lane_pair && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (
+                              s.locked &&
+                              !window.confirm(
+                                `Reset lanes on this FINALIZED matchup back to the default ${s.lane_pair}? Scores, teams and results are not changed.`,
+                              )
+                            )
+                              return;
+                            if (s.locked && s.match) {
+                              setLanePair.mutate({ id: s.match.id, lane: s.lane_pair });
+                            }
+                            set({ lane: s.lane_pair });
+                          }}
+                        >
+                          Reset to default
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                   {s.locked ? (
                     <span className="flex-1">
                       {(s.match as any)?.team_a?.name} vs {(s.match as any)?.team_b?.name}{" "}
                       <span className="ml-2 font-display text-[10px] uppercase tracking-[0.12em] text-gold">
-                        Final · locked
+                        Final · scores locked
                       </span>
+                      {finalizedLaneChanged && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="ml-3"
+                          disabled={!parsedLanePair || setLanePair.isPending}
+                          onClick={() => {
+                            const ok = window.confirm(
+                              `This matchup is FINALIZED. Change its lane pair from ${s.actual_lane_pair} to ${parsedLanePair}? Only lane metadata changes — scores, teams and points stay exactly as they are. Lane Data will re-attribute these games.`,
+                            );
+                            if (ok && s.match) setLanePair.mutate({ id: s.match.id, lane: parsedLanePair! });
+                          }}
+                        >
+                          Update lanes
+                        </Button>
+                      )}
                     </span>
                   ) : (
                     <>
@@ -631,9 +705,15 @@ function AdminSchedule() {
                       </span>
                     </>
                   )}
+                  {laneInvalid && (
+                    <span className="w-full text-xs text-destructive">
+                      Use two consecutive lanes, e.g. 31-32 (or just type 31).
+                    </span>
+                  )}
                 </div>
               );
             })}
+
 
             {weekHasBye && (
               <div className="flex flex-wrap items-center gap-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
