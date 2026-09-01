@@ -585,11 +585,18 @@ function AdminSchedule() {
         {!!weekId && !!activePairs.length && (
           <div className="space-y-2">
             {weekPlan.slots.map((s) => {
-              const d = draft[s.lane_pair] ?? { a: "", b: "", lane: s.actual_lane_pair };
+              const d = draft[s.lane_pair] ?? {
+                a: s.match?.team_a_id ?? "",
+                b: s.match?.team_b_id ?? "",
+                lane: s.actual_lane_pair,
+              };
               const set = (patch: Partial<{ a: string; b: string; lane: string }>) =>
                 setDraft((prev) => ({ ...prev, [s.lane_pair]: { ...d, ...patch } }));
-              const laneValue = d.lane ?? s.actual_lane_pair;
-              const parsedLanePair = parseLanePair(laneValue);
+              // Raw field text (may be blank while the admin retypes a pair).
+              const laneValue = d.lane ?? "";
+              // Effective lane used for validation/overrides: blank falls back to stored/default.
+              const effectiveLane = resolveActualLane(laneValue, s.actual_lane_pair, s.lane_pair);
+              const parsedLanePair = parseLanePair(effectiveLane);
               const isOverride = Boolean(parsedLanePair) && parsedLanePair !== s.lane_pair;
               const laneInvalid = laneValue.trim() !== "" && !parsedLanePair;
               const finalizedLaneChanged = s.locked && parsedLanePair !== s.actual_lane_pair;
