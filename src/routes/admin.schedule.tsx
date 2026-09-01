@@ -182,9 +182,13 @@ function AdminSchedule() {
 
   if (weekId && draftWeekId !== weekId) {
     setDraftWeekId(weekId);
-    const next: Record<string, { a: string; b: string }> = {};
+    const next: Record<string, { a: string; b: string; lane: string }> = {};
     for (const s of weekPlan.slots) {
-      next[s.lane_pair] = { a: s.match?.team_a_id ?? "", b: s.match?.team_b_id ?? "" };
+      next[s.lane_pair] = {
+        a: s.match?.team_a_id ?? "",
+        b: s.match?.team_b_id ?? "",
+        lane: s.actual_lane_pair,
+      };
     }
     setDraft(next);
     setByeTeam(existingBye?.team_a_id ?? "");
@@ -194,6 +198,7 @@ function AdminSchedule() {
     lane_pair: s.lane_pair,
     team_a_id: draft[s.lane_pair]?.a ?? "",
     team_b_id: draft[s.lane_pair]?.b ?? "",
+    actual_lane_pair: draft[s.lane_pair]?.lane ?? s.actual_lane_pair,
     locked: s.locked,
   }));
   const weekError = weekId ? validateWeekAssignments(assignments, byeTeam || null) : null;
@@ -206,6 +211,7 @@ function AdminSchedule() {
         if (s.locked) continue;
         const a = draft[s.lane_pair]?.a ?? "";
         const b = draft[s.lane_pair]?.b ?? "";
+        const lane = parseLanePair(draft[s.lane_pair]?.lane ?? s.actual_lane_pair) ?? s.lane_pair;
         if (s.match) {
           if (!a || !b) {
             const { error } = await supabase.from("matches").delete().eq("id", s.match.id);
@@ -217,7 +223,7 @@ function AdminSchedule() {
                 team_a_id: a,
                 team_b_id: b,
                 is_bye: false,
-                lane_pair: s.lane_pair,
+                lane_pair: lane,
                 sort_order: i + 1,
               })
               .eq("id", s.match.id);
@@ -229,7 +235,7 @@ function AdminSchedule() {
             team_a_id: a,
             team_b_id: b,
             is_bye: false,
-            lane_pair: s.lane_pair,
+            lane_pair: lane,
             sort_order: i + 1,
             status: "scheduled",
           });
@@ -270,6 +276,23 @@ function AdminSchedule() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  /** Lane-pair metadata only. Allowed on finalized matches; scores/teams untouched. */
+  const setLanePair = useMutation({
+    mutationFn: async ({ id, lane }: { id: string; lane: string }) => {
+      const parsed = parseLanePair(lane);
+      if (!parsed) throw new Error("Enter two consecutive lanes, e.g. 31-32.");
+      const { error } = await supabase.from("matches").update({ lane_pair: parsed }).eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Actual lane pair updated");
+      setDraftWeekId("");
+      qc.invalidateQueries({ queryKey: ["season-match-summary"] });
+      qc.invalidateQueries({ queryKey: ["lane-stats"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const remapOrphan = useMutation({
     mutationFn: async ({ id, lane }: { id: string; lane: string }) => {
       const { error } = await supabase.from("matches").update({ lane_pair: lane }).eq("id", id);
@@ -282,6 +305,7 @@ function AdminSchedule() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
 
   const removeMatch = useMutation({
