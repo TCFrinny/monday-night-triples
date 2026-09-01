@@ -17,18 +17,24 @@ export type SlotMatch = {
 };
 
 export type LaneSlot = {
+  /** Generated (season default) pair for this slot. */
   lane_pair: string;
   index: number;
   match: SlotMatch | null;
   locked: boolean;
+  /** The pair actually stored on the match, or the default for empty slots. */
+  actual_lane_pair: string;
+  /** True when the stored pair differs from the generated default. */
+  overridden: boolean;
 };
 
 export type WeekSlotPlan = {
   slots: LaneSlot[];
-  /** Existing matches whose lane_pair is not one of the generated slots. */
+  /** Existing matches that could not be placed in any slot (structural conflict). */
   orphans: SlotMatch[];
   byeCount: number;
 };
+
 
 /** Parses admin input into a positive integer lane number, or null. */
 export function parseStartingLane(value: string | number | null | undefined): number | null {
