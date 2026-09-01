@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildWeekSlots,
   hasBye,
+  laneOrderKey,
+  sortMatchesByActualLane,
   laneSlots,
   lanePairLabel,
   matchupsPerWeek,
