@@ -227,7 +227,9 @@ export function ballToken(frame: Frame, frameIndex: number, ballIndex: number): 
   const remaining = pinsRemaining(frame, ballIndex, isTenth);
   const rackPos = rackBallIndex(frame, ballIndex, isTenth);
   let token: string;
-  if (ball.pins === 10) token = "X";
+  // A full-rack clear is only a STRIKE on the first ball of a rack. Clearing
+  // all ten on the second ball (e.g. after a gutter) is a spare.
+  if (ball.pins === 10 && rackPos === 0) token = "X";
   else if (ball.pins === remaining && ball.pins > 0 && rackPos === 1) token = "/";
   else if (ball.pins === 0) token = "-";
   else token = String(ball.pins);
