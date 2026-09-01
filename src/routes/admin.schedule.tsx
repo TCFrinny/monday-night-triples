@@ -291,7 +291,7 @@ function AdminSchedule() {
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      toast.success("Actual lane pair updated");
+      toast.success("Actual lane pair updated — Lane Data re-attributed to the new pair");
       setDraftWeekId("");
       qc.invalidateQueries({ queryKey: ["season-match-summary"] });
       qc.invalidateQueries({ queryKey: ["lane-stats"] });

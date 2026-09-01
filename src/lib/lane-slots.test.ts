@@ -198,3 +198,53 @@ describe("resolveActualLane (draft fallback)", () => {
     ).toMatch(/two matchups/);
   });
 });
+
+describe("actual lane-pair ordering (public schedule)", () => {
+  it("orders matchups ascending by the current actual lane pair", () => {
+    const rows = [
+      { id: "a", lane_pair: "29-30", sort_order: 1 },
+      { id: "b", lane_pair: "45-46", sort_order: 2 },
+      { id: "c", lane_pair: "31-32", sort_order: 3 },
+      { id: "d", lane_pair: "47-48", sort_order: 7 },
+      { id: "e", lane_pair: "41-42", sort_order: 8 },
+    ];
+    expect(sortMatchesByActualLane(rows).map((r) => r.lane_pair)).toEqual([
+      "29-30",
+      "31-32",
+      "41-42",
+      "45-46",
+      "47-48",
+    ]);
+  });
+
+  it("ignores sort_order when the lane was overridden", () => {
+    const rows = [
+      { id: "a", lane_pair: "45-46", sort_order: 1 },
+      { id: "b", lane_pair: "29-30", sort_order: 9 },
+    ];
+    expect(sortMatchesByActualLane(rows).map((r) => r.id)).toEqual(["b", "a"]);
+  });
+
+  it("sorts byes and malformed/null lanes last with deterministic fallback", () => {
+    const rows = [
+      { id: "bye", lane_pair: null, is_bye: true, sort_order: 1 },
+      { id: "bad", lane_pair: "abc", sort_order: 5 },
+      { id: "null", lane_pair: null, sort_order: 2 },
+      { id: "ok", lane_pair: "33-34", sort_order: 9 },
+    ];
+    expect(sortMatchesByActualLane(rows).map((r) => r.id)).toEqual(["ok", "null", "bad", "bye"]);
+  });
+
+  it("does not mutate the input array", () => {
+    const rows = [{ id: "a", lane_pair: "45-46" }, { id: "b", lane_pair: "29-30" }];
+    sortMatchesByActualLane(rows);
+    expect(rows.map((r) => r.id)).toEqual(["a", "b"]);
+  });
+
+  it("laneOrderKey parses the leading lane and rejects malformed pairs", () => {
+    expect(laneOrderKey("29-30")).toBe(29);
+    expect(laneOrderKey("31 - 32")).toBe(31);
+    expect(laneOrderKey("31-33")).toBe(Number.POSITIVE_INFINITY);
+    expect(laneOrderKey(null)).toBe(Number.POSITIVE_INFINITY);
+  });
+});
