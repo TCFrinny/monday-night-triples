@@ -4,6 +4,7 @@ import {
   classifyFrame,
   emptyGame,
   parseBallToken,
+  scoreGame,
   type Frame,
 } from "./duckpin";
 
@@ -103,5 +104,62 @@ describe("parseBallToken", () => {
     const g = emptyGame();
     g[0] = frame(9);
     expect(parseBallToken("/", g, 0, 1).ball).toEqual({ pins: 1 });
+  });
+});
+
+describe("gutter then spare (- /)", () => {
+  it("accepts / on ball 2 after a gutter ball", () => {
+    const g = emptyGame();
+    g[0] = frame(0);
+    const res = parseBallToken("/", g, 0, 1);
+    expect(res.error).toBeNull();
+    expect(res.ball).toEqual({ pins: 10 });
+  });
+
+  it("displays - / and classifies as a spare", () => {
+    const f = frame(0, 10);
+    expect(tokens(f)).toEqual(["-", "/", ""]);
+    expect(classifyFrame(f, false)).toBe("spare");
+  });
+
+  it("scores - / as 10 plus the next ball", () => {
+    const g = emptyGame();
+    g[0] = frame(0, 10);
+    g[1] = frame(7, 2, 0);
+    const scored = scoreGame(g);
+    expect(scored.frames[0]!.frameScore).toBe(17);
+    expect(scored.frames[0]!.cumulative).toBe(17);
+    expect(scored.total).toBe(26);
+  });
+
+  it("still accepts ordinary 7 /", () => {
+    const g = emptyGame();
+    g[0] = frame(7);
+    expect(parseBallToken("/", g, 0, 1).ball).toEqual({ pins: 3 });
+  });
+
+  it("rejects / when the rack is already cleared", () => {
+    const g = emptyGame();
+    g[0] = frame(9, 1);
+    const res = parseBallToken("/", g, 0, 2);
+    expect(res.ball).toBeNull();
+    expect(res.error).toBeTruthy();
+  });
+
+  it("rejects X on ball 2 of a rack even with all pins standing", () => {
+    const g = emptyGame();
+    g[0] = frame(0);
+    expect(parseBallToken("x", g, 0, 1).ball).toBeNull();
+  });
+
+  it("handles - / in the 10th frame with a bonus ball", () => {
+    const g = emptyGame();
+    g[9] = frame(0);
+    expect(parseBallToken("/", g, 9, 1).ball).toEqual({ pins: 10 });
+    const f = frame(0, 10, 6);
+    expect(tokens(f, 9)).toEqual(["-", "/", "6"]);
+    const g2 = emptyGame();
+    g2[9] = f;
+    expect(scoreGame(g2).frames[9]!.frameScore).toBe(16);
   });
 });

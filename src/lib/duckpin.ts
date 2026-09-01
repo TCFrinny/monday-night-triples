@@ -227,7 +227,9 @@ export function ballToken(frame: Frame, frameIndex: number, ballIndex: number): 
   const remaining = pinsRemaining(frame, ballIndex, isTenth);
   const rackPos = rackBallIndex(frame, ballIndex, isTenth);
   let token: string;
-  if (ball.pins === 10) token = "X";
+  // A full-rack clear is only a STRIKE on the first ball of a rack. Clearing
+  // all ten on the second ball (e.g. after a gutter) is a spare.
+  if (ball.pins === 10 && rackPos === 0) token = "X";
   else if (ball.pins === remaining && ball.pins > 0 && rackPos === 1) token = "/";
   else if (ball.pins === 0) token = "-";
   else token = String(ball.pins);
@@ -254,19 +256,23 @@ export function parseBallToken(
   const frame = frames[frameIndex] ?? { balls: [] };
   const remaining = pinsRemaining(frame, ballIndex, isTenth);
 
+  const rackPos = rackBallIndex(frame, ballIndex, isTenth);
   let pins: number;
   if (core === "x") {
-    pins = remaining === 10 ? 10 : -1;
-    if (pins === -1) return { ball: null, error: "A strike needs a full rack." };
+    if (remaining !== 10 || rackPos !== 0)
+      return { ball: null, error: "A strike needs a full rack on the first ball." };
+    pins = 10;
   } else if (core === "/") {
     if (ballIndex === 0) return { ball: null, error: "A spare can never be on ball 1." };
-    if (remaining === 10) return { ball: null, error: "Nothing left to spare." };
-    if (rackBallIndex(frame, ballIndex, isTenth) !== 1)
+    // A spare clears whatever is STILL STANDING — including a full rack after a
+    // gutter ball. Only an already-cleared rack has nothing to spare.
+    if (remaining === 0) return { ball: null, error: "Nothing left to spare." };
+    if (rackPos !== 1)
       return { ball: null, error: "Ball 3 clears are 10-boxes — enter the pin count." };
     pins = remaining;
-
   } else if (core === "-") {
     pins = 0;
+
   } else if (/^\d{1,2}$/.test(core)) {
     pins = Number(core);
   } else {
