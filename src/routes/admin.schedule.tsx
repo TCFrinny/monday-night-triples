@@ -740,9 +740,11 @@ function AdminSchedule() {
             {!!weekPlan.orphans.length && (
               <div className="mt-4 rounded-md border border-gold/50 p-3">
                 <p className="mb-2 text-sm text-gold">
-                  {weekPlan.orphans.length} existing matchup(s) sit on lane pairs outside the current
-                  lane setup. Nothing was changed — remap them deliberately below.
+                  {weekPlan.orphans.length} extra matchup(s) this week have no slot left in the
+                  current lane setup. Lane overrides are fine and are shown above — this is a
+                  structural conflict (more matchups than slots). Nothing was changed.
                 </p>
+
                 <ul className="space-y-2">
                   {weekPlan.orphans.map((m: any) => (
                     <li key={m.id} className="flex flex-wrap items-center gap-3 text-sm">
