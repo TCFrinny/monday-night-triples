@@ -14,6 +14,7 @@ import {
   parseLanePair,
   parseStartingLane,
   validateWeekAssignments,
+  sortSlotsForDisplay,
 } from "@/lib/lane-slots";
 
 import { activeSeasonQuery, rosterSpotsQuery, seasonMatchSummaryQuery, teamsQuery, weeksQuery } from "@/lib/queries";

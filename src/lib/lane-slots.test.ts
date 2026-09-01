@@ -3,6 +3,7 @@ import {
   buildWeekSlots,
   hasBye,
   laneOrderKey,
+  sortSlotsForDisplay,
   sortMatchesByActualLane,
   laneSlots,
   lanePairLabel,
@@ -248,5 +249,59 @@ describe("actual lane-pair ordering (public schedule)", () => {
     expect(laneOrderKey("31 - 32")).toBe(31);
     expect(laneOrderKey("31-33")).toBe(Number.POSITIVE_INFINITY);
     expect(laneOrderKey(null)).toBe(Number.POSITIVE_INFINITY);
+  });
+});
+
+describe("admin week editor display order", () => {
+  const slot = (lane_pair: string, actual: string | null, hasMatch: boolean, index: number) => ({
+    lane_pair,
+    index,
+    match: hasMatch ? { id: `m${index}`, lane_pair: actual, sort_order: index + 1 } : null,
+    locked: false,
+    actual_lane_pair: actual ?? lane_pair,
+    overridden: Boolean(actual) && actual !== lane_pair,
+  });
+
+  it("sorts occupied rows by actual lane pair despite stale slot/sort order", () => {
+    const slots = [
+      slot("27-28", "29-30", true, 0),
+      slot("29-30", "45-46", true, 1),
+      slot("31-32", "31-32", true, 2),
+    ];
+    expect(sortSlotsForDisplay(slots).map((s) => s.actual_lane_pair)).toEqual([
+      "29-30",
+      "31-32",
+      "45-46",
+    ]);
+  });
+
+  it("keeps each row's default-slot identity while reordering", () => {
+    const slots = [slot("27-28", "45-46", true, 0), slot("29-30", "29-30", true, 1)];
+    expect(sortSlotsForDisplay(slots).map((s) => s.lane_pair)).toEqual(["29-30", "27-28"]);
+  });
+
+  it("places empty slots after occupied rows in default-lane order", () => {
+    const slots = [
+      slot("27-28", null, false, 0),
+      slot("29-30", "45-46", true, 1),
+      slot("31-32", null, false, 2),
+    ];
+    expect(sortSlotsForDisplay(slots).map((s) => s.lane_pair)).toEqual([
+      "29-30",
+      "27-28",
+      "31-32",
+    ]);
+  });
+
+  it("uses the in-progress draft override when ordering", () => {
+    const slots = [slot("27-28", "27-28", true, 0), slot("29-30", "29-30", true, 1)];
+    const ordered = sortSlotsForDisplay(slots, (s) => (s.lane_pair === "27-28" ? "41-42" : ""));
+    expect(ordered.map((s) => s.lane_pair)).toEqual(["29-30", "27-28"]);
+  });
+
+  it("falls back to stored lane when the draft field is blank mid-edit", () => {
+    const slots = [slot("27-28", "45-46", true, 0), slot("29-30", "29-30", true, 1)];
+    const ordered = sortSlotsForDisplay(slots, () => "");
+    expect(ordered.map((s) => s.lane_pair)).toEqual(["29-30", "27-28"]);
   });
 });
