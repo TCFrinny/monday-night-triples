@@ -14,6 +14,7 @@ import {
   parseLanePair,
   parseStartingLane,
   validateWeekAssignments,
+  sortMatchesByActualLane,
   sortSlotsForDisplay,
 } from "@/lib/lane-slots";
 
@@ -800,7 +801,9 @@ function AdminSchedule() {
 
         <div className="space-y-4">
           {(weeks ?? []).map((w: any) => {
-            const rows = (matches ?? []).filter((m: any) => m.weeks.id === w.id);
+            const rows = sortMatchesByActualLane(
+              (matches ?? []).filter((m: any) => m.weeks.id === w.id),
+            );
             if (!rows.length) return null;
             return (
               <div key={w.id}>
