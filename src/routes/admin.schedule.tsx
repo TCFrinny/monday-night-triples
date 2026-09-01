@@ -182,7 +182,8 @@ function AdminSchedule() {
   );
   const existingBye = weekMatches.find((m: any) => m.is_bye) ?? null;
 
-  if (weekId && draftWeekId !== weekId) {
+  useEffect(() => {
+    if (!weekId || draftWeekId === weekId) return;
     setDraftWeekId(weekId);
     const next: Record<string, { a: string; b: string; lane: string }> = {};
     for (const s of weekPlan.slots) {
@@ -194,13 +195,13 @@ function AdminSchedule() {
     }
     setDraft(next);
     setByeTeam(existingBye?.team_a_id ?? "");
-  }
+  }, [weekId, draftWeekId, weekPlan, existingBye]);
 
   const assignments = weekPlan.slots.map((s) => ({
     lane_pair: s.lane_pair,
-    team_a_id: draft[s.lane_pair]?.a ?? "",
-    team_b_id: draft[s.lane_pair]?.b ?? "",
-    actual_lane_pair: draft[s.lane_pair]?.lane ?? s.actual_lane_pair,
+    team_a_id: draft[s.lane_pair]?.a ?? s.match?.team_a_id ?? "",
+    team_b_id: draft[s.lane_pair]?.b ?? s.match?.team_b_id ?? "",
+    actual_lane_pair: resolveActualLane(draft[s.lane_pair]?.lane, s.actual_lane_pair, s.lane_pair),
     locked: s.locked,
   }));
   const weekError = weekId ? validateWeekAssignments(assignments, byeTeam || null) : null;
