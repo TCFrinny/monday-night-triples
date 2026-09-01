@@ -279,6 +279,7 @@ function AdminSchedule() {
       toast.success("Week matchups saved");
       setDraftWeekId("");
       qc.invalidateQueries({ queryKey: ["season-match-summary"] });
+      qc.invalidateQueries({ queryKey: ["lane-stats"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -306,9 +307,10 @@ function AdminSchedule() {
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      toast.success("Lane pair updated");
+      toast.success("Lane pair updated — Lane Data re-attributed");
       setDraftWeekId("");
       qc.invalidateQueries({ queryKey: ["season-match-summary"] });
+      qc.invalidateQueries({ queryKey: ["lane-stats"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
