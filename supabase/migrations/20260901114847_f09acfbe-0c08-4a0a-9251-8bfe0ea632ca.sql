@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.matches_lane_pair_refresh() FROM PUBLIC, anon, authenticated;
