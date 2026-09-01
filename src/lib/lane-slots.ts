@@ -235,3 +235,40 @@ export function validateActualLanes(
   return null;
 }
 
+
+/** Sort key for a match's ACTUAL lane pair: leading lane number, or Infinity. */
+export function laneOrderKey(lane: string | null | undefined): number {
+  const parsed = parseLanePair(lane ?? null);
+  if (!parsed) return Number.POSITIVE_INFINITY;
+  return Number(parsed.split("-")[0]);
+}
+
+export type LaneOrderable = {
+  id?: string | null;
+  lane_pair?: string | null;
+  sort_order?: number | null;
+  is_bye?: boolean | null;
+};
+
+/**
+ * Natural ordering of a week's matchups by the CURRENT actual lane pair.
+ * Byes and missing/malformed lanes sort last, then fall back deterministically
+ * to sort_order and finally id. Pure — never mutates the input.
+ */
+export function compareByActualLane(a: LaneOrderable, b: LaneOrderable): number {
+  const ba = a.is_bye ? 1 : 0;
+  const bb = b.is_bye ? 1 : 0;
+  if (ba !== bb) return ba - bb;
+  const ka = laneOrderKey(a.lane_pair);
+  const kb = laneOrderKey(b.lane_pair);
+  if (ka !== kb) return ka - kb;
+  const sa = a.sort_order ?? Number.POSITIVE_INFINITY;
+  const sb = b.sort_order ?? Number.POSITIVE_INFINITY;
+  if (sa !== sb) return sa - sb;
+  return String(a.id ?? "").localeCompare(String(b.id ?? ""));
+}
+
+/** Returns a new array of matchups ordered by actual lane pair. */
+export function sortMatchesByActualLane<T extends LaneOrderable>(matches: readonly T[]): T[] {
+  return [...matches].sort(compareByActualLane);
+}
