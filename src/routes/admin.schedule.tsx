@@ -584,7 +584,7 @@ function AdminSchedule() {
 
         {!!weekId && !!activePairs.length && (
           <div className="space-y-2">
-            {weekPlan.slots.map((s) => {
+            {sortSlotsForDisplay(weekPlan.slots, (s) => draft[s.lane_pair]?.lane).map((s) => {
               const d = draft[s.lane_pair] ?? {
                 a: s.match?.team_a_id ?? "",
                 b: s.match?.team_b_id ?? "",

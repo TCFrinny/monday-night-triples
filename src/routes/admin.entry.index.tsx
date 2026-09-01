@@ -15,7 +15,10 @@ function EntryIndex() {
   const [weekId, setWeekId] = useState("");
 
   const selected = weekId || (weeks ?? [])[0]?.id || "";
-  const rows = (matches ?? []).filter((m: any) => m.weeks.id === selected);
+  const rows = sortMatchesByActualLane(
+    (matches ?? []).filter((m: any) => m.weeks.id === selected),
+  );
+
 
   if (!season) return <p className="text-sm text-muted-foreground">Create a season first.</p>;
 
