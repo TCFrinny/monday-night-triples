@@ -10,9 +10,11 @@ import {
   hasBye,
   laneSlots,
   matchupsPerWeek,
+  parseLanePair,
   parseStartingLane,
   validateWeekAssignments,
 } from "@/lib/lane-slots";
+
 import { activeSeasonQuery, rosterSpotsQuery, seasonMatchSummaryQuery, teamsQuery, weeksQuery } from "@/lib/queries";
 import { rosterForWeek } from "@/lib/roster";
 import { isPositionRound, thirdForWeek } from "@/lib/league";
@@ -45,7 +47,7 @@ function AdminSchedule() {
   const [skipDates, setSkipDates] = useState<string[]>([]);
   const [weekId, setWeekId] = useState("");
   const [laneDraft, setLaneDraft] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Record<string, { a: string; b: string }>>({});
+  const [draft, setDraft] = useState<Record<string, { a: string; b: string; lane: string }>>({});
   const [byeTeam, setByeTeam] = useState("");
   const [draftWeekId, setDraftWeekId] = useState("");
 
