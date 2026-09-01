@@ -213,9 +213,11 @@ function AdminSchedule() {
       if (weekError) throw new Error(weekError);
       for (const [i, s] of weekPlan.slots.entries()) {
         if (s.locked) continue;
-        const a = draft[s.lane_pair]?.a ?? "";
-        const b = draft[s.lane_pair]?.b ?? "";
-        const lane = parseLanePair(draft[s.lane_pair]?.lane ?? s.actual_lane_pair) ?? s.lane_pair;
+        const a = draft[s.lane_pair]?.a ?? s.match?.team_a_id ?? "";
+        const b = draft[s.lane_pair]?.b ?? s.match?.team_b_id ?? "";
+        const lane =
+          parseLanePair(resolveActualLane(draft[s.lane_pair]?.lane, s.actual_lane_pair, s.lane_pair)) ??
+          s.lane_pair;
         if (s.match) {
           if (!a || !b) {
             const { error } = await supabase.from("matches").delete().eq("id", s.match.id);
