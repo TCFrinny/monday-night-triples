@@ -7,6 +7,7 @@ import {
   matchupsPerWeek,
   parseLanePair,
   parseStartingLane,
+  resolveActualLane,
   validateActualLanes,
   validateWeekAssignments,
 } from "./lane-slots";
@@ -160,5 +161,40 @@ describe("lane slots", () => {
         "t9",
       ),
     ).toBeNull();
+  });
+});
+
+describe("resolveActualLane (draft fallback)", () => {
+  it("blank or undefined draft falls back to stored, then default", () => {
+    expect(resolveActualLane("", "31-32", "27-28")).toBe("31-32");
+    expect(resolveActualLane(undefined, "", "27-28")).toBe("27-28");
+    expect(resolveActualLane("   ", null, "27-28")).toBe("27-28");
+  });
+
+  it("keeps a valid scheduled override and a malformed nonblank entry", () => {
+    expect(resolveActualLane("47-48", "43-44", "43-44")).toBe("47-48");
+    expect(resolveActualLane("47-49", "43-44", "43-44")).toBe("47-49");
+    expect(parseLanePair(resolveActualLane("47-49", "43-44", "43-44"))).toBeNull();
+  });
+
+  it("blank draft never produces a false invalid-lane error, but malformed does", () => {
+    const row = (lane: string) => ({
+      lane_pair: "43-44",
+      actual_lane_pair: resolveActualLane(lane, "43-44", "43-44"),
+      team_a_id: "t1",
+      team_b_id: "t2",
+    });
+    expect(validateActualLanes([row("")])).toBeNull();
+    expect(validateActualLanes([row("47-48")])).toBeNull();
+    expect(validateActualLanes([row("47-49")])).toMatch(/not a valid pair/);
+  });
+
+  it("still blocks duplicates produced through the fallback", () => {
+    expect(
+      validateActualLanes([
+        { lane_pair: "25-26", actual_lane_pair: resolveActualLane("", "47-48", "25-26"), team_a_id: "t1", team_b_id: "t2" },
+        { lane_pair: "43-44", actual_lane_pair: resolveActualLane("47-48", "43-44", "43-44"), team_a_id: "t3", team_b_id: "t4" },
+      ]),
+    ).toMatch(/two matchups/);
   });
 });

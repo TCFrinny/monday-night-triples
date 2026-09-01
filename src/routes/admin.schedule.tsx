@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { sortTeamsByName } from "@/lib/team-order";
 import {
   buildWeekSlots,
+  resolveActualLane,
   hasBye,
   laneSlots,
   matchupsPerWeek,
@@ -182,7 +183,8 @@ function AdminSchedule() {
   );
   const existingBye = weekMatches.find((m: any) => m.is_bye) ?? null;
 
-  if (weekId && draftWeekId !== weekId) {
+  useEffect(() => {
+    if (!weekId || draftWeekId === weekId) return;
     setDraftWeekId(weekId);
     const next: Record<string, { a: string; b: string; lane: string }> = {};
     for (const s of weekPlan.slots) {
@@ -194,13 +196,13 @@ function AdminSchedule() {
     }
     setDraft(next);
     setByeTeam(existingBye?.team_a_id ?? "");
-  }
+  }, [weekId, draftWeekId, weekPlan, existingBye]);
 
   const assignments = weekPlan.slots.map((s) => ({
     lane_pair: s.lane_pair,
-    team_a_id: draft[s.lane_pair]?.a ?? "",
-    team_b_id: draft[s.lane_pair]?.b ?? "",
-    actual_lane_pair: draft[s.lane_pair]?.lane ?? s.actual_lane_pair,
+    team_a_id: draft[s.lane_pair]?.a ?? s.match?.team_a_id ?? "",
+    team_b_id: draft[s.lane_pair]?.b ?? s.match?.team_b_id ?? "",
+    actual_lane_pair: resolveActualLane(draft[s.lane_pair]?.lane, s.actual_lane_pair, s.lane_pair),
     locked: s.locked,
   }));
   const weekError = weekId ? validateWeekAssignments(assignments, byeTeam || null) : null;
@@ -211,9 +213,11 @@ function AdminSchedule() {
       if (weekError) throw new Error(weekError);
       for (const [i, s] of weekPlan.slots.entries()) {
         if (s.locked) continue;
-        const a = draft[s.lane_pair]?.a ?? "";
-        const b = draft[s.lane_pair]?.b ?? "";
-        const lane = parseLanePair(draft[s.lane_pair]?.lane ?? s.actual_lane_pair) ?? s.lane_pair;
+        const a = draft[s.lane_pair]?.a ?? s.match?.team_a_id ?? "";
+        const b = draft[s.lane_pair]?.b ?? s.match?.team_b_id ?? "";
+        const lane =
+          parseLanePair(resolveActualLane(draft[s.lane_pair]?.lane, s.actual_lane_pair, s.lane_pair)) ??
+          s.lane_pair;
         if (s.match) {
           if (!a || !b) {
             const { error } = await supabase.from("matches").delete().eq("id", s.match.id);
@@ -581,11 +585,18 @@ function AdminSchedule() {
         {!!weekId && !!activePairs.length && (
           <div className="space-y-2">
             {weekPlan.slots.map((s) => {
-              const d = draft[s.lane_pair] ?? { a: "", b: "", lane: s.actual_lane_pair };
+              const d = draft[s.lane_pair] ?? {
+                a: s.match?.team_a_id ?? "",
+                b: s.match?.team_b_id ?? "",
+                lane: s.actual_lane_pair,
+              };
               const set = (patch: Partial<{ a: string; b: string; lane: string }>) =>
                 setDraft((prev) => ({ ...prev, [s.lane_pair]: { ...d, ...patch } }));
-              const laneValue = d.lane ?? s.actual_lane_pair;
-              const parsedLanePair = parseLanePair(laneValue);
+              // Raw field text (may be blank while the admin retypes a pair).
+              const laneValue = d.lane ?? "";
+              // Effective lane used for validation/overrides: blank falls back to stored/default.
+              const effectiveLane = resolveActualLane(laneValue, s.actual_lane_pair, s.lane_pair);
+              const parsedLanePair = parseLanePair(effectiveLane);
               const isOverride = Boolean(parsedLanePair) && parsedLanePair !== s.lane_pair;
               const laneInvalid = laneValue.trim() !== "" && !parsedLanePair;
               const finalizedLaneChanged = s.locked && parsedLanePair !== s.actual_lane_pair;
@@ -614,7 +625,7 @@ function AdminSchedule() {
                         placeholder={s.lane_pair}
                         onChange={(e) => set({ lane: e.target.value })}
                         onBlur={() => {
-                          const p = parseLanePair(laneValue);
+                          const p = parseLanePair(effectiveLane);
                           if (p && p !== laneValue) set({ lane: p });
                         }}
                       />
@@ -623,7 +634,7 @@ function AdminSchedule() {
                           Override
                         </span>
                       )}
-                      {laneValue !== s.lane_pair && (
+                      {effectiveLane !== s.lane_pair && (
                         <Button
                           type="button"
                           variant="ghost"
