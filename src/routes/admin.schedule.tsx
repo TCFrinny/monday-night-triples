@@ -625,7 +625,7 @@ function AdminSchedule() {
                         placeholder={s.lane_pair}
                         onChange={(e) => set({ lane: e.target.value })}
                         onBlur={() => {
-                          const p = parseLanePair(laneValue);
+                          const p = parseLanePair(effectiveLane);
                           if (p && p !== laneValue) set({ lane: p });
                         }}
                       />
@@ -634,7 +634,7 @@ function AdminSchedule() {
                           Override
                         </span>
                       )}
-                      {laneValue !== s.lane_pair && (
+                      {effectiveLane !== s.lane_pair && (
                         <Button
                           type="button"
                           variant="ghost"
