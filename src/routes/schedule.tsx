@@ -9,6 +9,7 @@ import { rosterForWeek, type RosterSpotRow } from "@/lib/roster";
 import { useProjections } from "@/hooks/use-projections";
 import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 import { formatDateOnly } from "@/lib/schedule-dates";
+import { sortMatchesByActualLane } from "@/lib/lane-slots";
 
 export const Route = createFileRoute("/schedule")({
   head: () => ({
