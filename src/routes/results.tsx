@@ -12,6 +12,7 @@ import {
 import { formatPoints } from "@/lib/league";
 import { resolveGameSnapshot } from "@/lib/results";
 import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
+import { sortMatchesByActualLane } from "@/lib/lane-slots";
 
 
 export const Route = createFileRoute("/results")({
