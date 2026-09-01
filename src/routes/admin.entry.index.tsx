@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { activeSeasonQuery, seasonMatchSummaryQuery, weeksQuery } from "@/lib/queries";
+import { sortMatchesByActualLane } from "@/lib/lane-slots";
 import { EmptyState } from "@/components/league/ui";
 
 export const Route = createFileRoute("/admin/entry/")({
@@ -15,7 +16,10 @@ function EntryIndex() {
   const [weekId, setWeekId] = useState("");
 
   const selected = weekId || (weeks ?? [])[0]?.id || "";
-  const rows = (matches ?? []).filter((m: any) => m.weeks.id === selected);
+  const rows = sortMatchesByActualLane(
+    (matches ?? []).filter((m: any) => m.weeks.id === selected),
+  );
+
 
   if (!season) return <p className="text-sm text-muted-foreground">Create a season first.</p>;
 

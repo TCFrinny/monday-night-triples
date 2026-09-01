@@ -14,6 +14,8 @@ import {
   parseLanePair,
   parseStartingLane,
   validateWeekAssignments,
+  sortMatchesByActualLane,
+  sortSlotsForDisplay,
 } from "@/lib/lane-slots";
 
 import { activeSeasonQuery, rosterSpotsQuery, seasonMatchSummaryQuery, teamsQuery, weeksQuery } from "@/lib/queries";
@@ -278,6 +280,7 @@ function AdminSchedule() {
       toast.success("Week matchups saved");
       setDraftWeekId("");
       qc.invalidateQueries({ queryKey: ["season-match-summary"] });
+      qc.invalidateQueries({ queryKey: ["lane-stats"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -305,9 +308,10 @@ function AdminSchedule() {
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      toast.success("Lane pair updated");
+      toast.success("Lane pair updated — Lane Data re-attributed");
       setDraftWeekId("");
       qc.invalidateQueries({ queryKey: ["season-match-summary"] });
+      qc.invalidateQueries({ queryKey: ["lane-stats"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -584,7 +588,7 @@ function AdminSchedule() {
 
         {!!weekId && !!activePairs.length && (
           <div className="space-y-2">
-            {weekPlan.slots.map((s) => {
+            {sortSlotsForDisplay(weekPlan.slots, (s) => draft[s.lane_pair]?.lane).map((s) => {
               const d = draft[s.lane_pair] ?? {
                 a: s.match?.team_a_id ?? "",
                 b: s.match?.team_b_id ?? "",
@@ -797,7 +801,9 @@ function AdminSchedule() {
 
         <div className="space-y-4">
           {(weeks ?? []).map((w: any) => {
-            const rows = (matches ?? []).filter((m: any) => m.weeks.id === w.id);
+            const rows = sortMatchesByActualLane(
+              (matches ?? []).filter((m: any) => m.weeks.id === w.id),
+            );
             if (!rows.length) return null;
             return (
               <div key={w.id}>

@@ -272,3 +272,29 @@ export function compareByActualLane(a: LaneOrderable, b: LaneOrderable): number 
 export function sortMatchesByActualLane<T extends LaneOrderable>(matches: readonly T[]): T[] {
   return [...matches].sort(compareByActualLane);
 }
+
+/**
+ * Display order for the admin week editor: occupied rows ascending by their
+ * EFFECTIVE actual lane pair (draft override → stored lane → default slot),
+ * then empty slots in default-lane order. Slot identity (`lane_pair`, the
+ * default slot key used for draft state and saving) is never changed.
+ */
+export function sortSlotsForDisplay(
+  slots: readonly LaneSlot[],
+  draftLane?: (slot: LaneSlot) => string | null | undefined,
+): LaneSlot[] {
+  const effective = (s: LaneSlot) =>
+    resolveActualLane(draftLane?.(s), s.actual_lane_pair, s.lane_pair);
+  return [...slots]
+    .map((s, i) => ({ s, i }))
+    .sort((x, y) => {
+      const ox = x.s.match ? 0 : 1;
+      const oy = y.s.match ? 0 : 1;
+      if (ox !== oy) return ox - oy;
+      const kx = x.s.match ? laneOrderKey(effective(x.s)) : laneOrderKey(x.s.lane_pair);
+      const ky = y.s.match ? laneOrderKey(effective(y.s)) : laneOrderKey(y.s.lane_pair);
+      if (kx !== ky) return kx - ky;
+      return x.i - y.i;
+    })
+    .map((e) => e.s);
+}
