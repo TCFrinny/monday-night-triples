@@ -45,21 +45,87 @@ describe("lane slots", () => {
     expect(laneSlots(null, 4)).toEqual([]);
   });
 
-  it("keeps existing matchups in natural slot order and surfaces orphans", () => {
+  it("keeps existing matchups in natural slot order and treats out-of-range lanes as overrides", () => {
     const pairs = laneSlots(25, 3);
     const plan = buildWeekSlots(pairs, [
       { id: "b", lane_pair: "27-28", status: "scheduled", team_a_id: "t3", team_b_id: "t4" },
       { id: "a", lane_pair: "25-26", status: "final", team_a_id: "t1", team_b_id: "t2" },
-      { id: "x", lane_pair: "9-10", status: "scheduled", team_a_id: "t5", team_b_id: "t6" },
+      {
+        id: "x",
+        lane_pair: "9-10",
+        sort_order: 3,
+        status: "scheduled",
+        team_a_id: "t5",
+        team_b_id: "t6",
+      },
     ]);
     expect(plan.slots.map((s) => s.lane_pair)).toEqual(["25-26", "27-28", "29-30"]);
     expect(plan.slots[0]!.match?.id).toBe("a");
     expect(plan.slots[0]!.locked).toBe(true);
+    expect(plan.slots[0]!.overridden).toBe(false);
     expect(plan.slots[1]!.match?.id).toBe("b");
-    expect(plan.slots[1]!.locked).toBe(false);
-    expect(plan.slots[2]!.match).toBeNull();
+    // Maintenance override keeps its slot and its stored lane pair.
+    expect(plan.slots[2]!.match?.id).toBe("x");
+    expect(plan.slots[2]!.actual_lane_pair).toBe("9-10");
+    expect(plan.slots[2]!.overridden).toBe(true);
+    expect(plan.orphans).toEqual([]);
+  });
+
+  it("only orphans matchups with no slot left (structural conflict)", () => {
+    const plan = buildWeekSlots(laneSlots(25, 1), [
+      { id: "a", lane_pair: "25-26", status: "scheduled", team_a_id: "t1", team_b_id: "t2" },
+      { id: "x", lane_pair: "31-32", status: "scheduled", team_a_id: "t3", team_b_id: "t4" },
+    ]);
     expect(plan.orphans.map((m) => m.id)).toEqual(["x"]);
   });
+
+  it("empty slots default to the generated pair", () => {
+    const plan = buildWeekSlots(laneSlots(25, 2), []);
+    expect(plan.slots.map((s) => s.actual_lane_pair)).toEqual(["25-26", "27-28"]);
+    expect(plan.slots.every((s) => !s.overridden)).toBe(true);
+  });
+
+  it("parses and normalizes lane-pair overrides", () => {
+    expect(parseLanePair("25-26")).toBe("25-26");
+    expect(parseLanePair("  31 - 32 ")).toBe("31-32");
+    expect(parseLanePair("31")).toBe("31-32");
+    expect(parseLanePair("25-27")).toBeNull();
+    expect(parseLanePair("26-25")).toBeNull();
+    expect(parseLanePair("0-1")).toBeNull();
+    expect(parseLanePair("abc")).toBeNull();
+    expect(parseLanePair("")).toBeNull();
+    expect(parseLanePair(null)).toBeNull();
+    // Outside the generated season pairs is allowed during lane maintenance.
+    expect(parseLanePair("101-102")).toBe("101-102");
+  });
+
+  it("rejects duplicate actual lane pairs within a week, ignoring empty slots and byes", () => {
+    expect(
+      validateActualLanes([
+        { lane_pair: "25-26", actual_lane_pair: "31-32", team_a_id: "t1", team_b_id: "t2" },
+        { lane_pair: "27-28", actual_lane_pair: "31-32", team_a_id: "t3", team_b_id: "t4" },
+      ]),
+    ).toMatch(/two matchups/);
+    expect(
+      validateActualLanes([
+        { lane_pair: "25-26", actual_lane_pair: "31-32", team_a_id: "t1", team_b_id: "t2" },
+        { lane_pair: "27-28", actual_lane_pair: "27-28", team_a_id: "", team_b_id: "" },
+      ]),
+    ).toBeNull();
+    expect(
+      validateActualLanes([
+        { lane_pair: "25-26", actual_lane_pair: "25-27", team_a_id: "t1", team_b_id: "t2" },
+      ]),
+    ).toMatch(/not a valid pair/);
+    // A finalized (locked) row still occupies its lane pair.
+    expect(
+      validateActualLanes([
+        { lane_pair: "25-26", actual_lane_pair: "31-32", team_a_id: "", team_b_id: "", locked: true },
+        { lane_pair: "27-28", actual_lane_pair: "31-32", team_a_id: "t3", team_b_id: "t4" },
+      ]),
+    ).toMatch(/two matchups/);
+  });
+
 
   it("counts byes separately from lane slots", () => {
     const plan = buildWeekSlots(laneSlots(25, 2), [
