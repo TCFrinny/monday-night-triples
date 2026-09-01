@@ -10,9 +10,11 @@ import {
   hasBye,
   laneSlots,
   matchupsPerWeek,
+  parseLanePair,
   parseStartingLane,
   validateWeekAssignments,
 } from "@/lib/lane-slots";
+
 import { activeSeasonQuery, rosterSpotsQuery, seasonMatchSummaryQuery, teamsQuery, weeksQuery } from "@/lib/queries";
 import { rosterForWeek } from "@/lib/roster";
 import { isPositionRound, thirdForWeek } from "@/lib/league";
@@ -45,7 +47,7 @@ function AdminSchedule() {
   const [skipDates, setSkipDates] = useState<string[]>([]);
   const [weekId, setWeekId] = useState("");
   const [laneDraft, setLaneDraft] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Record<string, { a: string; b: string }>>({});
+  const [draft, setDraft] = useState<Record<string, { a: string; b: string; lane: string }>>({});
   const [byeTeam, setByeTeam] = useState("");
   const [draftWeekId, setDraftWeekId] = useState("");
 
@@ -182,9 +184,13 @@ function AdminSchedule() {
 
   if (weekId && draftWeekId !== weekId) {
     setDraftWeekId(weekId);
-    const next: Record<string, { a: string; b: string }> = {};
+    const next: Record<string, { a: string; b: string; lane: string }> = {};
     for (const s of weekPlan.slots) {
-      next[s.lane_pair] = { a: s.match?.team_a_id ?? "", b: s.match?.team_b_id ?? "" };
+      next[s.lane_pair] = {
+        a: s.match?.team_a_id ?? "",
+        b: s.match?.team_b_id ?? "",
+        lane: s.actual_lane_pair,
+      };
     }
     setDraft(next);
     setByeTeam(existingBye?.team_a_id ?? "");
@@ -194,6 +200,7 @@ function AdminSchedule() {
     lane_pair: s.lane_pair,
     team_a_id: draft[s.lane_pair]?.a ?? "",
     team_b_id: draft[s.lane_pair]?.b ?? "",
+    actual_lane_pair: draft[s.lane_pair]?.lane ?? s.actual_lane_pair,
     locked: s.locked,
   }));
   const weekError = weekId ? validateWeekAssignments(assignments, byeTeam || null) : null;
@@ -206,6 +213,7 @@ function AdminSchedule() {
         if (s.locked) continue;
         const a = draft[s.lane_pair]?.a ?? "";
         const b = draft[s.lane_pair]?.b ?? "";
+        const lane = parseLanePair(draft[s.lane_pair]?.lane ?? s.actual_lane_pair) ?? s.lane_pair;
         if (s.match) {
           if (!a || !b) {
             const { error } = await supabase.from("matches").delete().eq("id", s.match.id);
@@ -217,7 +225,7 @@ function AdminSchedule() {
                 team_a_id: a,
                 team_b_id: b,
                 is_bye: false,
-                lane_pair: s.lane_pair,
+                lane_pair: lane,
                 sort_order: i + 1,
               })
               .eq("id", s.match.id);
@@ -229,7 +237,7 @@ function AdminSchedule() {
             team_a_id: a,
             team_b_id: b,
             is_bye: false,
-            lane_pair: s.lane_pair,
+            lane_pair: lane,
             sort_order: i + 1,
             status: "scheduled",
           });
@@ -270,6 +278,23 @@ function AdminSchedule() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  /** Lane-pair metadata only. Allowed on finalized matches; scores/teams untouched. */
+  const setLanePair = useMutation({
+    mutationFn: async ({ id, lane }: { id: string; lane: string }) => {
+      const parsed = parseLanePair(lane);
+      if (!parsed) throw new Error("Enter two consecutive lanes, e.g. 31-32.");
+      const { error } = await supabase.from("matches").update({ lane_pair: parsed }).eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Actual lane pair updated");
+      setDraftWeekId("");
+      qc.invalidateQueries({ queryKey: ["season-match-summary"] });
+      qc.invalidateQueries({ queryKey: ["lane-stats"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const remapOrphan = useMutation({
     mutationFn: async ({ id, lane }: { id: string; lane: string }) => {
       const { error } = await supabase.from("matches").update({ lane_pair: lane }).eq("id", id);
@@ -282,6 +307,7 @@ function AdminSchedule() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
 
   const removeMatch = useMutation({
@@ -555,21 +581,95 @@ function AdminSchedule() {
         {!!weekId && !!activePairs.length && (
           <div className="space-y-2">
             {weekPlan.slots.map((s) => {
-              const d = draft[s.lane_pair] ?? { a: "", b: "" };
-              const set = (patch: Partial<{ a: string; b: string }>) =>
+              const d = draft[s.lane_pair] ?? { a: "", b: "", lane: s.actual_lane_pair };
+              const set = (patch: Partial<{ a: string; b: string; lane: string }>) =>
                 setDraft((prev) => ({ ...prev, [s.lane_pair]: { ...d, ...patch } }));
+              const laneValue = d.lane ?? s.actual_lane_pair;
+              const parsedLanePair = parseLanePair(laneValue);
+              const isOverride = Boolean(parsedLanePair) && parsedLanePair !== s.lane_pair;
+              const laneInvalid = laneValue.trim() !== "" && !parsedLanePair;
+              const finalizedLaneChanged = s.locked && parsedLanePair !== s.actual_lane_pair;
               return (
                 <div
                   key={s.lane_pair}
-                  className="flex flex-wrap items-center gap-3 rounded-md border border-border px-3 py-2 text-sm"
+                  className={`flex flex-wrap items-center gap-3 rounded-md border px-3 py-2 text-sm ${
+                    isOverride ? "border-gold/60 bg-gold/5" : "border-border"
+                  }`}
                 >
-                  <span className="stat-num w-20 text-primary">{s.lane_pair}</span>
+                  <span className="w-24 shrink-0">
+                    <span className="block font-display text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                      Default
+                    </span>
+                    <span className="stat-num text-primary">{s.lane_pair}</span>
+                  </span>
+                  <div className="shrink-0 space-y-0.5">
+                    <span className="block font-display text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                      Actual lanes
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        aria-label={`Actual lane pair for default ${s.lane_pair}`}
+                        className="w-24"
+                        value={laneValue}
+                        placeholder={s.lane_pair}
+                        onChange={(e) => set({ lane: e.target.value })}
+                        onBlur={() => {
+                          const p = parseLanePair(laneValue);
+                          if (p && p !== laneValue) set({ lane: p });
+                        }}
+                      />
+                      {isOverride && (
+                        <span className="font-display text-[10px] uppercase tracking-[0.12em] text-gold">
+                          Override
+                        </span>
+                      )}
+                      {laneValue !== s.lane_pair && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (
+                              s.locked &&
+                              !window.confirm(
+                                `Reset lanes on this FINALIZED matchup back to the default ${s.lane_pair}? Scores, teams and results are not changed.`,
+                              )
+                            )
+                              return;
+                            if (s.locked && s.match) {
+                              setLanePair.mutate({ id: s.match.id, lane: s.lane_pair });
+                            }
+                            set({ lane: s.lane_pair });
+                          }}
+                        >
+                          Reset to default
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                   {s.locked ? (
                     <span className="flex-1">
                       {(s.match as any)?.team_a?.name} vs {(s.match as any)?.team_b?.name}{" "}
                       <span className="ml-2 font-display text-[10px] uppercase tracking-[0.12em] text-gold">
-                        Final · locked
+                        Final · scores locked
                       </span>
+                      {finalizedLaneChanged && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="ml-3"
+                          disabled={!parsedLanePair || setLanePair.isPending}
+                          onClick={() => {
+                            const ok = window.confirm(
+                              `This matchup is FINALIZED. Change its lane pair from ${s.actual_lane_pair} to ${parsedLanePair}? Only lane metadata changes — scores, teams and points stay exactly as they are. Lane Data will re-attribute these games.`,
+                            );
+                            if (ok && s.match) setLanePair.mutate({ id: s.match.id, lane: parsedLanePair! });
+                          }}
+                        >
+                          Update lanes
+                        </Button>
+                      )}
                     </span>
                   ) : (
                     <>
@@ -605,9 +705,15 @@ function AdminSchedule() {
                       </span>
                     </>
                   )}
+                  {laneInvalid && (
+                    <span className="w-full text-xs text-destructive">
+                      Use two consecutive lanes, e.g. 31-32 (or just type 31).
+                    </span>
+                  )}
                 </div>
               );
             })}
+
 
             {weekHasBye && (
               <div className="flex flex-wrap items-center gap-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
@@ -634,9 +740,11 @@ function AdminSchedule() {
             {!!weekPlan.orphans.length && (
               <div className="mt-4 rounded-md border border-gold/50 p-3">
                 <p className="mb-2 text-sm text-gold">
-                  {weekPlan.orphans.length} existing matchup(s) sit on lane pairs outside the current
-                  lane setup. Nothing was changed — remap them deliberately below.
+                  {weekPlan.orphans.length} extra matchup(s) this week have no slot left in the
+                  current lane setup. Lane overrides are fine and are shown above — this is a
+                  structural conflict (more matchups than slots). Nothing was changed.
                 </p>
+
                 <ul className="space-y-2">
                   {weekPlan.orphans.map((m: any) => (
                     <li key={m.id} className="flex flex-wrap items-center gap-3 text-sm">
