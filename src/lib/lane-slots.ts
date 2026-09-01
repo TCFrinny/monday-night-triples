@@ -90,6 +90,25 @@ export function parseLanePair(value: string | number | null | undefined): string
   return lanePairLabel(a);
 }
 
+/**
+ * Resolves the lane pair an editor row should use.
+ * A blank/undefined draft value (the admin cleared the field mid-edit) falls back
+ * to the stored actual lane, then to the generated default — it is never treated
+ * as an invalid empty lane. A non-blank malformed entry is returned as-is so
+ * validation can reject it.
+ */
+export function resolveActualLane(
+  draftLane: string | null | undefined,
+  storedLane: string | null | undefined,
+  defaultLane: string,
+): string {
+  const draft = (draftLane ?? "").trim();
+  if (draft) return draft;
+  const stored = (storedLane ?? "").trim();
+  if (stored) return stored;
+  return defaultLane;
+}
+
 /** Builds the week editor rows, keeping existing matches attached to their slot. */
 export function buildWeekSlots(pairs: readonly string[], matches: readonly SlotMatch[]): WeekSlotPlan {
   const used = new Set<string>();
