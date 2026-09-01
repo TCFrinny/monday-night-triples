@@ -123,8 +123,11 @@ function SchedulePage() {
       if (!map.has(wn)) map.set(wn, []);
       map.get(wn)!.push(m);
     }
+    // Present matchups in natural ACTUAL lane-pair order, not stale sort_order.
+    for (const [wn, list] of map) map.set(wn, sortMatchesByActualLane(list));
     return map;
   }, [matches]);
+
 
   const firstIncomplete =
     (weeks ?? []).find((w: any) => {

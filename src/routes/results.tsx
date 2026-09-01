@@ -58,9 +58,10 @@ function ResultsPage() {
   const [weekNumber, setWeekNumber] = useState<number | null>(null);
   const current = weekNumber ?? finalWeeks[0] ?? null;
   const week = (weeks ?? []).find((w: any) => w.week_number === current);
-  const weekMatches = (matches ?? []).filter(
-    (m: any) => m.weeks.week_number === current && m.status === "final",
+  const weekMatches = sortMatchesByActualLane(
+    (matches ?? []).filter((m: any) => m.weeks.week_number === current && m.status === "final"),
   );
+
 
   if (!current) {
     return (
