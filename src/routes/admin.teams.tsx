@@ -15,6 +15,8 @@ import {
   activeTeamByBowler,
   currentRoster,
   currentWeekNumber,
+  rosterStartWeek,
+  teamHasRosterHistory,
   type RosterSpotRow,
 } from "@/lib/roster";
 import { formatAverage, slugify } from "@/lib/league";
