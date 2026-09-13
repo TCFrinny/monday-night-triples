@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  applicableAverage,
   computeMatchPoints,
+  priorAveragesBefore,
   formatGamesBehind,
   formatRecord,
   formatRecordValue,
