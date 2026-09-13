@@ -272,6 +272,10 @@ function TeamManager({ seasonId }: { seasonId: string }) {
   const { data: weeks } = useQuery(weeksQuery(seasonId));
   const { data: matches } = useQuery(seasonMatchSummaryQuery(seasonId));
   const [teamName, setTeamName] = useState("");
+  // Per-team opt-in: a brand-new team's first roster starts at League Week 1
+  // (needed for a Week 1 makeup). Defaults on, and is only offered to teams
+  // with no roster history at all.
+  const [weekOneStart, setWeekOneStart] = useState<Record<string, boolean>>({});
 
   const week = currentWeekNumber(weeks as any, matches as any);
   const takenBy = activeTeamByBowler(spots as any);
