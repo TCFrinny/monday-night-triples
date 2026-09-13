@@ -61,3 +61,32 @@ export function currentWeekNumber(
   }
   return list[list.length - 1]?.week_number ?? 1;
 }
+
+/** Has this team ever had a roster assignment (current or historical)? */
+export function teamHasRosterHistory(
+  spots: RosterSpotRow[] | null | undefined,
+  teamId: string,
+): boolean {
+  return (spots ?? []).some((s) => s.team_id === teamId);
+}
+
+/**
+ * Week a roster assignment should take effect from.
+ *
+ * Established teams always start at the current league week, so historical
+ * rosters are never rewritten. A brand-new team with no roster history at all
+ * may instead start at week 1 — needed when a team added mid-season still has
+ * to make up League Week 1 (the makeup counts as Week 1 whatever date it is
+ * physically bowled). The choice is explicit; it is never applied to a team
+ * that already has history.
+ */
+export function rosterStartWeek(input: {
+  hasHistory: boolean;
+  currentWeek: number;
+  /** Admin opt-in: seed this new team's first roster from week 1. */
+  fromWeekOne?: boolean;
+}): number {
+  const current = Math.max(1, Math.trunc(input.currentWeek || 1));
+  if (input.hasHistory) return current;
+  return input.fromWeekOne ? 1 : current;
+}
