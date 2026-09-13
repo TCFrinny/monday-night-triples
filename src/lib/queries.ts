@@ -301,6 +301,28 @@ export const seasonLineupGamesQuery = (seasonId: string | undefined) =>
   });
 
 
+/**
+ * Every completed non-blind game in the season tagged with its LEAGUE week.
+ * Used to derive the games/average a bowler had before a given league week,
+ * so a delayed makeup (e.g. a Week 1 match bowled after Week 4) still uses
+ * the averages that applied on that league week.
+ */
+export const seasonGamesByWeekQuery = (seasonId: string | undefined) =>
+  queryOptions({
+    queryKey: ["season-games-by-week", seasonId],
+    enabled: Boolean(seasonId),
+    queryFn: async () =>
+      unwrap(
+        supabase
+          .from("match_lineups")
+          .select(
+            "bowler_id, participation, matches!inner(status, weeks!inner(season_id, week_number)), bowler_games(scratch_score, is_complete, is_blind)",
+          )
+          .eq("matches.weeks.season_id", seasonId!)
+          .eq("matches.status", "final"),
+      ),
+  });
+
 /** Lane-pair performance for a scope ("full" | "third_n" | "week_n"). */
 export const laneStatsQuery = (seasonId: string | undefined, scope: string) =>
   queryOptions({
