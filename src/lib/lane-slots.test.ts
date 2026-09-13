@@ -341,3 +341,50 @@ describe("22-team expansion (11 matchups per week)", () => {
     }
   });
 });
+
+describe("expanding default pairs never rewrites persisted lane overrides", () => {
+  it("keeps a maintenance override that now equals a newly generated default pair", () => {
+    // Week 1 was played on 9 pairs while the league ran 18 teams (9 slots).
+    // One match was moved to 39-40 for lane maintenance. Expanding to 22 teams
+    // generates 11 default pairs, and 39-40 is now also a generated default.
+    const week1 = [
+      { id: "m1", lane_pair: "29-30", sort_order: 1, status: "final", team_a_id: "t1", team_b_id: "t2" },
+      { id: "m2", lane_pair: "31-32", sort_order: 2, status: "final", team_a_id: "t3", team_b_id: "t4" },
+      { id: "m3", lane_pair: "33-34", sort_order: 3, status: "final", team_a_id: "t5", team_b_id: "t6" },
+      { id: "m4", lane_pair: "35-36", sort_order: 4, status: "final", team_a_id: "t7", team_b_id: "t8" },
+      { id: "m5", lane_pair: "37-38", sort_order: 5, status: "final", team_a_id: "t9", team_b_id: "t10" },
+      { id: "m6", lane_pair: "39-40", sort_order: 6, status: "final", team_a_id: "t11", team_b_id: "t12" },
+      { id: "m7", lane_pair: "43-44", sort_order: 7, status: "final", team_a_id: "t13", team_b_id: "t14" },
+      { id: "m8", lane_pair: "45-46", sort_order: 8, status: "final", team_a_id: "t15", team_b_id: "t16" },
+      { id: "m9", lane_pair: "47-48", sort_order: 9, status: "final", team_a_id: "t17", team_b_id: "t18" },
+    ] as const;
+
+    const before = buildWeekSlots(laneSlots(27, matchupsPerWeek(18)), week1 as any);
+    const after = buildWeekSlots(laneSlots(27, matchupsPerWeek(22)), week1 as any);
+
+    // Capacity grows from 9 to 11; nothing is orphaned either way.
+    expect(before.slots).toHaveLength(9);
+    expect(after.slots).toHaveLength(11);
+    expect(after.orphans).toEqual([]);
+
+    // Every source record keeps its id, teams, status and stored lane pair.
+    for (const m of week1) {
+      const slot = after.slots.find((s) => s.match?.id === m.id)!;
+      expect(slot.match?.lane_pair).toBe(m.lane_pair);
+      expect(slot.match?.team_a_id).toBe(m.team_a_id);
+      expect(slot.match?.team_b_id).toBe(m.team_b_id);
+      expect(slot.actual_lane_pair).toBe(m.lane_pair);
+      expect(slot.locked).toBe(true);
+    }
+
+    // The 39-40 match sits on that generated slot rather than being duplicated
+    // or shuffled away, and it is no longer flagged as an override.
+    const m6 = after.slots.find((s) => s.match?.id === "m6")!;
+    expect(m6.lane_pair).toBe("39-40");
+    expect(m6.overridden).toBe(false);
+
+    // Exactly 9 filled + 2 empty slots for the Week 1 makeups.
+    expect(after.slots.filter((s) => s.match)).toHaveLength(9);
+    expect(after.slots.filter((s) => !s.match).map((s) => s.lane_pair)).toEqual(["27-28", "41-42"]);
+  });
+});

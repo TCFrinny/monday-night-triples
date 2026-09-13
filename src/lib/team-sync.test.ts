@@ -63,6 +63,16 @@ describe("planTeamSync", () => {
     const plan = planTeamSync({ configuredCount: 8, teams: six, hasFinalizedResults: true });
     expect(plan.creates.map((c) => c.name)).toEqual(["#7 TEAM", "#8 TEAM"]);
     expect(plan.blockedReason).toBeNull();
+    expect(plan.removalBlockedReason).toBeNull();
+    expect(plan.preservedIds).toEqual(six.map((t) => t.id));
+  });
+
+  it("still protects the destructive direction after finalized results", () => {
+    const plan = planTeamSync({ configuredCount: 4, teams: six, hasFinalizedResults: true });
+    expect(plan.creates).toHaveLength(0);
+    expect(plan.isDecrease).toBe(true);
+    expect(plan.surplus).toBe(2);
+    expect(plan.removalBlockedReason).toBeTruthy();
     expect(plan.preservedIds).toEqual(six.map((t) => t.id));
   });
 
