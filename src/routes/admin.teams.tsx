@@ -360,7 +360,7 @@ function TeamManager({ seasonId }: { seasonId: string }) {
         team_id: teamId,
         bowler_id: bowlerId,
         slot,
-        effective_from_week: week,
+        effective_from_week: startWeek,
       });
       if (error) throw new Error(error.message);
     },
