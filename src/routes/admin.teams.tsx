@@ -552,6 +552,10 @@ function TeamCountSync({
         <p className="mt-3 text-xs text-destructive">{plan.blockedReason}</p>
       )}
 
+      {plan.removalBlockedReason && (
+        <p className="mt-3 text-xs text-destructive">{plan.removalBlockedReason}</p>
+      )}
+
       {plan.isDecrease && (
         <p className="mt-3 text-xs text-destructive">
           Team count is lower than the number of team records ({plan.surplus} extra). Nothing is
