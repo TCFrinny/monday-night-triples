@@ -5,10 +5,10 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   activeSeasonQuery,
-  bowlerStatsQuery,
   bowlersQuery,
   matchDetailQuery,
   rosterSpotsQuery,
+  seasonGamesByWeekQuery,
 } from "@/lib/queries";
 import { framesFromRows } from "@/components/league/ui";
 import { BallGrid } from "@/components/league/ball-grid";
