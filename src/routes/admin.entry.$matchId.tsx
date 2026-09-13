@@ -18,6 +18,8 @@ import {
   blindScore,
   computeMatchPoints,
   formatPoints,
+  priorAveragesBefore,
+  type PriorGameRow,
   teamAverage,
   teamHandicap,
   truncateAverage,
