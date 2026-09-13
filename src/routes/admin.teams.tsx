@@ -402,6 +402,8 @@ function TeamManager({ seasonId }: { seasonId: string }) {
       <div className="grid gap-4 md:grid-cols-2">
         {(teams ?? []).map((t: any) => {
           const slots = currentRoster(spots as any, t.id);
+          const isNewTeam = !teamHasRosterHistory(spots as any, t.id);
+          const startAtWeekOne = isNewTeam && (weekOneStart[t.id] ?? true);
           return (
             <div key={t.id} className="rounded-md border border-border p-4">
               <h3 className="font-display text-base uppercase text-foreground">
@@ -413,6 +415,25 @@ function TeamManager({ seasonId }: { seasonId: string }) {
                 />
               </h3>
               <p className="mt-1 text-[11px] normal-case text-muted-foreground">/teams/{t.slug}</p>
+
+              {isNewTeam && week > 1 && (
+                <div className="mt-3 flex items-start gap-2 rounded-md border border-gold/40 bg-gold/5 p-2">
+                  <Switch
+                    id={`w1-${t.id}`}
+                    checked={startAtWeekOne}
+                    onCheckedChange={(v) => setWeekOneStart((p) => ({ ...p, [t.id]: v }))}
+                  />
+                  <div className="text-[11px] leading-snug text-muted-foreground">
+                    <Label htmlFor={`w1-${t.id}`} className="text-xs text-foreground">
+                      First roster effective from Week 1
+                    </Label>
+                    <p className="mt-0.5">
+                      New team with no roster history — use this when it still owes a Week 1 makeup.
+                      Off means the roster starts at week {week}.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="mt-3 space-y-2">
                 {[1, 2, 3].map((slot) => {
@@ -428,6 +449,7 @@ function TeamManager({ seasonId }: { seasonId: string }) {
                             slot,
                             bowlerId: e.target.value,
                             current: spot ?? null,
+                            fromWeekOne: startAtWeekOne,
                           })
                         }
                         className="flex-1 rounded-md border border-border bg-card px-2 py-1.5 text-sm text-foreground"
