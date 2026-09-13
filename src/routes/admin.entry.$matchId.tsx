@@ -60,7 +60,7 @@ function ScoreEntry() {
    */
   const priorByBowler = useMemo(() => {
     const rows: PriorGameRow[] = [];
-    for (const l of ((priorGames ?? []) as any[]) ?? []) {
+    for (const l of (priorGames ?? []) as any[]) {
       if (!l?.bowler_id || l.participation === "blind") continue;
       const wk = Number(l.matches?.weeks?.week_number ?? 0);
       for (const g of (l.bowler_games ?? []) as any[]) {
