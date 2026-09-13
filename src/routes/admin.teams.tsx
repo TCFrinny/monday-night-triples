@@ -318,12 +318,23 @@ function TeamManager({ seasonId }: { seasonId: string }) {
       slot,
       bowlerId,
       current,
+      fromWeekOne,
     }: {
       teamId: string;
       slot: number;
       bowlerId: string;
       current?: RosterSpotRow | null;
+      /** New teams only: make the first roster effective from League Week 1. */
+      fromWeekOne?: boolean;
     }) => {
+      // A team added mid-season that still owes a Week 1 makeup can have its
+      // FIRST roster take effect from week 1. Teams with any roster history
+      // always start at the current week, so history is never rewritten.
+      const startWeek = rosterStartWeek({
+        hasHistory: teamHasRosterHistory(spots as any, teamId),
+        currentWeek: week,
+        fromWeekOne,
+      });
       if (bowlerId) {
         const other = takenBy.get(bowlerId);
         if (other && other !== teamId)
