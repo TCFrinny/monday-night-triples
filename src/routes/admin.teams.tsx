@@ -333,7 +333,7 @@ function TeamManager({ seasonId }: { seasonId: string }) {
       const startWeek = rosterStartWeek({
         hasHistory: teamHasRosterHistory(spots as any, teamId),
         currentWeek: week,
-        fromWeekOne,
+        fromWeekOne: fromWeekOne === true,
       });
       if (bowlerId) {
         const other = takenBy.get(bowlerId);
