@@ -35,8 +35,10 @@ export interface TeamSyncPlan {
   isDecrease: boolean;
   /** Existing ids, preserved verbatim. */
   preservedIds: string[];
-  /** Set when creation is not allowed (e.g. finalized results exist). */
+  /** Set when creation is not allowed. Additive expansion is always allowed. */
   blockedReason: string | null;
+  /** Set when the destructive (decrease) direction needs deliberate action. */
+  removalBlockedReason: string | null;
 }
 
 const NUMBER_RE = /^\s*#?\s*(\d{1,3})\b/;
