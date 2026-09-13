@@ -39,6 +39,46 @@ export function applicableAverage(args: {
     : { value: args.entryAverage, source: "entry" };
 }
 
+/** One completed game, tagged with the LEAGUE week it belongs to. */
+export interface PriorGameRow {
+  bowlerId: string;
+  weekNumber: number;
+  scratch: number;
+}
+
+export interface PriorAverage {
+  games: number;
+  average: number | null;
+}
+
+/**
+ * Games and average each bowler had BEFORE a given league week.
+ *
+ * Attribution follows league week, never the calendar date score entry
+ * happened on. A Week 1 makeup bowled after Weeks 2-4 therefore still sees
+ * "zero games before", so entry averages apply exactly as they would have on
+ * the original Week 1 night.
+ */
+export function priorAveragesBefore(
+  rows: PriorGameRow[],
+  weekNumber: number,
+): Map<string, PriorAverage> {
+  const acc = new Map<string, { games: number; pinfall: number }>();
+  for (const r of rows) {
+    if (!r.bowlerId) continue;
+    if (!(r.weekNumber < weekNumber)) continue;
+    const cur = acc.get(r.bowlerId) ?? { games: 0, pinfall: 0 };
+    cur.games += 1;
+    cur.pinfall += r.scratch;
+    acc.set(r.bowlerId, cur);
+  }
+  const out = new Map<string, PriorAverage>();
+  for (const [id, v] of acc) {
+    out.set(id, { games: v.games, average: v.games ? v.pinfall / v.games : null });
+  }
+  return out;
+}
+
 /** Team average = sum of each bowler's applicable average, truncated individually. */
 export function teamAverage(applicableAverages: number[]): number {
   return applicableAverages.reduce((sum, a) => sum + truncateAverage(a), 0);

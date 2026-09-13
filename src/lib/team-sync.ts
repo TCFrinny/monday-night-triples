@@ -88,14 +88,16 @@ export function planTeamSync(input: {
     if (candidate > 999) break;
   }
 
-  const blockedReason = input.hasFinalizedResults
-    ? "This season already has finalized results. Structural team changes must be made deliberately."
-    : null;
+  // Adding placeholder rows is purely additive: no existing team, match,
+  // score or cached row is touched, so a season with finalized results can
+  // still expand mid-season (e.g. 18 -> 22 teams). Only the decrease path is
+  // ever withheld, and it never deletes anything.
+  const blockedReason = null;
 
   return {
     configured,
     actual,
-    creates: blockedReason ? [] : creates,
+    creates,
     surplus: Math.max(0, actual - configured),
     isDecrease: configured > 0 && configured < actual,
     preservedIds: teams.map((t) => t.id),
