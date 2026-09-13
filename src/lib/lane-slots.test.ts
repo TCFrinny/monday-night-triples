@@ -305,3 +305,39 @@ describe("admin week editor display order", () => {
     expect(ordered.map((s) => s.lane_pair)).toEqual(["29-30", "27-28"]);
   });
 });
+
+describe("22-team expansion (11 matchups per week)", () => {
+  it("exposes 11 slots and leaves two empty for the Week 1 makeups", () => {
+    // Live Week 1 shape: 9 finalized matches, some on maintenance overrides.
+    const week1 = [
+      { id: "m1", lane_pair: "29-30", sort_order: 1, status: "final", team_a_id: "t1", team_b_id: "t2" },
+      { id: "m2", lane_pair: "45-46", sort_order: 1, status: "final", team_a_id: "t15", team_b_id: "t16" },
+      { id: "m3", lane_pair: "31-32", sort_order: 3, status: "final", team_a_id: "t3", team_b_id: "t4" },
+      { id: "m4", lane_pair: "33-34", sort_order: 4, status: "final", team_a_id: "t5", team_b_id: "t6" },
+      { id: "m5", lane_pair: "35-36", sort_order: 5, status: "final", team_a_id: "t7", team_b_id: "t8" },
+      { id: "m6", lane_pair: "37-38", sort_order: 6, status: "final", team_a_id: "t9", team_b_id: "t10" },
+      { id: "m7", lane_pair: "47-48", sort_order: 7, status: "final", team_a_id: "t17", team_b_id: "t18" },
+      { id: "m8", lane_pair: "41-42", sort_order: 8, status: "final", team_a_id: "t11", team_b_id: "t12" },
+      { id: "m9", lane_pair: "43-44", sort_order: 9, status: "final", team_a_id: "t13", team_b_id: "t14" },
+    ] as const;
+
+    const pairs = laneSlots(27, matchupsPerWeek(22));
+    expect(matchupsPerWeek(22)).toBe(11);
+    expect(pairs).toHaveLength(11);
+
+    const plan = buildWeekSlots(pairs, week1 as any);
+    expect(plan.orphans).toEqual([]);
+    const filled = plan.slots.filter((s) => s.match);
+    const empty = plan.slots.filter((s) => !s.match);
+    expect(filled).toHaveLength(9);
+    expect(empty).toHaveLength(2);
+    expect(empty.map((s) => s.lane_pair)).toEqual(["27-28", "39-40"]);
+
+    // Every existing match keeps its id and its stored lane pair.
+    for (const m of week1) {
+      const slot = plan.slots.find((s) => s.match?.id === m.id)!;
+      expect(slot.actual_lane_pair).toBe(m.lane_pair);
+      expect(slot.locked).toBe(true);
+    }
+  });
+});

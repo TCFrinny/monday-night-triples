@@ -59,10 +59,32 @@ describe("planTeamSync", () => {
     expect(plan.preservedIds).toHaveLength(6);
   });
 
-  it("blocks creation when finalized results exist", () => {
-    const plan = planTeamSync({ configuredCount: 18, teams: six, hasFinalizedResults: true });
-    expect(plan.creates).toHaveLength(0);
-    expect(plan.blockedReason).toBeTruthy();
+  it("still allows purely additive creation when finalized results exist", () => {
+    const plan = planTeamSync({ configuredCount: 8, teams: six, hasFinalizedResults: true });
+    expect(plan.creates.map((c) => c.name)).toEqual(["#7 TEAM", "#8 TEAM"]);
+    expect(plan.blockedReason).toBeNull();
+    expect(plan.preservedIds).toEqual(six.map((t) => t.id));
+  });
+
+  it("expands a live 18-team season to 22 with exactly four placeholders", () => {
+    const eighteen = Array.from({ length: 18 }, (_, i) => ({
+      id: `t-${i + 1}`,
+      name: `#${i + 1} SOME - REAL - NAMES`,
+    }));
+    const plan = planTeamSync({
+      configuredCount: 22,
+      teams: eighteen,
+      hasFinalizedResults: true,
+    });
+    expect(plan.creates.map((c) => c.name)).toEqual([
+      "#19 TEAM",
+      "#20 TEAM",
+      "#21 TEAM",
+      "#22 TEAM",
+    ]);
+    expect(plan.isDecrease).toBe(false);
+    expect(plan.surplus).toBe(0);
+    expect(plan.preservedIds).toEqual(eighteen.map((t) => t.id));
   });
 });
 
@@ -71,5 +93,9 @@ describe("matchesPerWeek", () => {
     expect(matchesPerWeek(18)).toEqual({ matches: 9, byes: 0 });
     expect(matchesPerWeek(6)).toEqual({ matches: 3, byes: 0 });
     expect(matchesPerWeek(17)).toEqual({ matches: 8, byes: 1 });
+  });
+
+  it("supports a 22-team league with 11 matches and no bye", () => {
+    expect(matchesPerWeek(22)).toEqual({ matches: 11, byes: 0 });
   });
 });

@@ -5,10 +5,10 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   activeSeasonQuery,
-  bowlerStatsQuery,
   bowlersQuery,
   matchDetailQuery,
   rosterSpotsQuery,
+  seasonGamesByWeekQuery,
 } from "@/lib/queries";
 import { framesFromRows } from "@/components/league/ui";
 import { BallGrid } from "@/components/league/ball-grid";
@@ -18,6 +18,8 @@ import {
   blindScore,
   computeMatchPoints,
   formatPoints,
+  priorAveragesBefore,
+  type PriorGameRow,
   teamAverage,
   teamHandicap,
   truncateAverage,
@@ -40,7 +42,7 @@ function ScoreEntry() {
   const { data: season } = useQuery(activeSeasonQuery);
   const { data: detail } = useQuery(matchDetailQuery(matchId));
   const { data: bowlers } = useQuery(bowlersQuery(season?.id));
-  const { data: stats } = useQuery(bowlerStatsQuery(season?.id, "full"));
+  const { data: priorGames } = useQuery(seasonGamesByWeekQuery(season?.id));
   const { data: spots } = useQuery(rosterSpotsQuery(season?.id));
   const [game, setGame] = useState(1);
   const [sheets, setSheets] = useState<Record<string, Frame[]>>({});
@@ -49,25 +51,43 @@ function ScoreEntry() {
 
   const invalidate = () => qc.invalidateQueries();
 
+  const week = detail?.match?.weeks?.week_number ?? 1;
+
+  /**
+   * Games/average each bowler had BEFORE this match's LEAGUE week. Using the
+   * league week (not the calendar entry date) keeps a delayed makeup — e.g. a
+   * Week 1 match bowled after Week 4 — on the averages that applied in Week 1.
+   */
+  const priorByBowler = useMemo(() => {
+    const rows: PriorGameRow[] = [];
+    for (const l of (priorGames ?? []) as any[]) {
+      if (!l?.bowler_id || l.participation === "blind") continue;
+      const wk = Number(l.matches?.weeks?.week_number ?? 0);
+      for (const g of (l.bowler_games ?? []) as any[]) {
+        if (g?.is_complete === false || g?.is_blind) continue;
+        rows.push({ bowlerId: l.bowler_id, weekNumber: wk, scratch: Number(g.scratch_score ?? 0) });
+      }
+    }
+    return priorAveragesBefore(rows, week);
+  }, [priorGames, week]);
+
   /** Applicable average for a bowler, from entry average + established current. */
   const appFor = useMemo(
     () => (bowlerId: string | null | undefined) => {
       const b = (bowlers ?? []).find((x: any) => x.id === bowlerId);
-      const s = (stats ?? []).find((x: any) => x.bowler_id === bowlerId);
-      const games = s?.games ?? 0;
       if (!b) return { value: 0, source: "entry" as const, games: 0 };
+      const prior = bowlerId ? priorByBowler.get(bowlerId) : undefined;
+      const games = prior?.games ?? 0;
       const app = applicableAverage({
         entryAverage: Number(b.entry_average),
-        currentAverage: games && s ? Number(s.average) : null,
+        currentAverage: prior?.average ?? null,
         gamesBefore: games,
         threshold: season?.establishment_threshold ?? 15,
       });
       return { ...app, games };
     },
-    [bowlers, stats, season?.establishment_threshold],
+    [bowlers, priorByBowler, season?.establishment_threshold],
   );
-
-  const week = detail?.match?.weeks?.week_number ?? 1;
 
   /** Auto-create the lineup snapshot from the roster effective for this week. */
   const seed = useMutation({

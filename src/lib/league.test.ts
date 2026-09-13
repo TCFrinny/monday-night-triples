@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  applicableAverage,
   computeMatchPoints,
+  priorAveragesBefore,
   formatGamesBehind,
   formatRecord,
   formatRecordValue,
@@ -67,5 +69,36 @@ describe("games behind", () => {
     const behind = recordFromPoints(12, 3); // 12-9
     expect(gamesBehind(leader, behind)).toBe(4.5);
     expect(formatGamesBehind(4.5)).toBe("4.5");
+  });
+});
+
+describe("priorAveragesBefore (delayed makeup safety)", () => {
+  const rows = [
+    { bowlerId: "new", weekNumber: 2, scratch: 120 },
+    { bowlerId: "new", weekNumber: 3, scratch: 130 },
+    { bowlerId: "new", weekNumber: 4, scratch: 140 },
+    { bowlerId: "vet", weekNumber: 1, scratch: 150 },
+  ];
+
+  it("credits zero games before Week 1 even when later weeks are already bowled", () => {
+    const map = priorAveragesBefore(rows, 1);
+    expect(map.get("new")).toBeUndefined();
+    expect(map.get("vet")).toBeUndefined();
+  });
+
+  it("a Week 1 makeup keeps the entry average for a new bowler", () => {
+    const prior = priorAveragesBefore(rows, 1).get("new");
+    const app = applicableAverage({
+      entryAverage: 110,
+      currentAverage: prior?.average ?? null,
+      gamesBefore: prior?.games ?? 0,
+      threshold: 15,
+    });
+    expect(app).toEqual({ value: 110, source: "entry" });
+  });
+
+  it("counts only games from earlier league weeks", () => {
+    const map = priorAveragesBefore(rows, 4);
+    expect(map.get("new")).toEqual({ games: 2, average: 125 });
   });
 });
