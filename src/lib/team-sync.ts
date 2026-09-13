@@ -35,8 +35,10 @@ export interface TeamSyncPlan {
   isDecrease: boolean;
   /** Existing ids, preserved verbatim. */
   preservedIds: string[];
-  /** Set when creation is not allowed (e.g. finalized results exist). */
+  /** Set when creation is not allowed. Additive expansion is always allowed. */
   blockedReason: string | null;
+  /** Set when the destructive (decrease) direction needs deliberate action. */
+  removalBlockedReason: string | null;
 }
 
 const NUMBER_RE = /^\s*#?\s*(\d{1,3})\b/;
@@ -90,18 +92,29 @@ export function planTeamSync(input: {
 
   // Adding placeholder rows is purely additive: no existing team, match,
   // score or cached row is touched, so a season with finalized results can
-  // still expand mid-season (e.g. 18 -> 22 teams). Only the decrease path is
-  // ever withheld, and it never deletes anything.
+  // still expand mid-season (e.g. 18 -> 22 teams). Creation is therefore
+  // never blocked by finalized results.
   const blockedReason = null;
+
+  const isDecrease = configured > 0 && configured < actual;
+
+  // Removal is the destructive direction, so it stays protected: nothing is
+  // ever deleted automatically, and once results are final the surplus must be
+  // dealt with deliberately.
+  const removalBlockedReason =
+    isDecrease && input.hasFinalizedResults
+      ? "This season already has finalized results. Removing or deactivating teams must be done deliberately — nothing is deleted automatically."
+      : null;
 
   return {
     configured,
     actual,
     creates,
     surplus: Math.max(0, actual - configured),
-    isDecrease: configured > 0 && configured < actual,
+    isDecrease,
     preservedIds: teams.map((t) => t.id),
     blockedReason,
+    removalBlockedReason,
   };
 }
 

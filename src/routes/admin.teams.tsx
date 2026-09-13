@@ -15,6 +15,8 @@ import {
   activeTeamByBowler,
   currentRoster,
   currentWeekNumber,
+  rosterStartWeek,
+  teamHasRosterHistory,
   type RosterSpotRow,
 } from "@/lib/roster";
 import { formatAverage, slugify } from "@/lib/league";
@@ -270,6 +272,10 @@ function TeamManager({ seasonId }: { seasonId: string }) {
   const { data: weeks } = useQuery(weeksQuery(seasonId));
   const { data: matches } = useQuery(seasonMatchSummaryQuery(seasonId));
   const [teamName, setTeamName] = useState("");
+  // Per-team opt-in: a brand-new team's first roster starts at League Week 1
+  // (needed for a Week 1 makeup). Defaults on, and is only offered to teams
+  // with no roster history at all.
+  const [weekOneStart, setWeekOneStart] = useState<Record<string, boolean>>({});
 
   const week = currentWeekNumber(weeks as any, matches as any);
   const takenBy = activeTeamByBowler(spots as any);
@@ -316,12 +322,23 @@ function TeamManager({ seasonId }: { seasonId: string }) {
       slot,
       bowlerId,
       current,
+      fromWeekOne,
     }: {
       teamId: string;
       slot: number;
       bowlerId: string;
       current?: RosterSpotRow | null;
+      /** New teams only: make the first roster effective from League Week 1. */
+      fromWeekOne?: boolean;
     }) => {
+      // A team added mid-season that still owes a Week 1 makeup can have its
+      // FIRST roster take effect from week 1. Teams with any roster history
+      // always start at the current week, so history is never rewritten.
+      const startWeek = rosterStartWeek({
+        hasHistory: teamHasRosterHistory(spots as any, teamId),
+        currentWeek: week,
+        fromWeekOne: fromWeekOne === true,
+      });
       if (bowlerId) {
         const other = takenBy.get(bowlerId);
         if (other && other !== teamId)
@@ -347,7 +364,7 @@ function TeamManager({ seasonId }: { seasonId: string }) {
         team_id: teamId,
         bowler_id: bowlerId,
         slot,
-        effective_from_week: week,
+        effective_from_week: startWeek,
       });
       if (error) throw new Error(error.message);
     },
@@ -389,6 +406,8 @@ function TeamManager({ seasonId }: { seasonId: string }) {
       <div className="grid gap-4 md:grid-cols-2">
         {(teams ?? []).map((t: any) => {
           const slots = currentRoster(spots as any, t.id);
+          const isNewTeam = !teamHasRosterHistory(spots as any, t.id);
+          const startAtWeekOne = isNewTeam && (weekOneStart[t.id] ?? true);
           return (
             <div key={t.id} className="rounded-md border border-border p-4">
               <h3 className="font-display text-base uppercase text-foreground">
@@ -400,6 +419,25 @@ function TeamManager({ seasonId }: { seasonId: string }) {
                 />
               </h3>
               <p className="mt-1 text-[11px] normal-case text-muted-foreground">/teams/{t.slug}</p>
+
+              {isNewTeam && week > 1 && (
+                <div className="mt-3 flex items-start gap-2 rounded-md border border-gold/40 bg-gold/5 p-2">
+                  <Switch
+                    id={`w1-${t.id}`}
+                    checked={startAtWeekOne}
+                    onCheckedChange={(v) => setWeekOneStart((p) => ({ ...p, [t.id]: v }))}
+                  />
+                  <div className="text-[11px] leading-snug text-muted-foreground">
+                    <Label htmlFor={`w1-${t.id}`} className="text-xs text-foreground">
+                      First roster effective from Week 1
+                    </Label>
+                    <p className="mt-0.5">
+                      New team with no roster history — use this when it still owes a Week 1 makeup.
+                      Off means the roster starts at week {week}.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="mt-3 space-y-2">
                 {[1, 2, 3].map((slot) => {
@@ -415,6 +453,7 @@ function TeamManager({ seasonId }: { seasonId: string }) {
                             slot,
                             bowlerId: e.target.value,
                             current: spot ?? null,
+                            fromWeekOne: startAtWeekOne,
                           })
                         }
                         className="flex-1 rounded-md border border-border bg-card px-2 py-1.5 text-sm text-foreground"
@@ -511,6 +550,10 @@ function TeamCountSync({
 
       {plan.blockedReason && (
         <p className="mt-3 text-xs text-destructive">{plan.blockedReason}</p>
+      )}
+
+      {plan.removalBlockedReason && (
+        <p className="mt-3 text-xs text-destructive">{plan.removalBlockedReason}</p>
       )}
 
       {plan.isDecrease && (
