@@ -15,9 +15,9 @@ export function AllBowlersReport() {
   return <ReportShell season={season} title="All Bowlers · Full Season" latestWeek={latestFinalizedWeek(matches)} backTo="/stats" orientation="landscape" reportType="all-bowlers">
     {!rows.length ? <EmptyState title="No active bowlers" hint="Bowlers will appear when they are active in this season." /> : (
       <table className="print-all-bowlers-table">
-        <thead><tr><th>Name</th><th>Team</th><th className="num">Average</th><th className="num">Games</th><th className="num">High Game</th><th className="num">High Set</th></tr></thead>
+        <thead><tr><th>Name</th><th>Team</th><th className="num entering-average">Entering Average</th><th className="num">Average</th><th className="num">Games</th><th className="num">High Game</th><th className="num">High Set</th></tr></thead>
         <tbody>{rows.map((row) => <tr key={row.id}>
-          <td>{row.name}</td><td>{row.team}</td><td className="num">{row.average}</td><td className="num">{row.games}</td><td className="num">{row.highGame ?? "—"}</td><td className="num">{row.highSet ?? "—"}</td>
+          <td>{row.name}</td><td>{row.team}</td><td className="num">{row.enteringAverage}</td><td className="num">{row.average}</td><td className="num">{row.games}</td><td className="num">{row.highGame ?? "—"}</td><td className="num">{row.highSet ?? "—"}</td>
         </tr>)}</tbody>
       </table>
     )}

@@ -6,6 +6,7 @@ export interface AllBowlerReportRow {
   name: string;
   team: string;
   teamName: string | null;
+  enteringAverage: string;
   average: string;
   games: number;
   highGame: number | null;
@@ -27,6 +28,7 @@ export function shapeAllBowlersReport(bowlers: any[] | null | undefined, stats: 
         name: bowler.full_name,
         team: teamName ?? (bowler.is_sub ? "SUB" : "—"),
         teamName,
+        enteringAverage: formatAverage(bowler.entry_average),
         average: games > 0 ? formatAverage(stat?.average) : "—",
         games,
         highGame: games > 0 && Number(stat?.high_game) > 0 ? Number(stat.high_game) : null,
