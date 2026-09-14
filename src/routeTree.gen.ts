@@ -32,6 +32,7 @@ import { Route as AdminEntryIndexRouteImport } from './routes/admin.entry.index'
 import { Route as AdminEntryMatchIdRouteImport } from './routes/admin.entry.$matchId'
 import { Route as StandingsPrintCurrentThirdRouteImport } from './routes/standings.print.current-third'
 import { Route as StandingsPrintFullRouteImport } from './routes/standings.print.full'
+import { Route as StatsPrintAllBowlersRouteImport } from './routes/stats.print.all-bowlers'
 import { Route as StatsPrintBowlersRouteImport } from './routes/stats.print.bowlers'
 import { Route as StatsPrintTeamsRouteImport } from './routes/stats.print.teams'
 
@@ -151,6 +152,11 @@ const StandingsPrintFullRoute = StandingsPrintFullRouteImport.update({
   path: '/print/full',
   getParentRoute: () => StandingsRoute,
 } as any)
+const StatsPrintAllBowlersRoute = StatsPrintAllBowlersRouteImport.update({
+  id: '/print/all-bowlers',
+  path: '/print/all-bowlers',
+  getParentRoute: () => StatsRoute,
+} as any)
 const StatsPrintBowlersRoute = StatsPrintBowlersRouteImport.update({
   id: '/print/bowlers',
   path: '/print/bowlers',
@@ -185,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/admin/entry/$matchId': typeof AdminEntryMatchIdRoute
   '/standings/print/current-third': typeof StandingsPrintCurrentThirdRoute
   '/standings/print/full': typeof StandingsPrintFullRoute
+  '/stats/print/all-bowlers': typeof StatsPrintAllBowlersRoute
   '/stats/print/bowlers': typeof StatsPrintBowlersRoute
   '/stats/print/teams': typeof StatsPrintTeamsRoute
   '/admin/entry/': typeof AdminEntryIndexRoute
@@ -209,6 +216,7 @@ export interface FileRoutesByTo {
   '/admin/entry/$matchId': typeof AdminEntryMatchIdRoute
   '/standings/print/current-third': typeof StandingsPrintCurrentThirdRoute
   '/standings/print/full': typeof StandingsPrintFullRoute
+  '/stats/print/all-bowlers': typeof StatsPrintAllBowlersRoute
   '/stats/print/bowlers': typeof StatsPrintBowlersRoute
   '/stats/print/teams': typeof StatsPrintTeamsRoute
   '/admin/entry': typeof AdminEntryIndexRoute
@@ -237,6 +245,7 @@ export interface FileRoutesById {
   '/admin/entry/$matchId': typeof AdminEntryMatchIdRoute
   '/standings/print/current-third': typeof StandingsPrintCurrentThirdRoute
   '/standings/print/full': typeof StandingsPrintFullRoute
+  '/stats/print/all-bowlers': typeof StatsPrintAllBowlersRoute
   '/stats/print/bowlers': typeof StatsPrintBowlersRoute
   '/stats/print/teams': typeof StatsPrintTeamsRoute
   '/admin/entry/': typeof AdminEntryIndexRoute
@@ -266,6 +275,7 @@ export interface FileRouteTypes {
     | '/admin/entry/$matchId'
     | '/standings/print/current-third'
     | '/standings/print/full'
+    | '/stats/print/all-bowlers'
     | '/stats/print/bowlers'
     | '/stats/print/teams'
     | '/admin/entry/'
@@ -290,6 +300,7 @@ export interface FileRouteTypes {
     | '/admin/entry/$matchId'
     | '/standings/print/current-third'
     | '/standings/print/full'
+    | '/stats/print/all-bowlers'
     | '/stats/print/bowlers'
     | '/stats/print/teams'
     | '/admin/entry'
@@ -317,6 +328,7 @@ export interface FileRouteTypes {
     | '/admin/entry/$matchId'
     | '/standings/print/current-third'
     | '/standings/print/full'
+    | '/stats/print/all-bowlers'
     | '/stats/print/bowlers'
     | '/stats/print/teams'
     | '/admin/entry/'
@@ -501,6 +513,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StandingsPrintFullRouteImport
       parentRoute: typeof StandingsRoute
     }
+    '/stats/print/all-bowlers': {
+      id: '/stats/print/all-bowlers'
+      path: '/print/all-bowlers'
+      fullPath: '/stats/print/all-bowlers'
+      preLoaderRoute: typeof StatsPrintAllBowlersRouteImport
+      parentRoute: typeof StatsRoute
+    }
     '/stats/print/bowlers': {
       id: '/stats/print/bowlers'
       path: '/print/bowlers'
@@ -556,12 +575,14 @@ const StandingsRouteWithChildren = StandingsRoute._addFileChildren(
 
 interface StatsRouteChildren {
   StatsIndexRoute: typeof StatsIndexRoute
+  StatsPrintAllBowlersRoute: typeof StatsPrintAllBowlersRoute
   StatsPrintBowlersRoute: typeof StatsPrintBowlersRoute
   StatsPrintTeamsRoute: typeof StatsPrintTeamsRoute
 }
 
 const StatsRouteChildren: StatsRouteChildren = {
   StatsIndexRoute: StatsIndexRoute,
+  StatsPrintAllBowlersRoute: StatsPrintAllBowlersRoute,
   StatsPrintBowlersRoute: StatsPrintBowlersRoute,
   StatsPrintTeamsRoute: StatsPrintTeamsRoute,
 }
