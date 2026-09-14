@@ -223,7 +223,7 @@
   @page standings-report { size: Letter landscape; margin: 0.4in; }
   html, body { background: white !important; color: #171717 !important; }
   body { background-image: none !important; }
-  body > div > header, body > div > footer { display: none !important; }
+  .site-header, .site-footer { display: none !important; }
   .print-toolbar { display: none !important; }
   .print-report { max-width: none; padding: 0; color: #171717; }
   .print-report-landscape { page: standings-report; }

@@ -12,7 +12,7 @@ export function ReportShell({
   orientation,
   children,
 }: {
-  season?: (BrandingSource & { season_name?: string | null }) | null;
+  season?: (BrandingSource & { season_name?: string | null }) | null | undefined;
   title: string;
   latestWeek: number;
   backTo: "/standings" | "/stats";

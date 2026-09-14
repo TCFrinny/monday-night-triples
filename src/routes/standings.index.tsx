@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FileDown } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState, MovementIndicator, ScopeTabs, TeamLink } from "@/components/league/ui";
@@ -111,6 +111,8 @@ function StandingsPage() {
   const [scope, setScope] = useState<StandingsScope>(() =>
     currentThirdScope(matches, season?.third_boundaries),
   );
+  const resolvedCurrentScope = currentThirdScope(matches, season?.third_boundaries);
+  useEffect(() => setScope(resolvedCurrentScope), [resolvedCurrentScope]);
 
   const { data: scoped } = useQuery(standingsQuery(season?.id, scope));
   const { data: full } = useQuery(standingsQuery(season?.id, "full"));
