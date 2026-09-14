@@ -228,7 +228,7 @@
   @page stats-report { size: Letter landscape; margin: 0.22in; }
   @page bowlers-report { size: Letter landscape; margin: 0.25in; }
   html, body { background: white !important; color: #171717 !important; }
-  html, body { height: auto !important; min-height: 0 !important; }
+  html, body { height: 8in !important; min-height: 0 !important; overflow: hidden !important; }
   body { background-image: none !important; }
   .site-header, .site-footer { display: none !important; }
   .print-toolbar { display: none !important; }
