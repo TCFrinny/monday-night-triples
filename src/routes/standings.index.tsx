@@ -16,7 +16,7 @@ import {
 import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 import { orderStandingsRows } from "@/lib/standings-order";
 
-export const Route = createFileRoute("/standings")({
+export const Route = createFileRoute("/standings/")({
   head: () => ({
     meta: [
       { title: `Standings — ${DEFAULT_LEAGUE_NAME}` },

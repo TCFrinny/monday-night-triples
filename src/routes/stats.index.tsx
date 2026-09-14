@@ -25,7 +25,7 @@ import {
 import type { StandingsScope } from "@/lib/league";
 import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
-export const Route = createFileRoute("/stats")({
+export const Route = createFileRoute("/stats/")({
   head: () => ({
     meta: [
       { title: `Stats & Leaders — ${DEFAULT_LEAGUE_NAME}` },
