@@ -20,7 +20,7 @@ export function SiteHeader() {
   const leagueName = useLeagueName();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur-xl">
+    <header className="site-header sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
         <Link to="/" className="flex items-center gap-3" onClick={() => setOpen(false)}>
           <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary font-display text-lg font-bold text-primary-foreground">
