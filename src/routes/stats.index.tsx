@@ -89,6 +89,7 @@ function StatsPage() {
         <span className="eyebrow mr-1 inline-flex items-center gap-1.5"><FileDown className="h-4 w-4" /> Print / Export</span>
         <Link to="/stats/print/bowlers" target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", size: "sm" })}>Bowlers — Full Season</Link>
         <Link to="/stats/print/teams" target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", size: "sm" })}>Teams — Full Season</Link>
+        <Link to="/stats/print/all-bowlers" target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", size: "sm" })}>All Bowlers — Rostered + Subs</Link>
       </div>
       <div className="mb-5 flex flex-wrap gap-3">
         <ScopeTabs

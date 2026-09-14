@@ -17,7 +17,7 @@ export function StandingsReport({ variant }: { variant: "full" | "current-third"
     ? "Standings — Full Season"
     : `Standings — Current Third · ${SCOPE_LABELS[scope]}`;
 
-  return <ReportShell season={season} title={title} latestWeek={latestFinalizedWeek(matches)} backTo="/standings" orientation="landscape">
+  return <ReportShell season={season} title={title} latestWeek={latestFinalizedWeek(matches)} backTo="/standings" orientation="landscape" reportType="standings">
     {!season ? <EmptyState title="No active season" hint="This report will be available when a season is active." /> : <StandingsReportTable rows={rows ?? []} />}
   </ReportShell>;
 }
