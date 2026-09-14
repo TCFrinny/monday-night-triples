@@ -188,3 +188,57 @@
   font-weight: 600;
   line-height: 1;
 }
+
+.print-report {
+  margin: 0 auto;
+  max-width: 72rem;
+  padding: 2rem 1rem 4rem;
+}
+
+.print-toolbar { display: flex; justify-content: space-between; gap: 0.75rem; margin-bottom: 1.5rem; }
+.print-report-header { display: flex; align-items: end; justify-content: space-between; gap: 2rem; border-bottom: 2px solid var(--color-primary); padding-bottom: 1rem; margin-bottom: 1.25rem; }
+.print-report-brand { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; text-transform: uppercase; }
+.print-report-season { margin-top: 0.15rem; color: var(--color-muted-foreground); font-size: 0.75rem; }
+.print-report-heading { text-align: right; }
+.print-report-heading h1 { font-size: 1.65rem; font-weight: 700; text-transform: uppercase; }
+.print-report-heading p { color: var(--color-muted-foreground); font-size: 0.75rem; }
+.print-standings-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.print-standings-table th, .print-standings-table td { border-bottom: 1px solid var(--color-border); padding: 0.5rem 0.6rem; text-align: left; }
+.print-standings-table th { background: var(--color-muted); font-family: var(--font-display); text-transform: uppercase; }
+.print-standings-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.print-standings-table .rank { font-family: var(--font-display); font-weight: 700; }
+.print-leaderboard-grid { columns: 2; column-gap: 0.75rem; }
+.print-leaderboard-card { break-inside: avoid; display: inline-block; width: 100%; margin-bottom: 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0.75rem; }
+.milestone-label { border-radius: 2px; background: color-mix(in oklab, var(--primary) 15%, transparent); padding: 0 0.2rem; font-size: 0.625rem; color: var(--color-primary); }
+
+@media (max-width: 640px) {
+  .print-report-header { align-items: start; flex-direction: column; gap: 0.75rem; }
+  .print-report-heading { text-align: left; }
+  .print-leaderboard-grid { columns: 1; }
+  .print-report-landscape { overflow-x: auto; }
+}
+
+@media print {
+  @page { size: Letter portrait; margin: 0.45in; }
+  @page standings-report { size: Letter landscape; margin: 0.4in; }
+  html, body { background: white !important; color: #171717 !important; }
+  body { background-image: none !important; }
+  body > div > header, body > div > footer { display: none !important; }
+  .print-toolbar { display: none !important; }
+  .print-report { max-width: none; padding: 0; color: #171717; }
+  .print-report-landscape { page: standings-report; }
+  .print-report * { color: inherit; box-shadow: none !important; text-shadow: none !important; }
+  .print-report-header { border-color: #555; margin-bottom: 0.16in; padding-bottom: 0.1in; }
+  .print-report-season, .print-report-heading p { color: #555 !important; }
+  .print-standings-table { font-size: 8.5pt; }
+  .print-standings-table thead { display: table-header-group; }
+  .print-standings-table tr { break-inside: avoid; }
+  .print-standings-table th, .print-standings-table td { border-color: #bbb; padding: 0.055in 0.075in; }
+  .print-standings-table th { background: #eee !important; }
+  .print-leaderboard-grid { columns: 2; column-gap: 0.18in; }
+  .print-leaderboard-card { border-color: #aaa; margin-bottom: 0.14in; padding: 0.1in; }
+  .print-leaderboard-card h2 { font-size: 10pt; }
+  .print-leaderboard-card ol { margin-top: 0.06in; font-size: 8.5pt; }
+  .print-leaderboard-card li { break-inside: avoid; }
+  .milestone-label { border: 1px solid #999; background: transparent !important; }
+}
