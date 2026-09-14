@@ -228,12 +228,13 @@
   @page stats-report { size: Letter landscape; margin: 0.22in; }
   @page bowlers-report { size: Letter landscape; margin: 0.25in; }
   html, body { background: white !important; color: #171717 !important; }
+  html, body { height: auto !important; min-height: 0 !important; }
   body { background-image: none !important; }
   .site-header, .site-footer { display: none !important; }
   .print-toolbar { display: none !important; }
-  .min-h-screen { min-height: 0 !important; }
+  .min-h-screen { display: block !important; min-height: 0 !important; }
   main { display: block !important; }
-  .print-report { max-width: none; padding: 0; color: #171717; }
+  .print-report { max-width: none; height: auto !important; min-height: 0 !important; padding: 0; color: #171717; }
   .print-report-standings { page: standings-report; }
   .print-report-stats { page: stats-report; }
   .print-report-all-bowlers { page: bowlers-report; }
@@ -249,7 +250,7 @@
   .print-standings-table tr { break-inside: avoid; }
   .print-standings-table th, .print-standings-table td { border-color: #bbb; padding: 0.025in 0.055in; height: 0.19in; }
   .print-standings-table th { background: #eee !important; }
-  .print-leaderboard-grid { columns: 4; column-gap: 0.08in; column-fill: balance; height: 7.7in; }
+  .print-leaderboard-grid { columns: 4; column-gap: 0.08in; column-fill: balance; }
   .print-leaderboard-card { border-color: #aaa; border-radius: 2px; margin-bottom: 0.035in; padding: 0.035in 0.045in; }
   .print-leaderboard-card h2 { font-size: 6pt; line-height: 1; }
   .print-leaderboard-card > p { display: none; }
@@ -259,9 +260,9 @@
   .print-leaderboard-card li > span:first-child { width: 0.11in; }
   .print-leaderboard-card .text-\[11px\] { font-size: 4.5pt; }
   .milestone-label { display: none; }
-  .print-all-bowlers-table { font-size: 5.5pt; line-height: 1; }
+  .print-all-bowlers-table { font-size: 4.8pt; line-height: 1; }
   .print-all-bowlers-table thead { display: table-header-group; }
   .print-all-bowlers-table tr { break-inside: avoid; }
-  .print-all-bowlers-table th, .print-all-bowlers-table td { border-color: #bbb; padding: 0.018in 0.055in; height: 0.12in; }
+  .print-all-bowlers-table th, .print-all-bowlers-table td { border-color: #bbb; padding: 0.01in 0.045in; height: 0.085in; }
   .print-all-bowlers-table th { background: #eee !important; }
 }
