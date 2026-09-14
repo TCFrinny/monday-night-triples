@@ -264,5 +264,6 @@
   .print-all-bowlers-table thead { display: table-header-group; }
   .print-all-bowlers-table tr { break-inside: avoid; }
   .print-all-bowlers-table th, .print-all-bowlers-table td { border-color: #bbb; padding: 0.01in 0.045in; height: 0.085in; }
+  .print-all-bowlers-table .entering-average { width: 0.72in; white-space: normal; }
   .print-all-bowlers-table th { background: #eee !important; }
 }
