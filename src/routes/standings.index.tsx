@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { FileDown } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState, MovementIndicator, ScopeTabs, TeamLink } from "@/components/league/ui";
 import { activeSeasonQuery, standingsQuery, seasonMatchSummaryQuery } from "@/lib/queries";
@@ -10,11 +11,12 @@ import {
   formatRecordValue,
   gamesBehind,
   recordFromPoints,
-  thirdForWeek,
   type StandingsScope,
 } from "@/lib/league";
+import { buttonVariants } from "@/components/ui/button";
 import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 import { orderStandingsRows } from "@/lib/standings-order";
+import { currentThirdScope, latestFinalizedWeek } from "@/lib/report-progress";
 
 export const Route = createFileRoute("/standings/")({
   head: () => ({
@@ -105,11 +107,10 @@ function StandingsPage() {
   const { data: season } = useQuery(activeSeasonQuery);
   const { data: matches } = useQuery(seasonMatchSummaryQuery(season?.id));
 
-  const lastFinalWeek = (matches ?? [])
-    .filter((m: any) => m.status === "final")
-    .reduce((max: number, m: any) => Math.max(max, m.weeks.week_number), 0);
-  const currentThird = thirdForWeek(Math.max(1, lastFinalWeek || 1), season?.third_boundaries ?? [12, 24, 36]);
-  const [scope, setScope] = useState<StandingsScope>(`third_${currentThird}` as StandingsScope);
+  const lastFinalWeek = latestFinalizedWeek(matches);
+  const [scope, setScope] = useState<StandingsScope>(() =>
+    currentThirdScope(matches, season?.third_boundaries),
+  );
 
   const { data: scoped } = useQuery(standingsQuery(season?.id, scope));
   const { data: full } = useQuery(standingsQuery(season?.id, "full"));
@@ -131,6 +132,11 @@ function StandingsPage() {
       title="Standings"
       description="Ranked by wins, with handicap pinfall as the tiebreaker. W-L comes from the seven points a night."
     >
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <span className="eyebrow mr-1 inline-flex items-center gap-1.5"><FileDown className="h-4 w-4" /> Print / Export</span>
+        <Link to="/standings/print/full" target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", size: "sm" })}>Full Season</Link>
+        <Link to="/standings/print/current-third" target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", size: "sm" })}>Current Third</Link>
+      </div>
       <div className="mb-5">
         <ScopeTabs
           value={scope}
