@@ -10,6 +10,7 @@ export function ReportShell({
   latestWeek,
   backTo,
   orientation,
+  reportType,
   children,
 }: {
   season?: (BrandingSource & { season_name?: string | null }) | null | undefined;
@@ -17,11 +18,12 @@ export function ReportShell({
   latestWeek: number;
   backTo: "/standings" | "/stats";
   orientation: "landscape" | "portrait";
+  reportType?: "standings" | "stats" | "all-bowlers";
   children: ReactNode;
 }) {
   const leagueName = resolveLeagueName(season);
   return (
-    <div className={`print-report print-report-${orientation}`}>
+    <div className={`print-report print-report-${orientation} print-report-${reportType ?? orientation}`}>
       <div className="print-toolbar">
         <Button variant="outline" size="sm" asChild>
           <Link to={backTo}><ArrowLeft /> Back</Link>

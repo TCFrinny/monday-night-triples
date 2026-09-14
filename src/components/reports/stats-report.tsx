@@ -33,7 +33,8 @@ export function StatsReport({ mode }: { mode: "bowlers" | "teams" }) {
     title={`Stats — ${mode === "bowlers" ? "Bowlers" : "Teams"} · Full Season`}
     latestWeek={latestFinalizedWeek(matches)}
     backTo="/stats"
-    orientation="portrait"
+    orientation="landscape"
+    reportType="stats"
   >
     {!rows.length ? <EmptyState title="No statistics yet" hint="Leaderboards populate once matches are finalized." /> : (
       <LeaderboardGrid

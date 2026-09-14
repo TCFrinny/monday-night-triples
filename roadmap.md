@@ -1,5 +1,9 @@
 # Roadmap
 
+- [x] Compact standings and stats exports to one Letter landscape page each.
+- [x] Add one-page All Bowlers report with rostered bowlers and subs.
+- [x] Test report shaping and verify five one-page PDFs plus normal report links.
+
 - [x] Add four dedicated public printable report routes.
 - [x] Add Print / Export actions to normal Standings and Stats pages.
 - [x] Share current-third and leaderboard shaping with existing public views.
