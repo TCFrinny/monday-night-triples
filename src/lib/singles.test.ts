@@ -9,6 +9,8 @@ import {
   positionRoundPairings,
   resolveSinglesSide,
   roundRobinPairings,
+  shouldRefreshSinglesOnMatchChange,
+  shouldRefreshSinglesOnScoreChange,
   singlesHandicap,
   singlesMatchPoints,
   sortSinglesStandings,
@@ -213,5 +215,41 @@ describe("recomputation from corrected Triples scores", () => {
     const corrected = singlesMatchPoints(adjustedScores([160, 160, 160], hA), adjustedScores([150, 150, 150], hB));
     expect(before.totalA).not.toBe(corrected.totalA);
     expect(matchId).toBe("singles-match-1");
+  });
+});
+
+describe("automatic Singles refresh conditions", () => {
+  it("fires when a match is finalized", () => {
+    expect(
+      shouldRefreshSinglesOnMatchChange({ op: "UPDATE", oldStatus: "in_progress", newStatus: "final" }),
+    ).toBe(true);
+  });
+
+  it("fires when a finalized match is reopened", () => {
+    expect(
+      shouldRefreshSinglesOnMatchChange({ op: "UPDATE", oldStatus: "final", newStatus: "in_progress" }),
+    ).toBe(true);
+  });
+
+  it("does not fire on a final -> final metadata update", () => {
+    expect(
+      shouldRefreshSinglesOnMatchChange({ op: "UPDATE", oldStatus: "final", newStatus: "final" }),
+    ).toBe(false);
+  });
+
+  it("does not fire on non-final status churn", () => {
+    expect(
+      shouldRefreshSinglesOnMatchChange({ op: "UPDATE", oldStatus: "scheduled", newStatus: "in_progress" }),
+    ).toBe(false);
+  });
+
+  it("fires for a match inserted already final", () => {
+    expect(shouldRefreshSinglesOnMatchChange({ op: "INSERT", newStatus: "final" })).toBe(true);
+    expect(shouldRefreshSinglesOnMatchChange({ op: "INSERT", newStatus: "scheduled" })).toBe(false);
+  });
+
+  it("refreshes on score corrections only for finalized matches", () => {
+    expect(shouldRefreshSinglesOnScoreChange("final")).toBe(true);
+    expect(shouldRefreshSinglesOnScoreChange("in_progress")).toBe(false);
   });
 });
