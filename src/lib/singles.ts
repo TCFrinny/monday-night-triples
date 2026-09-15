@@ -273,3 +273,33 @@ export function sortSinglesStandings<T extends SinglesStandingRowLike>(rows: rea
 export function formatSinglesPoints(points: number): string {
   return Number.isInteger(points) ? String(points) : Number(points).toFixed(1);
 }
+
+/* -------------------------------------------------------------------------
+ * Automatic refresh conditions
+ *
+ * Mirrors the database triggers so the rules are unit-testable:
+ *   matches_singles_refresh_trg       (AFTER INSERT OR UPDATE OF status)
+ *   bowler_games_singles_refresh_*    (statement level, final matches only)
+ *   match_lineups_singles_refresh_trg (final matches only)
+ * ---------------------------------------------------------------------- */
+
+export interface MatchStatusChange {
+  op: "INSERT" | "UPDATE";
+  oldStatus?: string | null;
+  newStatus: string;
+}
+
+/**
+ * True only when a Triples match transitions in or out of `final`.
+ * A final -> final metadata update must NOT trigger a Singles refresh.
+ */
+export function shouldRefreshSinglesOnMatchChange(change: MatchStatusChange): boolean {
+  if (change.op === "INSERT") return change.newStatus === "final";
+  if (change.oldStatus === change.newStatus) return false;
+  return change.newStatus === "final" || change.oldStatus === "final";
+}
+
+/** Score/lineup corrections refresh Singles only once the match is final. */
+export function shouldRefreshSinglesOnScoreChange(matchStatus: string): boolean {
+  return matchStatus === "final";
+}
