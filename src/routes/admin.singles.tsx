@@ -409,8 +409,11 @@ function AdminSingles() {
           }
         />
         <p className="mb-4 text-sm text-muted-foreground">
-          Singles results are derived from finalized Triples scores. Correcting a Triples match and
-          recalculating here rewrites the Singles result without touching the Singles schedule.
+          Singles normally updates itself: results and standings recalculate automatically as each
+          Triples match is finalized, and again whenever a finalized match is corrected. Matchups
+          calculate one at a time — a week does not have to be complete. Use Recalculate Singles only
+          as a repair tool; it rebuilds the same derived results without touching the Singles
+          schedule or any Triples scores.
         </p>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[520px] text-sm">
