@@ -9,6 +9,8 @@ import {
   positionRoundPairings,
   resolveSinglesSide,
   roundRobinPairings,
+  shouldRefreshSinglesOnMatchChange,
+  shouldRefreshSinglesOnScoreChange,
   singlesHandicap,
   singlesMatchPoints,
   sortSinglesStandings,
