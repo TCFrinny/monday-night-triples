@@ -15,6 +15,7 @@ export function LeaderboardGrid({
   includeSubs = false,
   printable = false,
   showEventWeeks = true,
+  minGames = null,
 }: {
   boards: Leader[];
   rows: any[];
@@ -23,13 +24,15 @@ export function LeaderboardGrid({
   includeSubs?: boolean;
   printable?: boolean;
   showEventWeeks?: boolean;
+  /** Season/Third individual participation minimums, keyed by bowler id. */
+  minGames?: Map<string, number> | null;
 }) {
   return <div className={printable ? "print-leaderboard-grid" : "grid gap-4 md:grid-cols-2 xl:grid-cols-3"}>
     {boards.map((board) => {
       const milestone = milestoneBoard(board.key);
       const entries = milestone
         ? milestoneLeaders(milestone, eventsFor(milestone.kind), { includeSubs })
-        : boardLeaders(board, rows, 5, { includeSubs });
+        : boardLeaders(board, rows, 5, { includeSubs, minGames });
       return <section key={board.key} className={printable ? "print-leaderboard-card" : "panel p-5"}>
         <h2 className="font-display text-base uppercase tracking-wide text-foreground">{board.title}</h2>
         {milestone ? <p className="mt-1 text-[11px] text-muted-foreground">Top 5, plus every {milestone.threshold}+ performance in this scope.</p> : board.note ? <p className="mt-1 text-[11px] text-muted-foreground">{board.note}</p> : null}
