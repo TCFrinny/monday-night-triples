@@ -374,12 +374,21 @@ export function boardLeaders(
   board: Leader,
   rows: any[],
   limit = 5,
-  opts: { includeSubs?: boolean } = {},
+  opts: { includeSubs?: boolean; minGames?: Map<string, number> | null } = {},
 ) {
   const dir = board.lowerIsBetter ? -1 : 1;
   const pool = opts.includeSubs ? rows : individualRows(rows);
+  // Season/Third individual boards enforce the 2/3 participation minimum,
+  // except for the exempt boards (raw counting/high-score categories).
+  const minGames = opts.minGames && !isParticipationExempt(board.key) ? opts.minGames : null;
   return pool
     .filter((r) => (board.eligible ? board.eligible(r) : true))
+    .filter((r) => {
+      if (!minGames) return true;
+      const required = minGames.get(r.bowler_id);
+      if (required === undefined) return false;
+      return (Number(r.games) || 0) >= required;
+    })
     .sort((a, b) => (board.value(b) - board.value(a)) * dir)
     .slice(0, limit);
 }
