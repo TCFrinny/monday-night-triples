@@ -7,11 +7,13 @@ import {
   activeSeasonQuery,
   bowlerStatsQuery,
   milestoneEventsQuery,
+  rosterSpotsQuery,
   seasonMatchSummaryQuery,
   teamStatsQuery,
   type MilestoneEventKind,
 } from "@/lib/queries";
 import { latestFinalizedWeek } from "@/lib/report-progress";
+import { participationMinimums } from "@/lib/participation";
 
 export function StatsReport({ mode }: { mode: "bowlers" | "teams" }) {
   const { data: season } = useQuery(activeSeasonQuery);
