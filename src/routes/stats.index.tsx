@@ -146,6 +146,10 @@ function StatsPage() {
         </p>
       )}
 
+      {participationActive && (
+        <p className="mb-4 text-xs text-muted-foreground">{PARTICIPATION_NOTE}</p>
+      )}
+
       {!rows.length ? (
 
         <EmptyState
@@ -153,7 +157,7 @@ function StatsPage() {
           hint="Leaderboards populate once matches are finalized."
         />
       ) : (
-        <LeaderboardGrid boards={boards} rows={rows} mode={mode} eventsFor={eventsFor} includeSubs={includeSubs} showEventWeeks={!weekly} />
+        <LeaderboardGrid boards={boards} rows={rows} mode={mode} eventsFor={eventsFor} includeSubs={includeSubs} showEventWeeks={!weekly} minGames={minGames} />
       )}
     </PageShell>
   );
