@@ -9,9 +9,11 @@ import {
   activeSeasonQuery,
   bowlerStatsQuery,
   milestoneEventsQuery,
+  rosterSpotsQuery,
   seasonMatchSummaryQuery,
   teamStatsQuery,
 } from "@/lib/queries";
+import { PARTICIPATION_NOTE, participationMinimums } from "@/lib/participation";
 import { SCOPE_LABELS } from "@/lib/league";
 import { BOWLER_BOARDS, TEAM_BOARDS, defaultWeek, finalizedWeeks, weeklyScope } from "@/lib/leaderboards";
 import type { StandingsScope } from "@/lib/league";
@@ -76,6 +78,14 @@ function StatsPage() {
   const eventsFor = (kind: string): any[] =>
     (kind === gameKind ? gameEvents : kind === setKind ? setEvents : []) ?? [];
 
+  // Season/Third individual boards require 2/3 of the team's completed games.
+  // Weekly and team boards are untouched.
+  const { data: rosterSpots } = useQuery(rosterSpotsQuery(season?.id));
+  const participationActive = !weekly && mode === "bowlers";
+  const minGames = participationActive
+    ? participationMinimums(matches as any, (rosterSpots as any) ?? [], scope)
+    : null;
+
 
 
 
@@ -136,6 +146,10 @@ function StatsPage() {
         </p>
       )}
 
+      {participationActive && (
+        <p className="mb-4 text-xs text-muted-foreground">{PARTICIPATION_NOTE}</p>
+      )}
+
       {!rows.length ? (
 
         <EmptyState
@@ -143,7 +157,7 @@ function StatsPage() {
           hint="Leaderboards populate once matches are finalized."
         />
       ) : (
-        <LeaderboardGrid boards={boards} rows={rows} mode={mode} eventsFor={eventsFor} includeSubs={includeSubs} showEventWeeks={!weekly} />
+        <LeaderboardGrid boards={boards} rows={rows} mode={mode} eventsFor={eventsFor} includeSubs={includeSubs} showEventWeeks={!weekly} minGames={minGames} />
       )}
     </PageShell>
   );

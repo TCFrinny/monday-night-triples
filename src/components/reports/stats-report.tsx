@@ -7,11 +7,13 @@ import {
   activeSeasonQuery,
   bowlerStatsQuery,
   milestoneEventsQuery,
+  rosterSpotsQuery,
   seasonMatchSummaryQuery,
   teamStatsQuery,
   type MilestoneEventKind,
 } from "@/lib/queries";
 import { latestFinalizedWeek } from "@/lib/report-progress";
+import { participationMinimums } from "@/lib/participation";
 
 export function StatsReport({ mode }: { mode: "bowlers" | "teams" }) {
   const { data: season } = useQuery(activeSeasonQuery);
@@ -27,6 +29,11 @@ export function StatsReport({ mode }: { mode: "bowlers" | "teams" }) {
   };
   const rows = mode === "bowlers" ? bowlerRows ?? [] : teamRows ?? [];
   const boards = mode === "bowlers" ? BOWLER_BOARDS : TEAM_BOARDS;
+  // Same full-season 2/3 participation rule as the on-screen bowler boards.
+  const { data: rosterSpots } = useQuery(rosterSpotsQuery(season?.id));
+  const minGames = mode === "bowlers"
+    ? participationMinimums(matches as any, (rosterSpots as any) ?? [], "full")
+    : null;
 
   return <ReportShell
     season={season}
@@ -43,6 +50,7 @@ export function StatsReport({ mode }: { mode: "bowlers" | "teams" }) {
         mode={mode}
         eventsFor={(kind) => eventSets[kind as MilestoneEventKind] ?? []}
         includeSubs={false}
+        minGames={minGames}
         printable
       />
     )}
