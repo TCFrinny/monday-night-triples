@@ -1,5 +1,6 @@
 import { formatAverage } from "@/lib/league";
 import { pct } from "@/lib/duckpin";
+import { isParticipationExempt } from "@/lib/participation";
 
 export type Leader = {
   key: string;
