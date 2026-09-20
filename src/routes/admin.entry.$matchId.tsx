@@ -432,6 +432,9 @@ function ScoreEntry() {
               const rosterBowlerId = (lineup.absent_bowler_id ?? lineup.bowler_id) as string | null;
               const k = sheetKey(lineup.id, game);
               const frames = sheets[k] ?? emptyGame();
+              const gameIsBlind = isGameBlind(lineup, game);
+              const blindVal = gameBlindValue(lineup, season.blind_deduction);
+              const isFinal = detail.match.status === "final";
               return (
                 <div key={lineup.id} className="rounded-md border border-border p-4">
                   <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -445,21 +448,23 @@ function ScoreEntry() {
                       value={lineup.participation}
                       onChange={(e) => {
                         const p = e.target.value as Participation;
+                        if (p === "blind") return; // blind is per game now — use the toggle
                         setLineup.mutate({
                           lineup,
                           patch:
                             p === "rostered"
                               ? { participation: p, bowlerId: rosterBowlerId, absentId: null }
-                              : p === "blind"
-                                ? { participation: p, bowlerId: null, absentId: rosterBowlerId }
-                                : { participation: p, bowlerId: null, absentId: rosterBowlerId },
+                              : { participation: p, bowlerId: null, absentId: rosterBowlerId },
                         });
                       }}
+                      disabled={isFinal}
                       className="rounded-md border border-border bg-card px-2 py-1.5 text-sm"
                     >
                       <option value="rostered">Rostered</option>
                       <option value="sub">Sub</option>
-                      <option value="blind">Blind</option>
+                      {lineup.participation === "blind" && (
+                        <option value="blind">Blind (all games — pick Rostered/Sub to correct)</option>
+                      )}
                     </select>
                     {lineup.participation === "sub" && (
                       <select
@@ -482,26 +487,41 @@ function ScoreEntry() {
                           ))}
                       </select>
                     )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={gameIsBlind ? "default" : "outline"}
+                      disabled={isFinal || lineup.participation === "blind"}
+                      onClick={() => toggleGameBlind(lineup, game)}
+                      title="Blind applies to this game only — the other games keep their own scores."
+                    >
+                      {gameIsBlind ? `Game ${game} is blind` : `Blind game ${game}`}
+                    </Button>
                     <span className="ml-auto text-xs text-muted-foreground">
                       Applicable {truncateAverage(Number(lineup.applicable_average))} (
                       {lineup.average_source})
-                      {lineup.participation === "blind"
-                        ? ` · blind ${blindScore(Number(lineup.applicable_average), season.blind_deduction)} per game`
-                        : ` · game ${scoreGame(frames).total}`}
+                      {gameIsBlind ? ` · blind ${blindVal}` : ` · game ${scoreGame(frames).total}`}
                     </span>
                   </div>
 
                   {lineup.participation === "blind" ? (
                     <p className="text-sm text-muted-foreground">
-                      Blind score of{" "}
-                      {blindScore(Number(lineup.applicable_average), season.blind_deduction)} counts
-                      toward the team total only — no ball-by-ball statistics are recorded.
+                      Legacy full-match blind: {blindVal} per game counts toward the team total
+                      only. To correct it, switch the lineup back to Rostered or Sub above, then
+                      use the per-game blind toggle if only some games are blind.
+                    </p>
+                  ) : gameIsBlind ? (
+                    <p className="text-sm text-muted-foreground">
+                      Game {game} is blind: {blindVal} counts toward the team total only — no
+                      ball-by-ball statistics for this game. The bowler&apos;s other games keep
+                      their own scores and stats. Use “Blind game {game}” again to switch it back
+                      to rolled.
                     </p>
                   ) : (
                     <BallGrid
                       gridId={k}
                       frames={frames}
-                      disabled={detail.match.status === "final" || !lineup.bowler_id}
+                      disabled={isFinal || !lineup.bowler_id}
                       onChange={(next) => {
                         setSheets((s) => ({ ...s, [k]: next }));
                         autosave(lineup.id, game, next);
