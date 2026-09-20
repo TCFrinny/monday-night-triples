@@ -15,7 +15,6 @@ import { BallGrid } from "@/components/league/ball-grid";
 import { rosterForWeek } from "@/lib/roster";
 import {
   applicableAverage,
-  blindScore,
   computeMatchPoints,
   formatPoints,
   priorAveragesBefore,
