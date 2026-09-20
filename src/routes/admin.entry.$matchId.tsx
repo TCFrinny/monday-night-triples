@@ -26,6 +26,7 @@ import {
 } from "@/lib/league";
 import { emptyGame, scoreGame, type Frame } from "@/lib/duckpin";
 import { finalizeMatch, saveBowlerGame, unfinalizeMatch } from "@/lib/admin";
+import { gameBlindValue, isGameBlind } from "@/lib/blind-games";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/admin/entry/$matchId")({
@@ -48,6 +49,8 @@ function ScoreEntry() {
   const [sheets, setSheets] = useState<Record<string, Frame[]>>({});
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const seeded = useRef(false);
+  const detailRef = useRef(detail);
+  detailRef.current = detail;
 
   const invalidate = () => qc.invalidateQueries();
 
@@ -181,19 +184,30 @@ function ScoreEntry() {
         })
         .eq("id", lineup.id);
       if (error) throw new Error(error.message);
+      // Correcting a legacy full-match blind back to a real identity un-blinds
+      // its games so ball entry is possible again (unfinalized matches only).
+      if (lineup.participation === "blind" && participation !== "blind") {
+        const unblind = await supabase
+          .from("bowler_games")
+          .update({ is_blind: false })
+          .eq("lineup_id", lineup.id);
+        if (unblind.error) throw new Error(unblind.error.message);
+      }
     },
     onSuccess: invalidate,
     onError: (e: Error) => toast.error(e.message),
   });
 
-  /** Debounced autosave of a bowler game sheet. */
+  /** Debounced autosave of a bowler game sheet. Never overwrites a blind game. */
   const autosave = (lineupId: string, gameNumber: number, frames: Frame[]) => {
     const k = sheetKey(lineupId, gameNumber);
     if (timers.current[k]) clearTimeout(timers.current[k]);
     timers.current[k] = setTimeout(async () => {
       try {
+        const l = (detailRef.current?.lineups ?? []).find((x: any) => x.id === lineupId);
+        if (l && isGameBlind(l, gameNumber)) return; // game was marked blind after scheduling
         await saveBowlerGame({ lineupId, gameNumber, frames, isBlind: false });
-        if (detail?.match.status === "scheduled") {
+        if (detailRef.current?.match.status === "scheduled") {
           await supabase.from("matches").update({ status: "in_progress" }).eq("id", matchId);
         }
         qc.invalidateQueries({ queryKey: ["match", matchId] });
@@ -201,6 +215,41 @@ function ScoreEntry() {
         toast.error((e as Error).message);
       }
     }, 700);
+  };
+
+  /** Toggle blind for ONE game only; other games are untouched. */
+  const toggleGameBlind = async (lineup: any, gameNumber: number) => {
+    const k = sheetKey(lineup.id, gameNumber);
+    if (timers.current[k]) {
+      clearTimeout(timers.current[k]);
+      delete timers.current[k];
+    }
+    const makeBlind = !isGameBlind(lineup, gameNumber);
+    try {
+      if (makeBlind) {
+        setSheets((s) => ({ ...s, [k]: emptyGame() }));
+        await saveBowlerGame({
+          lineupId: lineup.id,
+          gameNumber,
+          frames: emptyGame(),
+          isBlind: true,
+          blindValue: gameBlindValue(lineup, season!.blind_deduction),
+        });
+      } else {
+        await saveBowlerGame({
+          lineupId: lineup.id,
+          gameNumber,
+          frames: emptyGame(),
+          isBlind: false,
+        });
+      }
+      if (detailRef.current?.match.status === "scheduled") {
+        await supabase.from("matches").update({ status: "in_progress" }).eq("id", matchId);
+      }
+      qc.invalidateQueries({ queryKey: ["match", matchId] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   };
 
   useEffect(() => () => Object.values(timers.current).forEach(clearTimeout), []);
@@ -218,8 +267,7 @@ function ScoreEntry() {
 
   const scratchOf = (lineup: any, g: number) => {
     if (!lineup) return 0;
-    if (lineup.participation === "blind")
-      return blindScore(Number(lineup.applicable_average), season.blind_deduction);
+    if (isGameBlind(lineup, g)) return gameBlindValue(lineup, season.blind_deduction);
     const frames = sheets[sheetKey(lineup.id, g)];
     return frames ? scoreGame(frames).total : 0;
   };
