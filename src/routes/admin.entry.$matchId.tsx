@@ -15,7 +15,6 @@ import { BallGrid } from "@/components/league/ball-grid";
 import { rosterForWeek } from "@/lib/roster";
 import {
   applicableAverage,
-  blindScore,
   computeMatchPoints,
   formatPoints,
   priorAveragesBefore,
@@ -26,6 +25,7 @@ import {
 } from "@/lib/league";
 import { emptyGame, scoreGame, type Frame } from "@/lib/duckpin";
 import { finalizeMatch, saveBowlerGame, unfinalizeMatch } from "@/lib/admin";
+import { gameBlindValue, isGameBlind } from "@/lib/blind-games";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/admin/entry/$matchId")({
@@ -48,6 +48,8 @@ function ScoreEntry() {
   const [sheets, setSheets] = useState<Record<string, Frame[]>>({});
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const seeded = useRef(false);
+  const detailRef = useRef(detail);
+  detailRef.current = detail;
 
   const invalidate = () => qc.invalidateQueries();
 
@@ -181,19 +183,30 @@ function ScoreEntry() {
         })
         .eq("id", lineup.id);
       if (error) throw new Error(error.message);
+      // Correcting a legacy full-match blind back to a real identity un-blinds
+      // its games so ball entry is possible again (unfinalized matches only).
+      if (lineup.participation === "blind" && participation !== "blind") {
+        const unblind = await supabase
+          .from("bowler_games")
+          .update({ is_blind: false })
+          .eq("lineup_id", lineup.id);
+        if (unblind.error) throw new Error(unblind.error.message);
+      }
     },
     onSuccess: invalidate,
     onError: (e: Error) => toast.error(e.message),
   });
 
-  /** Debounced autosave of a bowler game sheet. */
+  /** Debounced autosave of a bowler game sheet. Never overwrites a blind game. */
   const autosave = (lineupId: string, gameNumber: number, frames: Frame[]) => {
     const k = sheetKey(lineupId, gameNumber);
     if (timers.current[k]) clearTimeout(timers.current[k]);
     timers.current[k] = setTimeout(async () => {
       try {
+        const l = (detailRef.current?.lineups ?? []).find((x: any) => x.id === lineupId);
+        if (l && isGameBlind(l, gameNumber)) return; // game was marked blind after scheduling
         await saveBowlerGame({ lineupId, gameNumber, frames, isBlind: false });
-        if (detail?.match.status === "scheduled") {
+        if (detailRef.current?.match.status === "scheduled") {
           await supabase.from("matches").update({ status: "in_progress" }).eq("id", matchId);
         }
         qc.invalidateQueries({ queryKey: ["match", matchId] });
@@ -201,6 +214,41 @@ function ScoreEntry() {
         toast.error((e as Error).message);
       }
     }, 700);
+  };
+
+  /** Toggle blind for ONE game only; other games are untouched. */
+  const toggleGameBlind = async (lineup: any, gameNumber: number) => {
+    const k = sheetKey(lineup.id, gameNumber);
+    if (timers.current[k]) {
+      clearTimeout(timers.current[k]);
+      delete timers.current[k];
+    }
+    const makeBlind = !isGameBlind(lineup, gameNumber);
+    try {
+      if (makeBlind) {
+        setSheets((s) => ({ ...s, [k]: emptyGame() }));
+        await saveBowlerGame({
+          lineupId: lineup.id,
+          gameNumber,
+          frames: emptyGame(),
+          isBlind: true,
+          blindValue: gameBlindValue(lineup, season!.blind_deduction),
+        });
+      } else {
+        await saveBowlerGame({
+          lineupId: lineup.id,
+          gameNumber,
+          frames: emptyGame(),
+          isBlind: false,
+        });
+      }
+      if (detailRef.current?.match.status === "scheduled") {
+        await supabase.from("matches").update({ status: "in_progress" }).eq("id", matchId);
+      }
+      qc.invalidateQueries({ queryKey: ["match", matchId] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   };
 
   useEffect(() => () => Object.values(timers.current).forEach(clearTimeout), []);
@@ -218,8 +266,7 @@ function ScoreEntry() {
 
   const scratchOf = (lineup: any, g: number) => {
     if (!lineup) return 0;
-    if (lineup.participation === "blind")
-      return blindScore(Number(lineup.applicable_average), season.blind_deduction);
+    if (isGameBlind(lineup, g)) return gameBlindValue(lineup, season.blind_deduction);
     const frames = sheets[sheetKey(lineup.id, g)];
     return frames ? scoreGame(frames).total : 0;
   };
@@ -307,6 +354,9 @@ function ScoreEntry() {
                       {[1, 2, 3].map((g) => (
                         <td key={g} className="px-3 py-1.5 text-right tabular-nums">
                           {scratchOf(l, g)}
+                          {l && isGameBlind(l, g) && (
+                            <span className="ml-1 text-[10px] uppercase text-muted-foreground">blind</span>
+                          )}
                         </td>
                       ))}
                       <td className="stat-num px-4 py-1.5 text-right">
@@ -381,6 +431,9 @@ function ScoreEntry() {
               const rosterBowlerId = (lineup.absent_bowler_id ?? lineup.bowler_id) as string | null;
               const k = sheetKey(lineup.id, game);
               const frames = sheets[k] ?? emptyGame();
+              const gameIsBlind = isGameBlind(lineup, game);
+              const blindVal = gameBlindValue(lineup, season.blind_deduction);
+              const isFinal = detail.match.status === "final";
               return (
                 <div key={lineup.id} className="rounded-md border border-border p-4">
                   <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -394,21 +447,23 @@ function ScoreEntry() {
                       value={lineup.participation}
                       onChange={(e) => {
                         const p = e.target.value as Participation;
+                        if (p === "blind") return; // blind is per game now — use the toggle
                         setLineup.mutate({
                           lineup,
                           patch:
                             p === "rostered"
                               ? { participation: p, bowlerId: rosterBowlerId, absentId: null }
-                              : p === "blind"
-                                ? { participation: p, bowlerId: null, absentId: rosterBowlerId }
-                                : { participation: p, bowlerId: null, absentId: rosterBowlerId },
+                              : { participation: p, bowlerId: null, absentId: rosterBowlerId },
                         });
                       }}
+                      disabled={isFinal}
                       className="rounded-md border border-border bg-card px-2 py-1.5 text-sm"
                     >
                       <option value="rostered">Rostered</option>
                       <option value="sub">Sub</option>
-                      <option value="blind">Blind</option>
+                      {lineup.participation === "blind" && (
+                        <option value="blind">Blind (all games — pick Rostered/Sub to correct)</option>
+                      )}
                     </select>
                     {lineup.participation === "sub" && (
                       <select
@@ -431,26 +486,41 @@ function ScoreEntry() {
                           ))}
                       </select>
                     )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={gameIsBlind ? "default" : "outline"}
+                      disabled={isFinal || lineup.participation === "blind"}
+                      onClick={() => toggleGameBlind(lineup, game)}
+                      title="Blind applies to this game only — the other games keep their own scores."
+                    >
+                      {gameIsBlind ? `Game ${game} is blind` : `Blind game ${game}`}
+                    </Button>
                     <span className="ml-auto text-xs text-muted-foreground">
                       Applicable {truncateAverage(Number(lineup.applicable_average))} (
                       {lineup.average_source})
-                      {lineup.participation === "blind"
-                        ? ` · blind ${blindScore(Number(lineup.applicable_average), season.blind_deduction)} per game`
-                        : ` · game ${scoreGame(frames).total}`}
+                      {gameIsBlind ? ` · blind ${blindVal}` : ` · game ${scoreGame(frames).total}`}
                     </span>
                   </div>
 
                   {lineup.participation === "blind" ? (
                     <p className="text-sm text-muted-foreground">
-                      Blind score of{" "}
-                      {blindScore(Number(lineup.applicable_average), season.blind_deduction)} counts
-                      toward the team total only — no ball-by-ball statistics are recorded.
+                      Legacy full-match blind: {blindVal} per game counts toward the team total
+                      only. To correct it, switch the lineup back to Rostered or Sub above, then
+                      use the per-game blind toggle if only some games are blind.
+                    </p>
+                  ) : gameIsBlind ? (
+                    <p className="text-sm text-muted-foreground">
+                      Game {game} is blind: {blindVal} counts toward the team total only — no
+                      ball-by-ball statistics for this game. The bowler&apos;s other games keep
+                      their own scores and stats. Use “Blind game {game}” again to switch it back
+                      to rolled.
                     </p>
                   ) : (
                     <BallGrid
                       gridId={k}
                       frames={frames}
-                      disabled={detail.match.status === "final" || !lineup.bowler_id}
+                      disabled={isFinal || !lineup.bowler_id}
                       onChange={(next) => {
                         setSheets((s) => ({ ...s, [k]: next }));
                         autosave(lineup.id, game, next);
@@ -468,12 +538,12 @@ function ScoreEntry() {
 
   async function finalizeNow() {
     try {
-      // Flush any pending autosaves first.
+      // Flush any pending autosaves first (skip games that are blind).
       for (const [k, t] of Object.entries(timers.current)) {
         clearTimeout(t);
         const [lineupId, g] = k.split(":");
         const l = (detail!.lineups ?? []).find((x: any) => x.id === lineupId);
-        if (!l || l.participation === "blind") continue;
+        if (!l || isGameBlind(l, Number(g))) continue;
         await saveBowlerGame({
           lineupId: lineupId!,
           gameNumber: Number(g),
@@ -481,16 +551,17 @@ function ScoreEntry() {
           isBlind: false,
         });
       }
-      // Persist blind games so the finalized record carries them.
+      // Persist every blind game so the finalized record carries it — per game,
+      // including legacy full-match blind lineups missing per-game rows.
       for (const l of detail!.lineups ?? []) {
-        if (l.participation !== "blind") continue;
         for (const g of [1, 2, 3]) {
+          if (!isGameBlind(l, g)) continue;
           await saveBowlerGame({
             lineupId: l.id,
             gameNumber: g,
             frames: emptyGame(),
             isBlind: true,
-            blindValue: blindScore(Number(l.applicable_average), season!.blind_deduction),
+            blindValue: gameBlindValue(l, season!.blind_deduction),
           });
         }
       }
