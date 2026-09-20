@@ -539,12 +539,12 @@ function ScoreEntry() {
 
   async function finalizeNow() {
     try {
-      // Flush any pending autosaves first.
+      // Flush any pending autosaves first (skip games that are blind).
       for (const [k, t] of Object.entries(timers.current)) {
         clearTimeout(t);
         const [lineupId, g] = k.split(":");
         const l = (detail!.lineups ?? []).find((x: any) => x.id === lineupId);
-        if (!l || l.participation === "blind") continue;
+        if (!l || isGameBlind(l, Number(g))) continue;
         await saveBowlerGame({
           lineupId: lineupId!,
           gameNumber: Number(g),
@@ -552,16 +552,17 @@ function ScoreEntry() {
           isBlind: false,
         });
       }
-      // Persist blind games so the finalized record carries them.
+      // Persist every blind game so the finalized record carries it — per game,
+      // including legacy full-match blind lineups missing per-game rows.
       for (const l of detail!.lineups ?? []) {
-        if (l.participation !== "blind") continue;
         for (const g of [1, 2, 3]) {
+          if (!isGameBlind(l, g)) continue;
           await saveBowlerGame({
             lineupId: l.id,
             gameNumber: g,
             frames: emptyGame(),
             isBlind: true,
-            blindValue: blindScore(Number(l.applicable_average), season!.blind_deduction),
+            blindValue: gameBlindValue(l, season!.blind_deduction),
           });
         }
       }
