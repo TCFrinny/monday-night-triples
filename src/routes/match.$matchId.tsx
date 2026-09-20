@@ -202,14 +202,22 @@ function MatchDetail() {
                     <div className="space-y-3">
                       {(l.bowler_games ?? [])
                         .sort((a: any, b: any) => a.game_number - b.game_number)
-                        .map((g: any) => (
-                          <div key={g.id}>
-                            <p className="mb-1 font-display text-xs uppercase tracking-wide text-muted-foreground">
-                              Game {g.game_number} · {g.scratch_score}
+                        .map((g: any) =>
+                          g.is_blind ? (
+                            <p key={g.id} className="text-sm text-muted-foreground">
+                              Game {g.game_number} · {g.scratch_score}{" "}
+                              <span className="text-xs uppercase">(blind)</span> — counted in the
+                              team score only, never in individual statistics.
                             </p>
-                            <Linescore frames={framesFromRows(g.frames)} />
-                          </div>
-                        ))}
+                          ) : (
+                            <div key={g.id}>
+                              <p className="mb-1 font-display text-xs uppercase tracking-wide text-muted-foreground">
+                                Game {g.game_number} · {g.scratch_score}
+                              </p>
+                              <Linescore frames={framesFromRows(g.frames)} />
+                            </div>
+                          ),
+                        )}
                     </div>
                   )}
                 </div>
