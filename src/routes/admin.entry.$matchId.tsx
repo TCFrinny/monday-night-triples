@@ -355,6 +355,9 @@ function ScoreEntry() {
                       {[1, 2, 3].map((g) => (
                         <td key={g} className="px-3 py-1.5 text-right tabular-nums">
                           {scratchOf(l, g)}
+                          {l && isGameBlind(l, g) && (
+                            <span className="ml-1 text-[10px] uppercase text-muted-foreground">blind</span>
+                          )}
                         </td>
                       ))}
                       <td className="stat-num px-4 py-1.5 text-right">
