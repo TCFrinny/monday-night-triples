@@ -11,6 +11,7 @@ import {
 } from "@/lib/queries";
 import { formatPoints } from "@/lib/league";
 import { resolveGameSnapshot } from "@/lib/results";
+import { RolloffNotes } from "@/components/league/rolloff-notes";
 import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 import { sortMatchesByActualLane } from "@/lib/lane-slots";
 
@@ -204,6 +205,7 @@ function ResultCard({
             ))}
           </tbody>
         </table>
+        <RolloffNotes match={match} games={games} />
       </div>
       <p className="px-5 py-2 text-[11px] text-muted-foreground">
         Handicap totals shown first, scratch in parentheses. Points: 2 per game, 1 for the set.
