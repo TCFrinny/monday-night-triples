@@ -1,0 +1,2 @@
+ALTER TABLE public.matches ADD COLUMN IF NOT EXISTS rolloff_decisions jsonb NOT NULL DEFAULT '{}'::jsonb;
+COMMENT ON COLUMN public.matches.rolloff_decisions IS 'Triples roll-off manual winners by key (game1, game2, game3, set) -> "a" | "b". Only consulted while the matching game/set is tied.';

@@ -563,6 +563,7 @@ export type Database = {
           lane_pair: string | null
           points_a: number
           points_b: number
+          rolloff_decisions: Json
           scratch_total_a: number
           scratch_total_b: number
           sort_order: number
@@ -587,6 +588,7 @@ export type Database = {
           lane_pair?: string | null
           points_a?: number
           points_b?: number
+          rolloff_decisions?: Json
           scratch_total_a?: number
           scratch_total_b?: number
           sort_order?: number
@@ -611,6 +613,7 @@ export type Database = {
           lane_pair?: string | null
           points_a?: number
           points_b?: number
+          rolloff_decisions?: Json
           scratch_total_a?: number
           scratch_total_b?: number
           sort_order?: number
