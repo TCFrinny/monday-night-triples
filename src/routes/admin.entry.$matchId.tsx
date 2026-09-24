@@ -665,6 +665,20 @@ function ScoreEntry() {
         }
       }
       const fresh = await qc.fetchQuery(matchDetailQuery(matchId));
+      // Roll-off frames come from the saved sheets, exactly as stored.
+      const freshFrameOne = (teamId: string, g: number) =>
+        teamFrameOne(
+          [1, 2, 3].map((slot) => {
+            const l = (fresh.lineups ?? []).find((x: any) => x.team_id === teamId && x.slot === slot);
+            const row = l?.bowler_games?.find((x: any) => x.game_number === g);
+            return {
+              blind: l ? isGameBlind(l, g) : false,
+              frames: row ? framesFromRows(row.frames) : null,
+            };
+          }),
+        );
+      const tA = detail!.match.team_a_id as string;
+      const tB = detail!.match.team_b_id as string;
       await finalizeMatch({
         matchId,
         seasonId: season!.id,
@@ -684,7 +698,10 @@ function ScoreEntry() {
         })),
         handicapPercent: season!.handicap_percent,
         blindDeduction: season!.blind_deduction,
-        frameOne: frameOneNow(),
+        frameOne: {
+          2: { a: freshFrameOne(tA, 2), b: freshFrameOne(tB, 2) },
+          3: { a: freshFrameOne(tA, 3), b: freshFrameOne(tB, 3) },
+        },
         decisions: parseDecisions(fresh.match.rolloff_decisions),
       });
       toast.success("Match finalized");
