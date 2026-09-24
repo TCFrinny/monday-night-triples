@@ -275,7 +275,7 @@ export const seasonMatchSummaryQuery = (seasonId: string | undefined) =>
         supabase
           .from("matches")
           .select(
-            "id, status, lane_pair, sort_order, is_bye, handicap_team_id, handicap_pins, team_a_id, team_b_id, team_a_average, team_b_average, points_a, points_b, scratch_total_a, scratch_total_b, hdcp_total_a, hdcp_total_b, game_points, weeks!inner(id, week_number, third, is_position_round, bowl_date, season_id), team_a:teams!matches_team_a_id_fkey(id, name, slug), team_b:teams!matches_team_b_id_fkey(id, name, slug)",
+            "id, status, lane_pair, sort_order, is_bye, handicap_team_id, handicap_pins, team_a_id, team_b_id, team_a_average, team_b_average, points_a, points_b, scratch_total_a, scratch_total_b, hdcp_total_a, hdcp_total_b, game_points, rolloff_decisions, weeks!inner(id, week_number, third, is_position_round, bowl_date, season_id), team_a:teams!matches_team_a_id_fkey(id, name, slug), team_b:teams!matches_team_b_id_fkey(id, name, slug)",
           )
           .eq("weeks.season_id", seasonId!)
           .order("sort_order"),
