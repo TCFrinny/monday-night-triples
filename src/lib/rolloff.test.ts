@@ -47,7 +47,7 @@ describe("Triples roll-offs", () => {
 
   it("4) strike frame includes next two balls", () => {
     expect(frameOneNatural(f1([10], [9, 1]))).toBe(20);
-    expect(frameOneNatural(f1([10], [9]))).toBe(19);
+    expect(frameOneNatural(f1([10], [3, 4]))).toBe(17);
     expect(frameOneNatural(f1([10]))).toBeNull();
   });
 
