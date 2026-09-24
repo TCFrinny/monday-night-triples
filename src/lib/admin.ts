@@ -1,7 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { scoreGame, type Frame } from "@/lib/duckpin";
-import { blindScore, computeMatchPoints, teamAverage, teamHandicap, truncateAverage } from "@/lib/league";
+import { blindScore, teamAverage, teamHandicap, truncateAverage } from "@/lib/league";
 import { buildGameSnapshot } from "@/lib/results";
+import { computeTriplesPoints, type RolloffDecisions, type TeamFrameOne } from "@/lib/rolloff";
 
 
 /** Persist one bowler game: replaces its frames and balls with the current sheet. */
@@ -105,6 +106,10 @@ export async function finalizeMatch(args: {
   lineups: LineupInput[];
   handicapPercent: number;
   blindDeduction: number;
+  /** Team frame-1 natural scores for games 2 and 3 (roll-offs for tied G1/G2). */
+  frameOne: Partial<Record<2 | 3, { a: TeamFrameOne; b: TeamFrameOne }>>;
+  /** Stored manual roll-off winners; stale ones are dropped. */
+  decisions: RolloffDecisions;
 }) {
   const side = (teamId: string) => args.lineups.filter((l) => l.team_id === teamId);
   const scratchFor = (lineups: LineupInput[], game: number) =>
@@ -126,7 +131,15 @@ export async function finalizeMatch(args: {
   const scratchB = [1, 2, 3].map((g) => scratchFor(b, g));
   const hdcpA = scratchA.map((s) => s + (hcp.receivingSide === "a" ? hcp.pins : 0));
   const hdcpB = scratchB.map((s) => s + (hcp.receivingSide === "b" ? hcp.pins : 0));
-  const points = computeMatchPoints(hdcpA, hdcpB);
+  // Triples never splits ties: roll-offs decide tied games and the set.
+  const points = computeTriplesPoints({
+    hdcpA,
+    hdcpB,
+    handicap: hcp,
+    frameOne: args.frameOne,
+    decisions: args.decisions,
+  });
+  if (points.pending.length) throw new Error(points.pending.join(" · "));
 
   const upd = await supabase
     .from("matches")
@@ -151,6 +164,7 @@ export async function finalizeMatch(args: {
         gamePoints: points.gamePoints,
       }),
 
+      rolloff_decisions: points.decisions,
       finalized_at: new Date().toISOString(),
     })
     .eq("id", args.matchId);
