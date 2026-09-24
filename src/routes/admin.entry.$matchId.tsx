@@ -15,7 +15,6 @@ import { BallGrid } from "@/components/league/ball-grid";
 import { rosterForWeek } from "@/lib/roster";
 import {
   applicableAverage,
-  computeMatchPoints,
   formatPoints,
   priorAveragesBefore,
   type PriorGameRow,
@@ -27,6 +26,13 @@ import { emptyGame, scoreGame, type Frame } from "@/lib/duckpin";
 import { finalizeMatch, saveBowlerGame, unfinalizeMatch } from "@/lib/admin";
 import { gameBlindValue, isGameBlind } from "@/lib/blind-games";
 import { Button } from "@/components/ui/button";
+import {
+  computeTriplesPoints,
+  parseDecisions,
+  teamFrameOne,
+  type RolloffKey,
+  type Side,
+} from "@/lib/rolloff";
 
 export const Route = createFileRoute("/admin/entry/$matchId")({
   component: ScoreEntry,
@@ -281,7 +287,45 @@ function ScoreEntry() {
 
   const hdcpA = [1, 2, 3].map((g) => hdcpTeam("a", teams[0]!.id, g));
   const hdcpB = [1, 2, 3].map((g) => hdcpTeam("b", teams[1]!.id, g));
-  const points = computeMatchPoints(hdcpA, hdcpB);
+  const decisions = parseDecisions(detail.match.rolloff_decisions);
+  const frameOneFor = (teamId: string, g: number) =>
+    teamFrameOne(
+      lineupsOf(teamId).map((l) => ({
+        blind: l ? isGameBlind(l, g) : false,
+        frames: l ? (sheets[sheetKey(l.id, g)] ?? null) : null,
+      })),
+    );
+  const frameOne = {
+    2: { a: frameOneFor(teams[0]!.id, 2), b: frameOneFor(teams[1]!.id, 2) },
+    3: { a: frameOneFor(teams[0]!.id, 3), b: frameOneFor(teams[1]!.id, 3) },
+  };
+  const points = computeTriplesPoints({ hdcpA, hdcpB, handicap: hcp, frameOne, decisions });
+  const isFinalMatch = detail.match.status === "final";
+  const sideName = (s: Side | null) => (s === "a" ? teams[0]!.name : s === "b" ? teams[1]!.name : "—");
+  const setDecision = async (key: RolloffKey, side: Side) => {
+    const next = { ...parseDecisions(detail.match.rolloff_decisions), [key]: side };
+    const { error } = await supabase.from("matches").update({ rolloff_decisions: next }).eq("id", matchId);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    qc.invalidateQueries({ queryKey: ["match", matchId] });
+  };
+  const WinnerPicker = ({ k, current }: { k: RolloffKey; current: Side | null }) => (
+    <span className="inline-flex gap-1">
+      {(["a", "b"] as const).map((s) => (
+        <Button
+          key={s}
+          size="sm"
+          variant={current === s ? "default" : "outline"}
+          disabled={isFinalMatch}
+          onClick={() => setDecision(k, s)}
+        >
+          {sideName(s)} won
+        </Button>
+      ))}
+    </span>
+  );
 
   return (
     <div className="space-y-6">
@@ -394,6 +438,64 @@ function ScoreEntry() {
           </span>
         </div>
       </div>
+
+      {(points.gamePoints.some((g) => g.tied) || points.set.tied) && (
+        <div className="panel space-y-3 p-4 text-sm">
+          <h2 className="font-display text-sm uppercase tracking-[0.14em] text-gold">
+            Roll-offs — Triples ties are never split
+          </h2>
+          {points.gamePoints
+            .filter((g) => g.tied)
+            .map((g) => {
+              const ro = g.rolloff!;
+              return (
+                <div key={g.game} className="rounded-md border border-border p-3">
+                  <div className="font-display uppercase text-foreground">
+                    Game {g.game} tied {hdcpA[g.game - 1]}–{hdcpB[g.game - 1]} (hdcp)
+                  </div>
+                  {ro.nextGame && (
+                    <div className="mt-1 text-muted-foreground tabular-nums">
+                      Roll-off = Game {ro.nextGame} frame 1 (natural score incl. bonus) + 10% of the
+                      handicap to the receiving team:{" "}
+                      {teams[0]!.name} {ro.aScratch ?? "?"} + {ro.aHdcp} = {ro.aTotal ?? "?"} ·{" "}
+                      {teams[1]!.name} {ro.bScratch ?? "?"} + {ro.bHdcp} = {ro.bTotal ?? "?"}
+                    </div>
+                  )}
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    {ro.winner ? (
+                      <span className="text-primary">
+                        Roll-off winner: {sideName(ro.winner)} (+2){ro.method === "manual" ? " · chosen by admin" : ""}
+                      </span>
+                    ) : (
+                      <span className="text-gold">{ro.message}</span>
+                    )}
+                    {ro.manualAllowed && (
+                      <WinnerPicker k={`game${g.game}` as RolloffKey} current={ro.winner} />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          {points.set.tied && (
+            <div className="rounded-md border border-border p-3">
+              <div className="font-display uppercase text-foreground">
+                Set tied {points.set.a}–{points.set.b} (hdcp)
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                {points.set.winner ? (
+                  <span className="text-primary">Roll-off winner: {sideName(points.set.winner)} (+1) · chosen by admin</span>
+                ) : (
+                  <span className="text-gold">{points.set.message}</span>
+                )}
+                <WinnerPicker k="set" current={points.set.winner} />
+              </div>
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Roll-offs decide points only — game scores, pinfall and stats stay exactly as bowled.
+          </p>
+        </div>
+      )}
 
       {/* Game tabs */}
       <div className="inline-flex gap-1 rounded-lg border border-border bg-secondary/40 p-1">
@@ -566,6 +668,20 @@ function ScoreEntry() {
         }
       }
       const fresh = await qc.fetchQuery(matchDetailQuery(matchId));
+      // Roll-off frames come from the saved sheets, exactly as stored.
+      const freshFrameOne = (teamId: string, g: number) =>
+        teamFrameOne(
+          [1, 2, 3].map((slot) => {
+            const l = (fresh.lineups ?? []).find((x: any) => x.team_id === teamId && x.slot === slot);
+            const row = l?.bowler_games?.find((x: any) => x.game_number === g);
+            return {
+              blind: l ? isGameBlind(l, g) : false,
+              frames: row ? framesFromRows(row.frames) : null,
+            };
+          }),
+        );
+      const tA = detail!.match.team_a_id as string;
+      const tB = detail!.match.team_b_id as string;
       await finalizeMatch({
         matchId,
         seasonId: season!.id,
@@ -585,6 +701,11 @@ function ScoreEntry() {
         })),
         handicapPercent: season!.handicap_percent,
         blindDeduction: season!.blind_deduction,
+        frameOne: {
+          2: { a: freshFrameOne(tA, 2), b: freshFrameOne(tB, 2) },
+          3: { a: freshFrameOne(tA, 3), b: freshFrameOne(tB, 3) },
+        },
+        decisions: parseDecisions(fresh.match.rolloff_decisions),
       });
       toast.success("Match finalized");
       invalidate();

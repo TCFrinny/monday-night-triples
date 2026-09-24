@@ -14,6 +14,7 @@ import {
 import { matchDetailQuery } from "@/lib/queries";
 import { formatPoints } from "@/lib/league";
 import { resolveGameSnapshot } from "@/lib/results";
+import { RolloffNotes } from "@/components/league/rolloff-notes";
 import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
 export const Route = createFileRoute("/match/$matchId")({
@@ -166,6 +167,7 @@ function MatchDetail() {
             })}
           </tbody>
         </table>
+        <RolloffNotes match={m} games={games} />
       </div>
 
       {[m.team_a, m.team_b].filter(Boolean).map((team: any) => (

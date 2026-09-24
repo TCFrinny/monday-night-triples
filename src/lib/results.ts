@@ -11,7 +11,7 @@
 import { blindScore } from "@/lib/league";
 
 export interface GameSnapshot {
-  [key: string]: number;
+  [key: string]: number | string | boolean | null | undefined;
   game: number;
   a_scratch: number;
   b_scratch: number;
@@ -19,6 +19,14 @@ export interface GameSnapshot {
   b_hdcp: number;
   a: number;
   b: number;
+  /** Triples roll-off (only when the handicap game score was tied). */
+  tied?: boolean;
+  rolloff_winner?: "a" | "b" | null;
+  rolloff_method?: "auto" | "manual" | "pending" | null;
+  rolloff_a?: number | null;
+  rolloff_b?: number | null;
+  rolloff_hdcp_a?: number | null;
+  rolloff_hdcp_b?: number | null;
 }
 
 
@@ -65,17 +73,33 @@ export function buildGameSnapshot(args: {
   scratchB: number[];
   hdcpA: number[];
   hdcpB: number[];
-  gamePoints: { game: number; a: number; b: number }[];
+  gamePoints: { game: number; a: number; b: number; tied?: boolean; rolloff?: any }[];
 }): GameSnapshot[] {
-  return [0, 1, 2].map((i) => ({
+  return [0, 1, 2].map((i) => {
+    const gp = args.gamePoints[i];
+    const ro = gp?.rolloff;
+    const extra = gp?.tied
+      ? {
+          tied: true,
+          rolloff_winner: ro?.winner ?? null,
+          rolloff_method: ro?.method ?? null,
+          rolloff_a: ro?.aScratch ?? null,
+          rolloff_b: ro?.bScratch ?? null,
+          rolloff_hdcp_a: ro?.aHdcp ?? null,
+          rolloff_hdcp_b: ro?.bHdcp ?? null,
+        }
+      : {};
+    return {
     game: i + 1,
     a_scratch: args.scratchA[i] ?? 0,
     b_scratch: args.scratchB[i] ?? 0,
     a_hdcp: args.hdcpA[i] ?? 0,
     b_hdcp: args.hdcpB[i] ?? 0,
-    a: args.gamePoints[i]?.a ?? 0,
-    b: args.gamePoints[i]?.b ?? 0,
-  }));
+    a: gp?.a ?? 0,
+    b: gp?.b ?? 0,
+    ...extra,
+  };
+  });
 }
 
 /**
