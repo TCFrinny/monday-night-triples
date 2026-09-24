@@ -56,7 +56,7 @@ export function teamFrameOne(bowlers: { blind: boolean; frames: Frame[] | null }
     if (s === null) return { score: null, reason: "incomplete" };
     total += s;
   }
-  return { score: total, reason: bowlers.length ? undefined : "incomplete" };
+  return bowlers.length ? { score: total } : { score: null, reason: "incomplete" };
 }
 
 export interface GameRolloff {

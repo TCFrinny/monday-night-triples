@@ -305,7 +305,10 @@ function ScoreEntry() {
   const setDecision = async (key: RolloffKey, side: Side) => {
     const next = { ...parseDecisions(detail.match.rolloff_decisions), [key]: side };
     const { error } = await supabase.from("matches").update({ rolloff_decisions: next }).eq("id", matchId);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     qc.invalidateQueries({ queryKey: ["match", matchId] });
   };
   const WinnerPicker = ({ k, current }: { k: RolloffKey; current: Side | null }) => (
