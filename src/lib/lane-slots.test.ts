@@ -139,7 +139,7 @@ describe("lane slots", () => {
     expect(plan.orphans).toEqual([]);
     expect(plan.slots.map((s) => s.match?.id ?? null)).toEqual(["m1", "m2", null]);
     expect(plan.slots.map((s) => s.actual_lane_pair)).toEqual(["37-38", "37-38", "41-42"]);
-    expect(plan.slots[1].overridden).toBe(true);
+    expect(plan.slots[1]?.overridden).toBe(true);
     const sorted = sortMatchesByActualLane([matches[1], matches[0]]);
     expect(sorted.map((m) => m.id)).toEqual(["m1", "m2"]);
     const tie = sortMatchesByActualLane([
