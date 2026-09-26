@@ -207,9 +207,10 @@ export function validateWeekAssignments(
 }
 
 /**
- * Actual (possibly overridden) lane pairs must be valid and unique within a week.
- * Empty slots and byes carry no lane. Locked rows are included because a finalized
- * match still occupies its lane pair.
+ * Actual (possibly overridden) lane pairs must be valid consecutive pairs.
+ * Duplicates within a week ARE allowed: a delayed makeup bowled on another
+ * date may legitimately reuse a physical pair for the same league week.
+ * Empty slots and byes carry no lane. Locked (finalized) rows are validated too.
  */
 export function validateActualLanes(
   assignments: readonly Pick<
@@ -217,20 +218,13 @@ export function validateActualLanes(
     "lane_pair" | "actual_lane_pair" | "team_a_id" | "team_b_id" | "locked"
   >[],
 ): string | null {
-  const seen = new Map<string, string>();
   for (const a of assignments) {
     const occupied = a.locked || (a.team_a_id && a.team_b_id);
     if (!occupied) continue;
     const raw = a.actual_lane_pair ?? a.lane_pair;
-    const parsed = parseLanePair(raw);
-    if (!parsed) {
+    if (!parseLanePair(raw)) {
       return `Actual lanes "${String(raw)}" is not a valid pair — use two consecutive lanes, e.g. 31-32.`;
     }
-    const prev = seen.get(parsed);
-    if (prev) {
-      return `Lanes ${parsed} are assigned to two matchups this week (default slots ${prev} and ${a.lane_pair}).`;
-    }
-    seen.set(parsed, a.lane_pair);
   }
   return null;
 }
