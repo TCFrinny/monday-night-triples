@@ -103,17 +103,17 @@ describe("lane slots", () => {
     expect(parseLanePair("101-102")).toBe("101-102");
   });
 
-  it("rejects duplicate actual lane pairs within a week, ignoring empty slots and byes", () => {
+  it("allows duplicate actual lane pairs within a week (makeups), still rejects malformed pairs", () => {
     expect(
       validateActualLanes([
         { lane_pair: "25-26", actual_lane_pair: "31-32", team_a_id: "t1", team_b_id: "t2" },
         { lane_pair: "27-28", actual_lane_pair: "31-32", team_a_id: "t3", team_b_id: "t4" },
       ]),
-    ).toMatch(/two matchups/);
+    ).toBeNull();
     expect(
-      validateActualLanes([
-        { lane_pair: "25-26", actual_lane_pair: "31-32", team_a_id: "t1", team_b_id: "t2" },
-        { lane_pair: "27-28", actual_lane_pair: "27-28", team_a_id: "", team_b_id: "" },
+      validateWeekAssignments([
+        { lane_pair: "37-38", actual_lane_pair: "37-38", team_a_id: "t1", team_b_id: "t2" },
+        { lane_pair: "39-40", actual_lane_pair: "37-38", team_a_id: "t3", team_b_id: "t4" },
       ]),
     ).toBeNull();
     expect(
@@ -121,13 +121,33 @@ describe("lane slots", () => {
         { lane_pair: "25-26", actual_lane_pair: "25-27", team_a_id: "t1", team_b_id: "t2" },
       ]),
     ).toMatch(/not a valid pair/);
-    // A finalized (locked) row still occupies its lane pair.
+    // A finalized override may move onto a pair already used by another match.
     expect(
       validateActualLanes([
         { lane_pair: "25-26", actual_lane_pair: "31-32", team_a_id: "", team_b_id: "", locked: true },
         { lane_pair: "27-28", actual_lane_pair: "31-32", team_a_id: "t3", team_b_id: "t4" },
       ]),
-    ).toMatch(/two matchups/);
+    ).toBeNull();
+  });
+
+  it("keeps both matches in their own slots when they share an actual pair", () => {
+    const matches = [
+      { id: "m1", lane_pair: "37-38", sort_order: 1, team_a_id: "a", team_b_id: "b", status: "final" },
+      { id: "m2", lane_pair: "37-38", sort_order: 2, team_a_id: "c", team_b_id: "d" },
+    ];
+    const plan = buildWeekSlots(laneSlots(37, 3), matches);
+    expect(plan.orphans).toEqual([]);
+    expect(plan.slots.map((s) => s.match?.id ?? null)).toEqual(["m1", "m2", null]);
+    expect(plan.slots.map((s) => s.actual_lane_pair)).toEqual(["37-38", "37-38", "41-42"]);
+    expect(plan.slots[1].overridden).toBe(true);
+    const sorted = sortMatchesByActualLane([matches[1], matches[0]]);
+    expect(sorted.map((m) => m.id)).toEqual(["m1", "m2"]);
+    const tie = sortMatchesByActualLane([
+      { id: "z", lane_pair: "37-38", sort_order: 2 },
+      { id: "a", lane_pair: "37-38", sort_order: 2 },
+    ]);
+    expect(tie.map((m) => m.id)).toEqual(["a", "z"]);
+    expect(new Set(laneSlots(25, 11)).size).toBe(11);
   });
 
 
