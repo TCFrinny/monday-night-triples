@@ -623,7 +623,7 @@ export const MILESTONE_BOARDS: MilestoneBoard[] = [
     threshold: 500,
     entity: "team",
   },
-  { key: "ths", title: "Team High Scratch Set", kind: "team_set", threshold: 1500, entity: "team" },
+  { key: "ths", title: "Team High Scratch Set", kind: "team_set", threshold: 1400, entity: "team" },
 ];
 
 export const milestoneBoard = (key: string) => MILESTONE_BOARDS.find((b) => b.key === key);
