@@ -460,8 +460,8 @@ describe("milestone performance cards", () => {
     expect(out.map((e) => e.event_id)).toEqual(["a", "b", "c", "d", "e"]);
   });
 
-  it("exact threshold scores qualify (200 / 500 / 1500)", () => {
-    for (const t of [200, 500, 1500]) {
+  it("exact threshold scores qualify (200 / 500 / 1400)", () => {
+    for (const t of [200, 500, 1400]) {
       const events = [
         ...Array.from({ length: 5 }, (_, i) => ev(`top${i}`, t + 100 + i)),
         ev("exact", t),
@@ -495,7 +495,7 @@ describe("milestone performance cards", () => {
       ["hg", 200, "bowler_game"],
       ["hs", 500, "bowler_set"],
       ["thg", 500, "team_game"],
-      ["ths", 1500, "team_set"],
+      ["ths", 1400, "team_set"],
     ]);
     expect(milestoneBoard("avg")).toBeUndefined();
   });
