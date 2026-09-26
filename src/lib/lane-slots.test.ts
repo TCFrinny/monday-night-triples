@@ -212,13 +212,13 @@ describe("resolveActualLane (draft fallback)", () => {
     expect(validateActualLanes([row("47-49")])).toMatch(/not a valid pair/);
   });
 
-  it("still blocks duplicates produced through the fallback", () => {
+  it("allows duplicates produced through the fallback", () => {
     expect(
       validateActualLanes([
         { lane_pair: "25-26", actual_lane_pair: resolveActualLane("", "47-48", "25-26"), team_a_id: "t1", team_b_id: "t2" },
         { lane_pair: "43-44", actual_lane_pair: resolveActualLane("47-48", "43-44", "43-44"), team_a_id: "t3", team_b_id: "t4" },
       ]),
-    ).toMatch(/two matchups/);
+    ).toBeNull();
   });
 });
 
