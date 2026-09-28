@@ -330,6 +330,7 @@ function BowlerRow({
 
         <td className="py-2">
           <Input
+            key={String(b.entry_average)}
             className="h-8 w-24"
             defaultValue={formatAverage(b.entry_average)}
             onBlur={(e) => {
