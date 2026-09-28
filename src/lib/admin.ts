@@ -1,8 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
-import { scoreGame, type Frame } from "@/lib/duckpin";
+import { isGameBlind } from "@/lib/blind-games";
+import { framesFromRows, scoreGame, type Frame } from "@/lib/duckpin";
 import { blindScore, teamAverage, teamHandicap, truncateAverage } from "@/lib/league";
 import { buildGameSnapshot } from "@/lib/results";
-import { computeTriplesPoints, type RolloffDecisions, type TeamFrameOne } from "@/lib/rolloff";
+import { computeTriplesPoints, parseDecisions, teamFrameOne, type RolloffDecisions, type TeamFrameOne } from "@/lib/rolloff";
 
 
 /** Persist one bowler game: replaces its frames and balls with the current sheet. */
@@ -186,6 +187,97 @@ export async function unfinalizeMatch(matchId: string, seasonId: string) {
 export async function refreshAggregates(seasonId: string) {
   const { error } = await supabase.rpc("refresh_season_aggregates", { p_season_id: seasonId });
   if (error) throw new Error(error.message);
+}
+
+export interface EntryCorrectionResult {
+  oldAverage: number;
+  newAverage: number;
+  snapshotsUpdated: number;
+  matchesRecalculated: number;
+}
+
+/**
+ * Retroactive entering-average correction. The RPC atomically updates the
+ * bowler's entry average and every entry-source lineup snapshot; each
+ * affected finalized match is then re-finalized with the existing Triples
+ * rules (scores/frames untouched, rolloff decisions preserved or cleared by
+ * the normal sanitization), and Singles is rebuilt from the corrected
+ * lineup averages.
+ */
+export async function applyEntryAverageCorrection(args: {
+  bowlerId: string;
+  newAverage: number;
+  seasonId: string;
+  fetchMatchDetail: (matchId: string) => Promise<{ match: any; lineups: any[] }>;
+}): Promise<EntryCorrectionResult> {
+  const { data, error } = await supabase.rpc("correct_entry_average", {
+    p_bowler_id: args.bowlerId,
+    p_new_average: args.newAverage,
+  });
+  if (error) throw new Error(error.message);
+  const result = data as {
+    old_average: number;
+    new_average: number;
+    snapshots_updated: number;
+    match_ids: string[];
+  };
+
+  let recalculated = 0;
+  for (const matchId of result.match_ids ?? []) {
+    const detail = await args.fetchMatchDetail(matchId);
+    if (detail.match.status !== "final") continue; // unfinalized: snapshot only
+    const season = detail.match.weeks?.seasons;
+    const frameOneFor = (teamId: string, g: number) =>
+      teamFrameOne(
+        [1, 2, 3].map((slot) => {
+          const l = (detail.lineups ?? []).find((x: any) => x.team_id === teamId && x.slot === slot);
+          const game = l?.bowler_games?.find((x: any) => x.game_number === g);
+          return {
+            blind: l ? isGameBlind(l, g) : false,
+            frames: game ? framesFromRows(game.frames) : null,
+          };
+        }),
+      );
+    await finalizeMatch({
+      matchId,
+      seasonId: args.seasonId,
+      teamAId: detail.match.team_a_id,
+      teamBId: detail.match.team_b_id,
+      lineups: (detail.lineups ?? []).map((l: any) => ({
+        id: l.id,
+        team_id: l.team_id,
+        slot: l.slot,
+        participation: l.participation,
+        applicable_average: Number(l.applicable_average),
+        bowler_games: (l.bowler_games ?? []).map((g: any) => ({
+          game_number: g.game_number,
+          scratch_score: g.scratch_score,
+          is_blind: g.is_blind,
+        })),
+      })),
+      handicapPercent: Number(season?.handicap_percent ?? 80),
+      blindDeduction: Number(season?.blind_deduction ?? 10),
+      frameOne: {
+        2: { a: frameOneFor(detail.match.team_a_id, 2), b: frameOneFor(detail.match.team_b_id, 2) },
+        3: { a: frameOneFor(detail.match.team_a_id, 3), b: frameOneFor(detail.match.team_b_id, 3) },
+      },
+      decisions: parseDecisions(detail.match.rolloff_decisions),
+    });
+    recalculated += 1;
+  }
+
+  // Re-finalizing an already-final match does not fire the non-final→final
+  // Singles trigger, so rebuild Singles explicitly from the corrected
+  // lineup averages (scratch games unchanged).
+  const singles = await supabase.rpc("refresh_singles", { p_season_id: args.seasonId });
+  if (singles.error) throw new Error(singles.error.message);
+
+  return {
+    oldAverage: Number(result.old_average),
+    newAverage: Number(result.new_average),
+    snapshotsUpdated: Number(result.snapshots_updated),
+    matchesRecalculated: recalculated,
+  };
 }
 
 /** Truncated applicable average helper for display in admin tables. */
