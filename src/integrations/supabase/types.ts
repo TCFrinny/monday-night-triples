@@ -1591,6 +1591,10 @@ export type Database = {
         Returns: Json
       }
       bootstrap_first_admin: { Args: never; Returns: boolean }
+      correct_entry_average: {
+        Args: { p_bowler_id: string; p_new_average: number }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
