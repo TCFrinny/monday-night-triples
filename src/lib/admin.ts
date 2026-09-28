@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isGameBlind } from "@/lib/blind-games";
-import { framesFromRows, scoreGame, type Frame } from "@/lib/duckpin";
+import { framesFromRows } from "@/components/league/ui";
+import { scoreGame, type Frame } from "@/lib/duckpin";
 import { blindScore, teamAverage, teamHandicap, truncateAverage } from "@/lib/league";
 import { buildGameSnapshot } from "@/lib/results";
 import { computeTriplesPoints, parseDecisions, teamFrameOne, type RolloffDecisions, type TeamFrameOne } from "@/lib/rolloff";
