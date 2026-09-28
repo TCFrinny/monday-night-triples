@@ -1,56 +1,30 @@
-# Singles: mid-season participant replacement
+# What happens when you change an entering average
 
-## What the live data shows (read-only inspection)
+This was a read-only check. Nothing was changed. The plan section at the bottom is optional repair work, for you to decide on.
 
-- 56 Singles participants, all enrolled.
-- Singles schedule is fully generated for 32 league weeks (weeks 2–17, 19–34), 28 pairings each = 896 matchups. Position weeks 18 and 35 are still pending by design.
-- Singles Week 1 (league week 2) is complete: 28 results, all 56 people have a played record, standings has 56 rows.
-- Any one person appears in 31 future matchups (weeks 3–34).
+## Current behavior
 
-## The critical technical fact
+1. **What Admin saves:** Only the bowler's entering average is updated. The database step that runs on save does nothing except record the time of the edit. No other database logic uses the entering average.
+2. **Stored match averages:** Not changed. When a match is set up, each bowler's average at that time is saved with that match's lineup, and it stays as saved.
+3. **Finished matches:** Handicap, points, pinfall and standings are not recalculated. Finishing a match uses the averages saved with the lineup. Reopening and finishing it again still uses those saved averages, not the entering average.
+4. **Unfinished matches that are already set up:** These keep the old average. Setup only fills empty lineup spots. The new value is picked up only if an admin changes that spot's player type (Rostered, Sub or Blind) or picks a different bowler, because that re-saves the average.
+5. **Future weeks for bowlers under 15 games:** These use the new entering average when their match is set up in Score Entry. The projected handicaps on the upcoming schedule update right away.
+6. **Bowlers with 15+ games before a week:** They use their league average, so the entering average has no effect on new matches. Their past matches from before they reached 15 games keep the old value.
+7. **Singles:** Singles handicap comes from the average saved with each Triples lineup. Past Singles results do not change, even after a Singles recalculation. Future Singles results follow whatever average their Triples lineup saves.
+8. **Stats and league averages:** Unaffected. Only handicap and blind scores depend on it. Blind score = saved average minus the blind deduction, so past blind scores also stay as they were.
+9. **Reports:** The All Bowlers "Entering Average" column, bowler profiles and the Bowlers list update right away. Past results do not.
+10. **Repair tool:** None exists today. "Recalculate Singles" and the stats refresh both reuse the saved lineup averages. The only manual fix is reopening a match and re-selecting each affected bowler's player type in every past match. This is clumsy and only works on unfinished or reopened matches.
 
-Singles results and standings are not stored history — they are rebuilt from scratch every time a recalculation runs (and that now happens automatically whenever a Triples match is finalized or corrected). The rebuild deletes every result for the season and regenerates it from the Singles matchup list plus the Triples scores.
+## Main caveat
 
-Consequence: whoever is named in a Singles matchup row owns that week's result, permanently and retroactively. So:
+If you fix the entering average now, every match the bowler already bowled keeps the wrong average. That includes the team handicap, points, blind scores, standings and Singles handicap for those weeks. Those stay wrong until they are repaired by hand.
 
-- Swapping the outgoing person for the incoming person in **all** matchup rows would silently rewrite completed Week 1 history — the incoming bowler would appear to have bowled Week 1, using the outgoing bowler's Triples scores.
-- Manually editing the stored Week 1 result row to "preserve" it would not survive; the next automatic rebuild erases it.
+## Optional follow-up: a repair tool (not built unless approved)
 
-Therefore history can only be preserved by leaving the completed week's matchup rows naming the outgoing bowler, and changing only the not-yet-played weeks.
+"Correct entering average" button in Admin → Teams/Bowlers:
+- Shows every match where this bowler used the entering average, and which finished matches would change: handicap, points, and roll-off effects.
+- When you confirm, it updates only the saved averages that came from the entering average. Saved league averages are left alone. Blind lineups that used this bowler's average are included.
+- Then it re-finishes the affected matches with the existing finish logic, keeping roll-off decisions. Standings and Singles then update automatically.
+- It never changes ball-by-ball scores.
 
-## The one product decision needed from you
-
-Does the incoming bowler **inherit the seat's record** (starts with the points and pinfall the outgoing bowler earned in Singles Week 1), or **start from zero**?
-
-- **Option A — Start fresh (recommended, and the only option that needs no new data model).** Week 1 stays credited to the outgoing bowler under their own name, forever. The incoming bowler takes over the same schedule slot from the next unplayed Singles week and appears in standings with 0 points / 1 fewer week played. The outgoing bowler stays in the standings with their single completed week.
-- **Option B — Inherit the seat's record.** The standings line becomes a "seat" rather than a person (e.g. "Seat 14 — Jane Doe (weeks 1), John Smith (weeks 2+)"), carrying combined points and pinfall. This is a genuinely different abstraction: it needs a new seat concept that matchups, results and standings all key off instead of a bowler ID, plus display rules for a shared line. Substantially larger change.
-
-Everything below assumes Option A unless you tell me otherwise.
-
-## Proposed replacement workflow (Option A)
-
-An admin action in Admin → Singles: **Replace participant**, picking the outgoing bowler, the incoming bowler, and showing the effective week (first Singles week with no results, computed, not typed).
-
-What it does, in one transaction:
-
-1. Validate: outgoing is enrolled, incoming is an active bowler in the season and not already enrolled, and the incoming person is not already an opponent in any affected week (they cannot be scheduled against themselves).
-2. Reassign only future matchups: in `singles_matches`, replace the outgoing bowler ID with the incoming bowler ID for weeks at or after the effective week. Completed weeks are untouched. The round-robin pairing structure and matchup IDs survive intact, so no schedule regeneration is needed.
-3. Enrollment: add the incoming bowler to `singles_participants`; keep the outgoing bowler enrolled so their completed week still shows a standings line (their remaining weeks are gone, so they simply stop accruing).
-4. Recalculate Singles so standings reflect both people correctly.
-
-Safety rails:
-- Refuses to touch any week that already has results.
-- Refuses if the incoming bowler already has matchups in the affected weeks.
-- Shows a preview ("31 future matchups will move from A to B; Week 2 stays with A") and requires confirmation before writing.
-
-## Display consequence to confirm
-
-Under Option A, both people appear in the Singles standings: the outgoing bowler frozen at one completed week, the incoming bowler building from the next week. I'd add a small note on the Singles standings marking a participant who has been replaced ("withdrawn after week N") so the frozen line isn't confusing. Say the word if you'd rather hide withdrawn participants once they have no remaining matchups.
-
-## Technical notes
-
-- No change to `refresh_singles_impl`, `singles_side_scores`, handicap or substitute semantics.
-- No change to Triples scores, lineups or match records.
-- Data touched: `singles_matches` (future weeks only), `singles_participants` (one insert), plus the derived rebuild of `singles_results` / `singles_standings_cache`.
-- Likely a small `replaceSinglesParticipant` helper in `src/lib/singles.ts` (pure: given matchups, results and a cutover week, produce the list of rows to reassign and the validation errors) with unit tests, wired to a new panel in `src/routes/admin.singles.tsx`.
-- A database migration is needed only if we add a "withdrawn after week N" marker; otherwise the change is application-side.
+Please tell me whether you want this tool, or would rather correct the average for future weeks only.
