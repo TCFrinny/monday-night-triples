@@ -1,0 +1,1 @@
+revoke execute on function public.correct_entry_average(uuid, numeric) from public, anon;

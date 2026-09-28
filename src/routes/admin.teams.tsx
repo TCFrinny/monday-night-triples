@@ -20,6 +20,14 @@ import {
   type RosterSpotRow,
 } from "@/lib/roster";
 import { formatAverage, slugify } from "@/lib/league";
+import { applyEntryAverageCorrection } from "@/lib/admin";
+import {
+  entrySourceTargets,
+  shapeCorrectionPreview,
+  validateCorrectedAverage,
+  type CorrectionPreview,
+} from "@/lib/entry-average-correction";
+import { matchDetailQuery } from "@/lib/queries";
 import { renameBowler, renameTeam, type NamedRow } from "@/lib/rename";
 import { matchesPerWeek, planTeamSync } from "@/lib/team-sync";
 import { sortTeamsByName } from "@/lib/team-order";
@@ -201,55 +209,29 @@ function BowlerManager({ seasonId }: { seasonId: string }) {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[620px] text-sm">
+        <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className="border-b border-border text-left font-display text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               <th className="py-2">Name</th>
               <th className="py-2">Entry avg</th>
               <th className="py-2">Sub</th>
               <th className="py-2">Active</th>
+              <th className="py-2">Correct avg</th>
             </tr>
           </thead>
           <tbody>
             {(bowlers ?? []).map((b: any) => (
-              <tr key={b.id} className="border-b border-border/60 last:border-0">
-                <td className="py-2">
-                  <InlineNameEditor
-                    value={b.full_name}
-                    maxLength={100}
-                    pending={rename.isPending && rename.variables?.id === b.id}
-                    onSave={(next) => rename.mutate({ id: b.id, name: next })}
-                  />
-                </td>
-
-                <td className="py-2">
-                  <Input
-                    className="h-8 w-24"
-                    defaultValue={formatAverage(b.entry_average)}
-                    onBlur={(e) => {
-                      const v = Number(e.target.value);
-                      if (Number.isFinite(v) && v >= 0 && v <= 300 && v !== Number(b.entry_average))
-                        update.mutate({ id: b.id, patch: { entry_average: v } });
-                    }}
-                  />
-                </td>
-                <td className="py-2">
-                  <Switch
-                    checked={b.is_sub}
-                    onCheckedChange={(v) => update.mutate({ id: b.id, patch: { is_sub: v } })}
-                  />
-                </td>
-                <td className="py-2">
-                  <Switch
-                    checked={b.is_active}
-                    onCheckedChange={(v) => update.mutate({ id: b.id, patch: { is_active: v } })}
-                  />
-                </td>
-              </tr>
+              <BowlerRow
+                key={b.id}
+                bowler={b}
+                seasonId={seasonId}
+                rename={rename}
+                update={update}
+              />
             ))}
             {!(bowlers ?? []).length && (
               <tr>
-                <td colSpan={4} className="py-4 text-muted-foreground">
+                <td colSpan={5} className="py-4 text-muted-foreground">
                   No bowlers yet.
                 </td>
               </tr>
@@ -258,6 +240,188 @@ function BowlerManager({ seasonId }: { seasonId: string }) {
         </table>
       </div>
     </section>
+  );
+}
+
+/**
+ * Retroactive entering-average correction. Unlike the plain entry-average
+ * edit (future weeks only), this previews and then repairs every historical
+ * lineup snapshot that used the entry average, re-finalizing the affected
+ * matches with the existing rules. Scores and stats never change.
+ */
+function BowlerRow({
+  bowler: b,
+  seasonId,
+  rename,
+  update,
+}: {
+  bowler: any;
+  seasonId: string;
+  rename: any;
+  update: any;
+}) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [preview, setPreview] = useState<CorrectionPreview | null>(null);
+  const [previewAvg, setPreviewAvg] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const loadPreview = async () => {
+    const value = Number(draft);
+    const problem = validateCorrectedAverage(value, Number(b.entry_average));
+    if (problem) {
+      toast.error(problem);
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data, error } = await supabase
+        .from("match_lineups")
+        .select(
+          "id, match_id, bowler_id, absent_bowler_id, average_source, applicable_average, participation, matches(id, status, weeks(week_number), team_a:teams!matches_team_a_id_fkey(name), team_b:teams!matches_team_b_id_fkey(name))",
+        )
+        .or(`bowler_id.eq.${b.id},absent_bowler_id.eq.${b.id}`);
+      if (error) throw new Error(error.message);
+      setPreview(shapeCorrectionPreview(entrySourceTargets((data ?? []) as any, b.id)));
+      setPreviewAvg(value);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const apply = async () => {
+    if (previewAvg === null) return;
+    setBusy(true);
+    try {
+      const result = await applyEntryAverageCorrection({
+        bowlerId: b.id,
+        newAverage: previewAvg,
+        seasonId,
+        fetchMatchDetail: (matchId) => qc.fetchQuery(matchDetailQuery(matchId)),
+      });
+      toast.success(
+        `Corrected ${formatAverage(result.oldAverage)} → ${formatAverage(result.newAverage)}: ${result.snapshotsUpdated} lineup snapshot(s) updated, ${result.matchesRecalculated} finished match(es) recalculated, standings and Singles refreshed.`,
+      );
+      setOpen(false);
+      setPreview(null);
+      setDraft("");
+      qc.invalidateQueries();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <tr className="border-b border-border/60 last:border-0">
+        <td className="py-2">
+          <InlineNameEditor
+            value={b.full_name}
+            maxLength={100}
+            pending={rename.isPending && rename.variables?.id === b.id}
+            onSave={(next: string) => rename.mutate({ id: b.id, name: next })}
+          />
+        </td>
+
+        <td className="py-2">
+          <Input
+            key={String(b.entry_average)}
+            className="h-8 w-24"
+            defaultValue={formatAverage(b.entry_average)}
+            onBlur={(e) => {
+              const v = Number(e.target.value);
+              if (Number.isFinite(v) && v >= 0 && v <= 300 && v !== Number(b.entry_average))
+                update.mutate({ id: b.id, patch: { entry_average: v } });
+            }}
+          />
+        </td>
+        <td className="py-2">
+          <Switch
+            checked={b.is_sub}
+            onCheckedChange={(v) => update.mutate({ id: b.id, patch: { is_sub: v } })}
+          />
+        </td>
+        <td className="py-2">
+          <Switch
+            checked={b.is_active}
+            onCheckedChange={(v) => update.mutate({ id: b.id, patch: { is_active: v } })}
+          />
+        </td>
+        <td className="py-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={() => {
+              setOpen((o) => !o);
+              setPreview(null);
+              setDraft("");
+            }}
+          >
+            Correct…
+          </Button>
+        </td>
+      </tr>
+      {open && (
+        <tr className="border-b border-border/60 last:border-0">
+          <td colSpan={5} className="bg-muted/30 px-3 py-3">
+            <div className="space-y-3 text-sm">
+              <p className="text-muted-foreground">
+                Correcting the entering average also repairs every past match that used it:
+                handicaps, points, standings and Singles are recalculated. Bowling scores and
+                stats never change. The plain edit on the left only affects future weeks.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span>
+                  {formatAverage(b.entry_average)} →
+                </span>
+                <Input
+                  className="h-8 w-24"
+                  placeholder="New avg"
+                  value={draft}
+                  onChange={(e) => {
+                    setDraft(e.target.value);
+                    setPreview(null);
+                  }}
+                />
+                <Button size="sm" variant="secondary" disabled={busy} onClick={loadPreview}>
+                  Preview correction
+                </Button>
+              </div>
+              {preview && (
+                <div className="space-y-2 rounded-md border border-border p-3">
+                  <p>
+                    {preview.snapshots} lineup snapshot(s) will change to {formatAverage(previewAvg)}.
+                    {preview.finalized.length > 0 &&
+                      ` ${preview.finalized.length} finished match(es) will be recalculated:`}
+                    {preview.finalized.length === 0 && " No finished matches are affected."}
+                    {preview.unfinalized.length > 0 &&
+                      ` ${preview.unfinalized.length} upcoming match(es) will use the new average but stay unfinished.`}
+                  </p>
+                  {preview.finalized.length > 0 && (
+                    <ul className="list-disc pl-5 text-muted-foreground">
+                      {preview.finalized.map((m) => (
+                        <li key={m.matchId}>
+                          Week {m.week ?? "?"} — {m.label}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <Button size="sm" disabled={busy} onClick={apply}>
+                    {busy ? "Applying…" : "Confirm correction"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
