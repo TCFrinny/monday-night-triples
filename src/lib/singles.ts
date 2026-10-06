@@ -93,6 +93,8 @@ export interface TriplesLineupLike {
   absent_bowler_id: string | null;
   participation: string;
   applicable_average: number | string;
+  /** Per-game rows; a mid-game withdrawal (is_withdrawn) flags the side blind. */
+  bowler_games?: { is_withdrawn?: boolean | null }[] | null;
 }
 
 export interface SinglesSide {
@@ -131,7 +133,10 @@ export function resolveSinglesSide<T extends TriplesLineupLike>(
     scheduledBowlerId,
     actualBowlerId: l.bowler_id,
     isSub: l.participation === "sub" && l.bowler_id !== scheduledBowlerId,
-    isBlind: l.participation === "blind",
+    // Mirrors singles_side_scores: a hybrid (withdrawn) source game marks the
+    // side blind/withdrawn; its numeric team-valid score is still used.
+    isBlind:
+      l.participation === "blind" || (l.bowler_games ?? []).some((g) => Boolean(g.is_withdrawn)),
     applicableAverage: avg,
     handicap: singlesHandicap(avg, base, percent),
   };

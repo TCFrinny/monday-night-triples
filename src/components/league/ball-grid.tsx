@@ -4,6 +4,8 @@ import {
   FRAME_COUNT,
   ballDisabled,
   ballToken,
+  hasBlindBalls,
+  inheritWithdrawal,
   nextCursor,
   parseBallToken,
   scoreGame,
@@ -67,8 +69,9 @@ export function BallGrid({
       // Clearing a ball removes it and everything after it in the frame.
       frame.balls = frame.balls.slice(0, ballIndex);
       setError(null);
-      onChange(next);
-      return next;
+      const out = inheritWithdrawal(next);
+      onChange(out);
+      return out;
     }
     frame.balls = frame.balls.slice(0, ballIndex);
     const parsed = parseBallToken(raw, next, frameIndex, ballIndex);
@@ -78,8 +81,10 @@ export function BallGrid({
     }
     frame.balls.push(parsed.ball);
     setError(null);
-    onChange(next);
-    return next;
+    // After the first B ball every later ball is blind too (withdrawal).
+    const out = inheritWithdrawal(next);
+    onChange(out);
+    return out;
   };
 
   return (
@@ -143,7 +148,11 @@ export function BallGrid({
                         }}
                         className={cn(
                           "w-full flex-1 border-r border-border/70 bg-transparent text-center text-xs uppercase outline-none last:border-r-0 focus:bg-primary/15",
-                          frame.balls[b]?.isSplit ? "text-gold" : "text-foreground",
+                          frame.balls[b]?.isBlind
+                            ? "text-muted-foreground italic"
+                            : frame.balls[b]?.isSplit
+                              ? "text-gold"
+                              : "text-foreground",
                           isDisabled && "bg-secondary/30 text-muted-foreground/40",
                         )}
                       />
@@ -159,6 +168,12 @@ export function BallGrid({
         </div>
       </div>
       {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
+      {hasBlindBalls(frames) && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          Withdrawn game — B balls do not count toward individual stats/average. Later balls
+          are marked B automatically.
+        </p>
+      )}
     </div>
   );
 }

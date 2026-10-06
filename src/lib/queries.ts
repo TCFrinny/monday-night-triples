@@ -104,7 +104,7 @@ export const matchDetailQuery = (matchId: string) =>
         supabase
           .from("match_lineups")
           .select(
-            "*, bowler:bowlers!match_lineups_bowler_id_fkey(id, full_name, slug, is_sub), absent:bowlers!match_lineups_absent_bowler_id_fkey(id, full_name, slug), bowler_games(id, game_number, scratch_score, is_blind, frames(id, frame_number, outcome, frame_score, cumulative_score, is_split, first_ball_pins, balls(ball_number, pins, is_split)))",
+            "*, bowler:bowlers!match_lineups_bowler_id_fkey(id, full_name, slug, is_sub), absent:bowlers!match_lineups_absent_bowler_id_fkey(id, full_name, slug), bowler_games(id, game_number, scratch_score, is_blind, is_withdrawn, frames(id, frame_number, outcome, frame_score, cumulative_score, is_split, first_ball_pins, balls(ball_number, pins, is_split, is_blind)))",
           )
           .eq("match_id", matchId)
           .order("slot"),
@@ -241,7 +241,7 @@ export const bowlerHistoryQuery = (bowlerId: string | undefined) =>
         supabase
           .from("match_lineups")
           .select(
-            "id, participation, applicable_average, teams(name, slug), matches!inner(id, status, weeks(week_number, third)), bowler_games(game_number, scratch_score, frames(frame_number, outcome, frame_score, cumulative_score, is_split, balls(ball_number, pins, is_split)))",
+            "id, participation, applicable_average, teams(name, slug), matches!inner(id, status, weeks(week_number, third)), bowler_games(game_number, scratch_score, is_blind, is_withdrawn, frames(frame_number, outcome, frame_score, cumulative_score, is_split, balls(ball_number, pins, is_split, is_blind)))",
           )
           .eq("bowler_id", bowlerId!)
           .eq("matches.status", "final"),
@@ -316,7 +316,7 @@ export const seasonGamesByWeekQuery = (seasonId: string | undefined) =>
         supabase
           .from("match_lineups")
           .select(
-            "bowler_id, participation, matches!inner(status, weeks!inner(season_id, week_number)), bowler_games(scratch_score, is_complete, is_blind)",
+            "bowler_id, participation, matches!inner(status, weeks!inner(season_id, week_number)), bowler_games(scratch_score, is_complete, is_blind, is_withdrawn)",
           )
           .eq("matches.weeks.season_id", seasonId!)
           .eq("matches.status", "final"),

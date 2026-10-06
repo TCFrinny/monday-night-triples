@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isGameBlind } from "@/lib/blind-games";
 import { framesFromRows } from "@/components/league/ui";
-import { scoreGame, type Frame } from "@/lib/duckpin";
+import { hasBlindBalls, scoreGame, validateWithdrawalSequence, type Frame } from "@/lib/duckpin";
 import { blindScore, teamAverage, teamHandicap, truncateAverage } from "@/lib/league";
 import { buildGameSnapshot } from "@/lib/results";
 import { computeTriplesPoints, parseDecisions, teamFrameOne, type RolloffDecisions, type TeamFrameOne } from "@/lib/rolloff";
@@ -18,6 +18,12 @@ export async function saveBowlerGame(args: {
   const scored = scoreGame(args.frames);
   const scratch = args.isBlind ? (args.blindValue ?? 0) : scored.total;
   const complete = args.isBlind ? true : scored.complete;
+  // Hybrid (mid-game withdrawal) game: derived from persisted B balls.
+  const isWithdrawn = !args.isBlind && hasBlindBalls(args.frames);
+  if (isWithdrawn) {
+    const err = validateWithdrawalSequence(args.frames);
+    if (err) throw new Error(err);
+  }
 
   const existing = await supabase
     .from("bowler_games")
@@ -31,7 +37,7 @@ export async function saveBowlerGame(args: {
   if (gameId) {
     const upd = await supabase
       .from("bowler_games")
-      .update({ scratch_score: scratch, is_blind: args.isBlind, is_complete: complete })
+      .update({ scratch_score: scratch, is_blind: args.isBlind, is_withdrawn: isWithdrawn, is_complete: complete })
       .eq("id", gameId);
     if (upd.error) throw new Error(upd.error.message);
     const del = await supabase.from("frames").delete().eq("game_id", gameId);
@@ -44,6 +50,7 @@ export async function saveBowlerGame(args: {
         game_number: args.gameNumber,
         scratch_score: scratch,
         is_blind: args.isBlind,
+        is_withdrawn: isWithdrawn,
         is_complete: complete,
       })
       .select("id")
@@ -77,6 +84,7 @@ export async function saveBowlerGame(args: {
         ball_number: i + 1,
         pins: b.pins,
         is_split: Boolean(b.isSplit),
+        is_blind: Boolean(b.isBlind),
       })),
     ).filter((r) => r.frame_id);
     if (ballRows.length) {

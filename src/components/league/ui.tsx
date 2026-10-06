@@ -166,7 +166,11 @@ export function Linescore({ frames }: { frames: Frame[] }) {
                   key={b}
                   className={cn(
                     "flex flex-1 items-center justify-center border-r border-border/70 text-xs last:border-r-0",
-                    frames[i]?.balls[b]?.isSplit ? "text-gold" : "text-foreground",
+                    frames[i]?.balls[b]?.isBlind
+                      ? "text-muted-foreground italic"
+                      : frames[i]?.balls[b]?.isSplit
+                        ? "text-gold"
+                        : "text-foreground",
                   )}
                 >
                   {ballToken(frames[i] ?? { balls: [] }, i, b)}
@@ -191,7 +195,12 @@ export function framesFromRows(rows: any[] | null | undefined): Frame[] {
     if (idx < 0 || idx > 9) continue;
     const balls = [...(r.balls ?? [])].sort((a: any, b: any) => a.ball_number - b.ball_number);
     frames[idx] = {
-      balls: balls.map((b: any) => (b.is_split ? { pins: b.pins, isSplit: true } : { pins: b.pins })),
+      balls: balls.map((b: any) => {
+        const ball: Frame["balls"][number] = { pins: b.pins };
+        if (b.is_split) ball.isSplit = true;
+        if (b.is_blind) ball.isBlind = true;
+        return ball;
+      }),
     };
   }
   return frames;
