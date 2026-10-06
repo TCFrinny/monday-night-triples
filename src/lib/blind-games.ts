@@ -77,3 +77,17 @@ export function planBlindToggle(args: {
     blindValue: args.makeBlind ? gameBlindValue(args.lineup, args.blindDeduction) : 0,
   };
 }
+
+/**
+ * Whether a stored game counts toward a bowler's individual average, game
+ * count and establishment threshold: complete, not a full-game blind, and not
+ * a mid-game withdrawal (hybrid) game.
+ */
+export function isAverageEligibleGame(g: {
+  is_complete?: boolean | null;
+  is_blind?: boolean | null;
+  is_withdrawn?: boolean | null;
+} | null | undefined): boolean {
+  if (!g) return false;
+  return g.is_complete !== false && !g.is_blind && !g.is_withdrawn;
+}

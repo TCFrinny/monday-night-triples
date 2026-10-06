@@ -215,6 +215,11 @@ function MatchDetail() {
                             <div key={g.id}>
                               <p className="mb-1 font-display text-xs uppercase tracking-wide text-muted-foreground">
                                 Game {g.game_number} · {g.scratch_score}
+                                {g.is_withdrawn && (
+                                  <span className="ml-2 normal-case tracking-normal">
+                                    (withdrawn — team score only; real pre-withdrawal stats retained)
+                                  </span>
+                                )}
                               </p>
                               <Linescore frames={framesFromRows(g.frames)} />
                             </div>

@@ -22,9 +22,9 @@ import {
   teamHandicap,
   truncateAverage,
 } from "@/lib/league";
-import { emptyGame, scoreGame, type Frame } from "@/lib/duckpin";
+import { clearWithdrawal, emptyGame, hasBlindBalls, scoreGame, type Frame } from "@/lib/duckpin";
 import { finalizeMatch, saveBowlerGame, unfinalizeMatch } from "@/lib/admin";
-import { gameBlindValue, isGameBlind } from "@/lib/blind-games";
+import { gameBlindValue, isAverageEligibleGame, isGameBlind } from "@/lib/blind-games";
 import { Button } from "@/components/ui/button";
 import {
   computeTriplesPoints,
@@ -72,7 +72,7 @@ function ScoreEntry() {
       if (!l?.bowler_id || l.participation === "blind") continue;
       const wk = Number(l.matches?.weeks?.week_number ?? 0);
       for (const g of (l.bowler_games ?? []) as any[]) {
-        if (g?.is_complete === false || g?.is_blind) continue;
+        if (!isAverageEligibleGame(g)) continue; // blind or mid-game withdrawal
         rows.push({ bowlerId: l.bowler_id, weekNumber: wk, scratch: Number(g.scratch_score ?? 0) });
       }
     }
@@ -619,15 +619,49 @@ function ScoreEntry() {
                       to rolled.
                     </p>
                   ) : (
-                    <BallGrid
-                      gridId={k}
-                      frames={frames}
-                      disabled={isFinal || !lineup.bowler_id}
-                      onChange={(next) => {
-                        setSheets((s) => ({ ...s, [k]: next }));
-                        autosave(lineup.id, game, next);
-                      }}
-                    />
+                    <div className="space-y-2">
+                      {hasBlindBalls(frames) ? (
+                        <div className="flex flex-wrap items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-xs">
+                          <span className="font-display uppercase tracking-wide text-foreground">
+                            Mid-game withdrawal
+                          </span>
+                          <span className="text-muted-foreground">
+                            Withdrawn — excluded from average. Full score {scoreGame(frames).total} counts
+                            for the team; real frames before the first B ball keep their stats.
+                          </span>
+                          {!isFinal && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="ml-auto"
+                              onClick={() => {
+                                const next = clearWithdrawal(frames);
+                                setSheets((s) => ({ ...s, [k]: next }));
+                                autosave(lineup.id, game, next);
+                              }}
+                            >
+                              Clear withdrawal / make rolled again
+                            </Button>
+                          )}
+                        </div>
+                      ) : isFinal ? null : (
+                        <p className="text-xs text-muted-foreground">
+                          Mid-game withdrawal: enter the real balls, then add B to the first
+                          blind-completion ball (e.g. 7B, -B, XB, /B). Later balls become B
+                          automatically.
+                        </p>
+                      )}
+                      <BallGrid
+                        gridId={k}
+                        frames={frames}
+                        disabled={isFinal || !lineup.bowler_id}
+                        onChange={(next) => {
+                          setSheets((s) => ({ ...s, [k]: next }));
+                          autosave(lineup.id, game, next);
+                        }}
+                      />
+                    </div>
                   )}
                 </div>
               );

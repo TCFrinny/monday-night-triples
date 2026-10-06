@@ -44,12 +44,16 @@ export function frameOneNatural(frames: Frame[] | null | undefined): number | nu
 export interface TeamFrameOne {
   score: number | null;
   /** Why it couldn't be scored: "blind" (no frames exist) or "incomplete". */
-  reason?: "blind" | "incomplete";
+  reason?: "blind" | "incomplete" | "withdrawn";
 }
 
 /** Sum each bowler's natural frame 1 for one team's next game. */
 export function teamFrameOne(bowlers: { blind: boolean; frames: Frame[] | null }[]): TeamFrameOne {
   if (bowlers.some((b) => b.blind)) return { score: null, reason: "blind" };
+  // A frame 1 containing any blind-completion (B) ball is not a natural rolled
+  // frame — the admin must pick the roll-off winner manually.
+  if (bowlers.some((b) => (b.frames?.[0]?.balls ?? []).some((x) => x.isBlind)))
+    return { score: null, reason: "withdrawn" };
   let total = 0;
   for (const b of bowlers) {
     const s = frameOneNatural(b.frames);
@@ -135,6 +139,8 @@ export function computeTriplesPoints(args: {
         } else {
           ro = { ...base, method: "pending", aTotal, bTotal, autoTied: true, manualAllowed: true, winner: null, message: `Game ${game} roll-off still tied — choose winner` };
         }
+      } else if (fa.reason === "withdrawn" || fb.reason === "withdrawn") {
+        ro = { ...base, method: "pending", manualAllowed: true, winner: null, message: `Game ${game} roll-off can't be scored (blind B ball in Game ${next} frame 1) — choose winner` };
       } else if (fa.reason === "blind" || fb.reason === "blind") {
         ro = { ...base, method: "pending", manualAllowed: true, winner: null, message: `Game ${game} roll-off can't be scored (blind bowler in Game ${next}) — choose winner` };
       } else {

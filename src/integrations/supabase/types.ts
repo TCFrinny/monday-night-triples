@@ -61,6 +61,7 @@ export type Database = {
           created_at: string
           frame_id: string
           id: string
+          is_blind: boolean
           is_split: boolean
           pins: number
         }
@@ -69,6 +70,7 @@ export type Database = {
           created_at?: string
           frame_id: string
           id?: string
+          is_blind?: boolean
           is_split?: boolean
           pins: number
         }
@@ -77,6 +79,7 @@ export type Database = {
           created_at?: string
           frame_id?: string
           id?: string
+          is_blind?: boolean
           is_split?: boolean
           pins?: number
         }
@@ -88,6 +91,13 @@ export type Database = {
             referencedRelation: "frames"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "balls_frame_id_fkey"
+            columns: ["frame_id"]
+            isOneToOne: false
+            referencedRelation: "v_frame_flags"
+            referencedColumns: ["id"]
+          },
         ]
       }
       bowler_games: {
@@ -97,6 +107,7 @@ export type Database = {
           id: string
           is_blind: boolean
           is_complete: boolean
+          is_withdrawn: boolean
           lineup_id: string
           scratch_score: number
           updated_at: string
@@ -107,6 +118,7 @@ export type Database = {
           id?: string
           is_blind?: boolean
           is_complete?: boolean
+          is_withdrawn?: boolean
           lineup_id: string
           scratch_score?: number
           updated_at?: string
@@ -117,6 +129,7 @@ export type Database = {
           id?: string
           is_blind?: boolean
           is_complete?: boolean
+          is_withdrawn?: boolean
           lineup_id?: string
           scratch_score?: number
           updated_at?: string
@@ -1474,6 +1487,45 @@ export type Database = {
           },
         ]
       }
+      v_frame_flags: {
+        Row: {
+          any_blind: boolean | null
+          created_at: string | null
+          cumulative_score: number | null
+          fb_blind: boolean | null
+          first_ball_pins: number | null
+          frame_number: number | null
+          frame_score: number | null
+          game_id: string | null
+          id: string | null
+          is_split: boolean | null
+          outcome: Database["public"]["Enums"]["frame_outcome"] | null
+          split_converted: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "frames_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "bowler_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "frames_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "v_bowler_game_events"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "frames_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "v_game_context"
+            referencedColumns: ["game_id"]
+          },
+        ]
+      }
       v_game_context: {
         Row: {
           applicable_average: number | null
@@ -1482,6 +1534,7 @@ export type Database = {
           game_number: number | null
           is_blind: boolean | null
           is_bye: boolean | null
+          is_withdrawn: boolean | null
           lane_pair: string | null
           lineup_id: string | null
           match_id: string | null

@@ -18,6 +18,9 @@ export type FrameOutcome = "strike" | "spare" | "ten_box" | "open" | "incomplete
 export interface Ball {
   pins: number;
   isSplit?: boolean;
+  /** Blind-completion ball after a mid-game withdrawal. Pins still count for
+   *  the team score; the ball is excluded from individual statistics. */
+  isBlind?: boolean;
 }
 
 export interface Frame {
@@ -34,6 +37,10 @@ export interface ScoredFrame {
   isSplit: boolean;
   splitConverted: boolean;
   firstBallPins: number | null;
+  /** Frame contains at least one blind (B) ball. */
+  hasBlindBall: boolean;
+  /** The frame's first ball is a blind (B) ball. */
+  firstBallBlind: boolean;
 }
 
 export interface ScoredGame {
@@ -146,6 +153,8 @@ export function scoreGame(frames: Frame[]): ScoredGame {
       isSplit: Boolean(frame.balls[0]?.isSplit),
       splitConverted: Boolean(frame.balls[0]?.isSplit) && outcome === "spare",
       firstBallPins: frame.balls[0] ? frame.balls[0].pins : null,
+      hasBlindBall: frame.balls.some((b) => b.isBlind),
+      firstBallBlind: Boolean(frame.balls[0]?.isBlind),
     });
   }
 
@@ -234,6 +243,7 @@ export function ballToken(frame: Frame, frameIndex: number, ballIndex: number): 
   else if (ball.pins === 0) token = "-";
   else token = String(ball.pins);
   if (ball.isSplit) token += "s";
+  if (ball.isBlind) token += "b";
   return token;
 }
 
@@ -250,8 +260,11 @@ export function parseBallToken(
 ): { ball: Ball; error: null } | { ball: null; error: string } {
   const input = raw.trim().toLowerCase();
   if (!input) return { ball: null, error: "Empty entry." };
+  if (/[sb]{2,}$/.test(input))
+    return { ball: null, error: "A ball can't be both a split (S) and blind (B)." };
   const isSplit = input.endsWith("s");
-  const core = isSplit ? input.slice(0, -1) : input;
+  const isBlind = input.endsWith("b");
+  const core = isSplit || isBlind ? input.slice(0, -1) : input;
   const isTenth = frameIndex === FRAME_COUNT - 1;
   const frame = frames[frameIndex] ?? { balls: [] };
   const remaining = pinsRemaining(frame, ballIndex, isTenth);
@@ -282,7 +295,10 @@ export function parseBallToken(
   if (isSplit && ballIndex !== 0) return { ball: null, error: "Splits are marked on ball 1." };
   const err = validateBall(frames, frameIndex, ballIndex, pins);
   if (err) return { ball: null, error: err };
-  return { ball: isSplit ? { pins, isSplit: true } : { pins }, error: null };
+  const ball: Ball = { pins };
+  if (isSplit) ball.isSplit = true;
+  if (isBlind) ball.isBlind = true;
+  return { ball, error: null };
 }
 
 /** Where the cursor should move after entering a ball. */
@@ -343,6 +359,19 @@ export function accumulateFrameStats(
   frames: ScoredFrame[],
 ): FrameStatTotals {
   for (const f of frames) {
+    // A real first ball counts toward first-ball/split-left stats even when a
+    // later ball in the frame is blind.
+    const realFirst = f.firstBallPins !== null && !f.firstBallBlind;
+    if (f.hasBlindBall) {
+      if (realFirst) {
+        totals.firstBallPins += f.firstBallPins!;
+        totals.firstBallCount += 1;
+        if (f.firstBallPins! >= 8) totals.eightPlus += 1;
+        if (f.firstBallPins! >= 9) totals.ninePlus += 1;
+        if (f.isSplit) totals.splits += 1;
+      }
+      continue; // outcome was at least partly blind
+    }
     if (f.outcome === "incomplete") continue;
     totals.frames += 1;
     if (f.outcome === "strike") totals.strikes += 1;
@@ -370,4 +399,60 @@ export function accumulateFrameStats(
 export function pct(part: number, whole: number): number {
   if (!whole) return 0;
   return Math.round((part / whole) * 1000) / 10;
+}
+
+/* ---------------- Mid-game withdrawal (blind-completion balls) ---------------- */
+
+/** True when any ball in the game is a blind (B) ball. */
+export function hasBlindBalls(frames: Frame[]): boolean {
+  return frames.some((f) => f.balls.some((b) => b.isBlind));
+}
+
+/** Throwing-order position of the first B ball, or null. */
+export function firstBlindBallPosition(
+  frames: Frame[],
+): { frameIndex: number; ballIndex: number } | null {
+  for (let fi = 0; fi < frames.length; fi++) {
+    const balls = frames[fi]?.balls ?? [];
+    for (let bi = 0; bi < balls.length; bi++) if (balls[bi]!.isBlind) return { frameIndex: fi, ballIndex: bi };
+  }
+  return null;
+}
+
+/** Error when a real (non-B) ball follows the first B ball, else null. */
+export function validateWithdrawalSequence(frames: Frame[]): string | null {
+  let seen = false;
+  for (let fi = 0; fi < frames.length; fi++) {
+    for (const b of frames[fi]?.balls ?? []) {
+      if (b.isBlind) seen = true;
+      else if (seen) return `Frame ${fi + 1}: every ball after the first B ball must also be blind (B).`;
+    }
+  }
+  return null;
+}
+
+/**
+ * Withdrawal means the rest of the game is blind: every ball after the first
+ * B ball is marked B (a split mark is dropped on those balls). Returns a copy.
+ */
+export function inheritWithdrawal(frames: Frame[]): Frame[] {
+  let seen = false;
+  return frames.map((f) => ({
+    balls: f.balls.map((b) => {
+      if (b.isBlind) seen = true;
+      if (!seen) return { ...b };
+      const { isSplit: _s, ...rest } = b;
+      return { ...rest, isBlind: true };
+    }),
+  }));
+}
+
+/** Remove every B flag; numeric pins are kept. */
+export function clearWithdrawal(frames: Frame[]): Frame[] {
+  return frames.map((f) => ({
+    balls: f.balls.map((b) => {
+      const { isBlind: _b, ...rest } = b;
+      return rest;
+    }),
+  }));
 }
