@@ -382,7 +382,7 @@ export function boardLeaders(
   // Season/Third individual boards enforce the 2/3 participation minimum,
   // except for the exempt boards (raw counting/high-score categories).
   const minGames = opts.minGames && !isParticipationExempt(board.key) ? opts.minGames : null;
-  return pool
+  const sorted = pool
     .filter((r) => (board.eligible ? board.eligible(r) : true))
     .filter((r) => {
       if (!minGames) return true;
@@ -390,8 +390,20 @@ export function boardLeaders(
       if (required === undefined) return false;
       return (Number(r.games) || 0) >= required;
     })
-    .sort((a, b) => (board.value(b) - board.value(a)) * dir)
-    .slice(0, limit);
+    .sort((a, b) => (board.value(b) - board.value(a)) * dir);
+  return topPositions(sorted, board.value, limit);
+}
+
+/** Top-N leaderboard POSITIONS: given rows already sorted best-first by
+ *  `value`, keep the first `limit` rows plus every further row whose primary
+ *  value equals the cutoff row's value. Ties are never broken for inclusion;
+ *  existing (stable) order among tied rows is preserved. */
+export function topPositions<T>(sorted: T[], value: (r: T) => number, limit = 5): T[] {
+  if (sorted.length <= limit) return sorted.slice();
+  const cutoff = value(sorted[limit - 1]!);
+  let end = limit;
+  while (end < sorted.length && value(sorted[end]!) === cutoff) end++;
+  return sorted.slice(0, end);
 }
 
 /* ---------------------------------------------------------------------------
@@ -616,8 +628,10 @@ export function topFivePlusMilestones<T extends PerformanceEvent>(
       return true;
     })
     .sort((a, b) => Number(b.score) - Number(a.score) || String(a.event_id).localeCompare(String(b.event_id)));
-  const kept = sorted.slice(0, limit);
-  for (const e of sorted.slice(limit)) if (Number(e.score) >= threshold) kept.push(e);
+  // Union of Top-N positions (cutoff ties included) and threshold qualifiers.
+  // `sorted` is already deduped, so the union cannot repeat an event.
+  const kept = topPositions(sorted, (e) => Number(e.score), limit);
+  for (const e of sorted.slice(kept.length)) if (Number(e.score) >= threshold) kept.push(e);
   return kept;
 }
 
