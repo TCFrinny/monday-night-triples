@@ -1,0 +1,2 @@
+DROP TRIGGER IF EXISTS matches_lane_pair_refresh_trg ON public.matches;
+CREATE TRIGGER matches_lane_pair_refresh_trg AFTER UPDATE OF lane_pair, game_lane_pairs ON public.matches FOR EACH ROW EXECUTE FUNCTION public.matches_lane_pair_refresh();

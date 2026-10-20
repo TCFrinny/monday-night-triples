@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792512932023,
+      "tag": "0000_per_game_lane_pairs",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792513047982,
+      "tag": "0001_lane_trigger_game_lanes",
+      "breakpoints": true
+    }
+  ]
+}

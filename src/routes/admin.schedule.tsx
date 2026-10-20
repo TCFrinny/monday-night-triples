@@ -16,6 +16,12 @@ import {
   validateWeekAssignments,
   sortMatchesByActualLane,
   sortSlotsForDisplay,
+  GAME_NUMBERS,
+  gameLaneSummary,
+  laneMetadataPatch,
+  normalizeGameLanePairs,
+  sameGameLanePairs,
+  validateGameLanePairs,
 } from "@/lib/lane-slots";
 
 import { activeSeasonQuery, rosterSpotsQuery, seasonMatchSummaryQuery, teamsQuery, weeksQuery } from "@/lib/queries";
@@ -50,7 +56,8 @@ function AdminSchedule() {
   const [skipDates, setSkipDates] = useState<string[]>([]);
   const [weekId, setWeekId] = useState("");
   const [laneDraft, setLaneDraft] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Record<string, { a: string; b: string; lane: string }>>({});
+  const [draft, setDraft] = useState<Record<string, SlotDraft>>({});
+  const [openGames, setOpenGames] = useState<Set<string>>(new Set());
   const [byeTeam, setByeTeam] = useState("");
   const [draftWeekId, setDraftWeekId] = useState("");
 
@@ -188,12 +195,13 @@ function AdminSchedule() {
   useEffect(() => {
     if (!weekId || draftWeekId === weekId) return;
     setDraftWeekId(weekId);
-    const next: Record<string, { a: string; b: string; lane: string }> = {};
+    const next: Record<string, SlotDraft> = {};
     for (const s of weekPlan.slots) {
       next[s.lane_pair] = {
         a: s.match?.team_a_id ?? "",
         b: s.match?.team_b_id ?? "",
         lane: s.actual_lane_pair,
+        g: gamesDraft(s.match),
       };
     }
     setDraft(next);
@@ -207,7 +215,13 @@ function AdminSchedule() {
     actual_lane_pair: resolveActualLane(draft[s.lane_pair]?.lane, s.actual_lane_pair, s.lane_pair),
     locked: s.locked,
   }));
-  const weekError = weekId ? validateWeekAssignments(assignments, byeTeam || null) : null;
+  const gameLaneError =
+    weekPlan.slots
+      .map((s) => (draft[s.lane_pair]?.g ? validateGameLanePairs(draft[s.lane_pair]!.g!) : null))
+      .find(Boolean) ?? null;
+  const weekError = weekId
+    ? validateWeekAssignments(assignments, byeTeam || null) ?? gameLaneError
+    : null;
 
   const saveWeek = useMutation({
     mutationFn: async () => {
@@ -220,6 +234,10 @@ function AdminSchedule() {
         const lane =
           parseLanePair(resolveActualLane(draft[s.lane_pair]?.lane, s.actual_lane_pair, s.lane_pair)) ??
           s.lane_pair;
+        const game_lane_pairs = normalizeGameLanePairs(
+          lane,
+          draft[s.lane_pair]?.g ?? (s.match as any)?.game_lane_pairs ?? {},
+        );
         if (s.match) {
           if (!a || !b) {
             const { error } = await supabase.from("matches").delete().eq("id", s.match.id);
@@ -232,6 +250,7 @@ function AdminSchedule() {
                 team_b_id: b,
                 is_bye: false,
                 lane_pair: lane,
+                game_lane_pairs,
                 sort_order: i + 1,
               })
               .eq("id", s.match.id);
@@ -244,6 +263,7 @@ function AdminSchedule() {
             team_b_id: b,
             is_bye: false,
             lane_pair: lane,
+            game_lane_pairs,
             sort_order: i + 1,
             status: "scheduled",
           });
@@ -287,14 +307,21 @@ function AdminSchedule() {
 
   /** Lane-pair metadata only. Allowed on finalized matches; scores/teams untouched. */
   const setLanePair = useMutation({
-    mutationFn: async ({ id, lane }: { id: string; lane: string }) => {
-      const parsed = parseLanePair(lane);
-      if (!parsed) throw new Error("Enter two consecutive lanes, e.g. 31-32.");
-      const { error } = await supabase.from("matches").update({ lane_pair: parsed }).eq("id", id);
+    mutationFn: async ({
+      id,
+      lane,
+      games,
+    }: {
+      id: string;
+      lane: string;
+      games: Record<string, string | null | undefined> | unknown;
+    }) => {
+      const patch = laneMetadataPatch(lane, games);
+      const { error } = await supabase.from("matches").update(patch).eq("id", id);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      toast.success("Actual lane pair updated — Lane Data re-attributed to the new pair");
+      toast.success("Lane metadata updated — Lane Data re-attributed; scores and points unchanged");
       setDraftWeekId("");
       qc.invalidateQueries({ queryKey: ["season-match-summary"] });
       qc.invalidateQueries({ queryKey: ["lane-stats"] });
@@ -593,8 +620,9 @@ function AdminSchedule() {
                 a: s.match?.team_a_id ?? "",
                 b: s.match?.team_b_id ?? "",
                 lane: s.actual_lane_pair,
+                g: gamesDraft(s.match),
               };
-              const set = (patch: Partial<{ a: string; b: string; lane: string }>) =>
+              const set = (patch: Partial<SlotDraft>) =>
                 setDraft((prev) => ({ ...prev, [s.lane_pair]: { ...d, ...patch } }));
               // Raw field text (may be blank while the admin retypes a pair).
               const laneValue = d.lane ?? "";
@@ -603,7 +631,22 @@ function AdminSchedule() {
               const parsedLanePair = parseLanePair(effectiveLane);
               const isOverride = Boolean(parsedLanePair) && parsedLanePair !== s.lane_pair;
               const laneInvalid = laneValue.trim() !== "" && !parsedLanePair;
-              const finalizedLaneChanged = s.locked && parsedLanePair !== s.actual_lane_pair;
+              const gDraft = d.g ?? gamesDraft(s.match);
+              let normGames: Record<string, string> | null = null;
+              try {
+                normGames = parsedLanePair ? normalizeGameLanePairs(parsedLanePair, gDraft) : null;
+              } catch {
+                normGames = null;
+              }
+              const gamesChanged =
+                normGames !== null &&
+                !sameGameLanePairs(normGames, (s.match as any)?.game_lane_pairs ?? {});
+              const finalizedLaneChanged =
+                s.locked && (parsedLanePair !== s.actual_lane_pair || gamesChanged);
+              const summary = normGames
+                ? gameLaneSummary({ lane_pair: parsedLanePair, game_lane_pairs: normGames })
+                : "";
+              const isOpen = openGames.has(s.lane_pair);
               return (
                 <div
                   key={s.lane_pair}
@@ -652,7 +695,7 @@ function AdminSchedule() {
                             )
                               return;
                             if (s.locked && s.match) {
-                              setLanePair.mutate({ id: s.match.id, lane: s.lane_pair });
+                              setLanePair.mutate({ id: s.match.id, lane: s.lane_pair, games: gDraft });
                             }
                             set({ lane: s.lane_pair });
                           }}
@@ -677,9 +720,10 @@ function AdminSchedule() {
                           disabled={!parsedLanePair || setLanePair.isPending}
                           onClick={() => {
                             const ok = window.confirm(
-                              `This matchup is FINALIZED. Change its lane pair from ${s.actual_lane_pair} to ${parsedLanePair}? Only lane metadata changes — scores, teams and points stay exactly as they are. Lane Data will re-attribute these games.`,
+                              `This matchup is FINALIZED. Save lanes ${parsedLanePair}${summary ? ` (${summary})` : ""}? Only lane metadata changes — scores, teams and points stay exactly as they are. Lane Data will re-attribute the affected games to the pair they were bowled on.`,
                             );
-                            if (ok && s.match) setLanePair.mutate({ id: s.match.id, lane: parsedLanePair! });
+                            if (ok && s.match)
+                              setLanePair.mutate({ id: s.match.id, lane: parsedLanePair!, games: gDraft });
                           }}
                         >
                           Update lanes
@@ -724,6 +768,65 @@ function AdminSchedule() {
                     <span className="w-full text-xs text-destructive">
                       Use two consecutive lanes, e.g. 31-32 (or just type 31).
                     </span>
+                  )}
+                  {s.match && (
+                    <div className="flex w-full flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        aria-expanded={isOpen}
+                        onClick={() =>
+                          setOpenGames((prev) => {
+                            const n = new Set(prev);
+                            n.has(s.lane_pair) ? n.delete(s.lane_pair) : n.add(s.lane_pair);
+                            return n;
+                          })
+                        }
+                      >
+                        {isOpen ? "Hide per-game lanes" : "Per-game lanes"}
+                      </Button>
+                      {summary && (
+                        <span className="rounded border border-gold/60 px-1.5 py-0.5 font-display text-[10px] uppercase tracking-[0.12em] text-gold">
+                          {summary}
+                        </span>
+                      )}
+                      {isOpen &&
+                        GAME_NUMBERS.map((n) => {
+                          const k = String(n);
+                          const v = gDraft[k] ?? "";
+                          const bad = v.trim() !== "" && !parseLanePair(v);
+                          return (
+                            <span key={k} className="flex items-center gap-1">
+                              <span className="font-display text-[10px] uppercase text-muted-foreground">
+                                G{n}
+                              </span>
+                              <Input
+                                aria-label={`Game ${n} lanes for default ${s.lane_pair}`}
+                                className={`w-28 ${bad ? "border-destructive" : ""}`}
+                                value={v}
+                                placeholder={`same as ${parsedLanePair ?? effectiveLane}`}
+                                onChange={(e) => set({ g: { ...gDraft, [k]: e.target.value } })}
+                                onBlur={() => {
+                                  const p = parseLanePair(v);
+                                  if (p && p !== v) set({ g: { ...gDraft, [k]: p } });
+                                }}
+                              />
+                              {v.trim() !== "" && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  aria-label={`Reset game ${n} lanes`}
+                                  onClick={() => set({ g: { ...gDraft, [k]: "" } })}
+                                >
+                                  Reset
+                                </Button>
+                              )}
+                            </span>
+                          );
+                        })}
+                    </div>
                   )}
                 </div>
               );
@@ -842,4 +945,12 @@ function AdminSchedule() {
       </section>
     </div>
   );
+}
+
+type SlotDraft = { a: string; b: string; lane: string; g?: Record<string, string> };
+
+/** Editable per-game lane draft from a stored match (overrides only; blank = inherit). */
+function gamesDraft(match: any): Record<string, string> {
+  const m = match?.game_lane_pairs && typeof match.game_lane_pairs === "object" ? match.game_lane_pairs : {};
+  return { "1": m["1"] ?? "", "2": m["2"] ?? "", "3": m["3"] ?? "" };
 }

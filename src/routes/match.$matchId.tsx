@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { PageShell } from "@/components/page-shell";
+import { laneNote } from "@/lib/lane-slots";
 import {
   BowlerLink,
   EmptyState,
@@ -100,7 +101,7 @@ function MatchDetail() {
 
   return (
     <PageShell
-      eyebrow={`Week ${m.weeks?.week_number} · Lanes ${m.lane_pair ?? "—"}`}
+      eyebrow={`Week ${m.weeks?.week_number} · ${laneNote(m)}`}
       title={`${m.team_a?.name ?? "Team A"} vs ${m.team_b?.name ?? "BYE"}`}
     >
       <div className="mb-6 flex flex-wrap items-center gap-4">

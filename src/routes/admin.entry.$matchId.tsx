@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { gameLanePair, gameLaneSummary } from "@/lib/lane-slots";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -335,6 +336,11 @@ function ScoreEntry() {
         </Link>
         <span className="font-display uppercase text-foreground">
           Week {detail.match.weeks.week_number}: {teams[0]!.name} vs {teams[1]!.name}
+        </span>
+        <span className="text-muted-foreground" title="Where each game was bowled (edit in Admin → Schedule)">
+          {gameLaneSummary(detail.match)
+            ? [1, 2, 3].map((n) => `G${n} ${gameLanePair(detail.match, n) ?? "—"}`).join(" · ")
+            : `Lanes ${detail.match.lane_pair ?? "—"}`}
         </span>
         <span className="text-muted-foreground">
           Team averages {teamAvg(teams[0]!.id)} / {teamAvg(teams[1]!.id)} · HDCP{" "}
