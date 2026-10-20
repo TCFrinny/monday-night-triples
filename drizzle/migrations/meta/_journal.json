@@ -15,6 +15,13 @@
       "when": 1792513047982,
       "tag": "0001_lane_trigger_game_lanes",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792517618921,
+      "tag": "0002_clean_games_zero_wood",
+      "breakpoints": true
     }
   ]
 }
