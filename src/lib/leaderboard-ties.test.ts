@@ -37,13 +37,10 @@ describe("Top-5 positions with tie expansion", () => {
   it("milestone union: cutoff ties plus threshold qualifiers, no duplicates", () => {
     const board = milestoneBoard("hg")!; // threshold 200
     const ev = (id: string, score: number) => ({ event_id: id, score });
-    const events = [
-      ev("a", 230), ev("b", 220), ev("c", 210), ev("d", 205), ev("e", 180), ev("f", 180),
-      ev("g", 201), ev("a", 230), ev("h", 150),
-    ];
+    const events = [ev("a", 250), ev("b", 240), ev("c", 230), ev("d", 220), ev("e", 210), ev("f", 210), ev("g", 205), ev("a", 250), ev("h", 150)];
     const out = milestoneLeaders(board, events).map((e) => e.event_id);
-    // top 5 positions: a b c d g(201)... then e/f tie at 180? 5th is g (201): sorted a,b,c,d,g,e,f,h
-    expect(out).toEqual(["a", "b", "c", "d", "g"]);
+    // e/f tie at 5th (210), g qualifies by threshold (>=200), "a" deduped.
+    expect(out).toEqual(["a", "b", "c", "d", "e", "f", "g"]);
     const tied = milestoneLeaders(board, [ev("a", 230), ev("b", 190), ev("c", 185), ev("d", 182), ev("e", 180), ev("f", 180), ev("g", 179)]);
     expect(tied.map((e) => e.event_id)).toEqual(["a", "b", "c", "d", "e", "f"]);
     expect(new Set(out).size).toBe(out.length);
