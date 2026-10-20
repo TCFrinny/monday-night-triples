@@ -553,6 +553,23 @@ export function pinsLost(frames: FrameLike[]) {
   return frames.reduce((s, f) => s + framePinsLost(f), 0);
 }
 
+/** Clean Game = zero wood: a complete (10 scored frames, none incomplete),
+ *  non-blind, non-withdrawn game whose total pins lost (same per-frame rule as
+ *  `framePinsLost`) is exactly 0. Mirrors the `cg` CTE in the aggregate refresh.
+ *  B-ball frames arrive as "incomplete", so withdrawn games never qualify. */
+export function isCleanGame(
+  frames: FrameLike[],
+  opts: { isBlind?: boolean; isWithdrawn?: boolean } = {},
+) {
+  if (opts.isBlind || opts.isWithdrawn) return false;
+  if (frames.length !== 10 || frames.some((f) => f.outcome === "incomplete")) return false;
+  return pinsLost(frames) === 0;
+}
+
+/** Clean Frames (unchanged): frames that are a strike or spare. */
+export const cleanFrames = (frames: FrameLike[]) =>
+  frames.filter((f) => f.outcome === "strike" || f.outcome === "spare").length;
+
 /** A finalized team game: scratch total of the three bowler games (subs
  *  included) plus the handicap pins that team received for that match. */
 export interface TeamGameTotal {
