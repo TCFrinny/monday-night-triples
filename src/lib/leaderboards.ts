@@ -382,7 +382,7 @@ export function boardLeaders(
   // Season/Third individual boards enforce the 2/3 participation minimum,
   // except for the exempt boards (raw counting/high-score categories).
   const minGames = opts.minGames && !isParticipationExempt(board.key) ? opts.minGames : null;
-  return pool
+  const sorted = pool
     .filter((r) => (board.eligible ? board.eligible(r) : true))
     .filter((r) => {
       if (!minGames) return true;
@@ -390,15 +390,8 @@ export function boardLeaders(
       if (required === undefined) return false;
       return (Number(r.games) || 0) >= required;
     })
-    .sort((a, b) => (board.value(b) - board.value(a)) * dir)
-    .reduce<any[]>((acc, r) => (acc.push(r), acc), [])
-    .filter((_, __, sorted) => sorted.length > 0)
-    .slice()
-    .filter(Boolean)
-    .concat()
-    .slice(0)
-    .filter(() => true)
-    .reduce<any[]>((acc, r, i, sorted) => (i === 0 ? topPositions(sorted, board.value, limit) : acc), []);
+    .sort((a, b) => (board.value(b) - board.value(a)) * dir);
+  return topPositions(sorted, board.value, limit);
 }
 
 /** Top-N leaderboard POSITIONS: given rows already sorted best-first by
