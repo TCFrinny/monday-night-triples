@@ -159,3 +159,26 @@ describe("High Game / High Set milestone behavior", () => {
     expect(milestoneLeaders(ms, events as any, { includeSubs: false })).toHaveLength(2);
   });
 });
+
+describe("Fewest Opens participation gating", () => {
+  const opens = BOWLER_BOARDS.find((b) => b.key === "opens")!;
+  const row = (id: string, games: number, o: number) => ({
+    id, bowler_id: id, games, frames: games * 10, opens: o,
+    bowlers: { full_name: id, slug: id, is_sub: false },
+  });
+  it("is not exempt from the 2/3 rule", () => {
+    expect(isParticipationExempt("opens")).toBe(false);
+  });
+  it("hides a bowler below the minimum even with the fewest opens", () => {
+    const rows = [row("Short", 5, 1), row("Full", 9, 20)];
+    const min = new Map([["Short", 6], ["Full", 6]]);
+    expect(boardLeaders(opens, rows, 5, { minGames: min }).map((r: any) => r.bowler_id)).toEqual(["Full"]);
+  });
+  it("weekly boards (no minimum map) keep everyone, sorted ascending", () => {
+    const rows = [row("Full", 9, 20), row("Short", 5, 1)];
+    expect(boardLeaders(opens, rows, 5, { minGames: null }).map((r: any) => r.bowler_id)).toEqual(["Short", "Full"]);
+  });
+  it("existing exemptions unchanged", () => {
+    for (const k of ["hg", "hs", "strikes", "sparect", "clean", "streak", "marks"]) expect(isParticipationExempt(k)).toBe(true);
+  });
+});
