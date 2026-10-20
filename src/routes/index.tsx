@@ -22,6 +22,7 @@ import {
 } from "@/lib/league";
 import { DEFAULT_LEAGUE_NAME, resolveLeagueName } from "@/lib/branding";
 import { orderStandingsRows } from "@/lib/standings-order";
+import { topPositions } from "@/lib/leaderboards";
 
 export const Route = createFileRoute("/")({
   head: () => ({
