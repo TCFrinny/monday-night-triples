@@ -3,7 +3,7 @@ import { BOWLER_BOARDS, boardLeaders, cleanFrames, isCleanGame, type FrameLike }
 import { isParticipationExempt } from "@/lib/participation";
 
 const fr = (outcomes: FrameLike["outcome"][], balls?: number[][]): FrameLike[] =>
-  outcomes.map((outcome, i) => ({ frame_number: i + 1, outcome, balls: balls?.[i] }));
+  outcomes.map((outcome, i) => ({ frame_number: i + 1, outcome, ...(balls?.[i] ? { balls: balls[i]! } : {}) }));
 
 const allMarks = fr(Array(10).fill("spare"));
 
