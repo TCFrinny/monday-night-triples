@@ -182,3 +182,23 @@ describe("Fewest Opens participation gating", () => {
     for (const k of ["hg", "hs", "strikes", "sparect", "clean", "streak", "marks"]) expect(isParticipationExempt(k)).toBe(true);
   });
 });
+
+describe("2/3 minimum — Don-like scenarios", () => {
+  const weeks = (n: number) => Array.from({ length: n }, (_, i) => match(i + 1, 1, "T", "X"));
+  const spot = (from: number, to: number | null = null, team = "T"): ParticipationRosterRow =>
+    ({ team_id: team, bowler_id: "D", effective_from_week: from, effective_to_week: to });
+  it("rostered all 7 weeks: 21 opportunities, minimum 14", () => {
+    expect(teamGameOpportunities(weeks(7), [spot(1)], "full").get("D")).toBe(21);
+    expect(participationMinimums(weeks(7), [spot(1)], "full").get("D")).toBe(14);
+  });
+  it.each([[2, false], [4, false], [5, true]])("%i weeks bowled (x3 games) vs 14", (w, ok) => {
+    expect(w * 3 >= participationMinimums(weeks(7), [spot(1)], "full").get("D")!).toBe(ok);
+  });
+  it("late joiner from week 6 only accrues weeks 6-7", () => {
+    expect(participationMinimums(weeks(7), [spot(6)], "full").get("D")).toBe(4);
+  });
+  it("transfer accrues each team's weeks once; overlapping rows don't double count", () => {
+    const ms = [...weeks(4), ...[5, 6, 7].map((w) => match(w, 1, "U", "X"))];
+    expect(teamGameOpportunities(ms, [spot(1, 4), spot(1, 4), spot(5, null, "U")], "full").get("D")).toBe(21);
+  });
+});
