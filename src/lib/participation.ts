@@ -59,9 +59,14 @@ function rosterActive(spot: ParticipationRosterRow, week: number): boolean {
 }
 
 /**
- * Team-game opportunities per bowler for the given scope: every finalized,
- * non-bye match gives +3 to each bowler rostered on that team for that league
- * week. Duplicate roster rows for the same bowler/team/week count once.
+ * Team-game opportunities per bowler for the given scope.
+ *
+ * Each league week with a finalized, non-bye match for the bowler's team in
+ * scope adds 3 opportunities (at most once per week). The team for a week is
+ * the bowler's active roster team that week; for weeks before their first
+ * assignment it is the first assignment's team, so replacements and late
+ * joiners inherit the team's completed weeks. Weeks after a roster spell ends
+ * with no new assignment add nothing. Duplicate roster rows count once.
  */
 export function teamGameOpportunities(
   matches: ParticipationMatchRow[] | null | undefined,
@@ -69,21 +74,38 @@ export function teamGameOpportunities(
   scope: string,
 ): Map<string, number> {
   const third = scopeThird(scope);
-  const out = new Map<string, number>();
+  // team -> set of weeks with a counting match
+  const teamWeeks = new Map<string, Set<number>>();
   for (const match of matches ?? []) {
     if (!matchCounts(match, third)) continue;
     const week = Number(match.weeks?.week_number);
     for (const teamId of [match.team_a_id, match.team_b_id]) {
       if (!teamId) continue;
-      const seen = new Set<string>();
-      for (const spot of spots ?? []) {
-        if (spot.team_id !== teamId) continue;
-        if (!rosterActive(spot, week)) continue;
-        if (seen.has(spot.bowler_id)) continue;
-        seen.add(spot.bowler_id);
-        out.set(spot.bowler_id, (out.get(spot.bowler_id) ?? 0) + GAMES_PER_MATCH);
-      }
+      if (!teamWeeks.has(teamId)) teamWeeks.set(teamId, new Set());
+      teamWeeks.get(teamId)!.add(week);
     }
+  }
+  const allWeeks = [...new Set([...teamWeeks.values()].flatMap((s) => [...s]))];
+  const byBowler = new Map<string, ParticipationRosterRow[]>();
+  for (const spot of spots ?? []) {
+    if (!byBowler.has(spot.bowler_id)) byBowler.set(spot.bowler_id, []);
+    byBowler.get(spot.bowler_id)!.push(spot);
+  }
+  const out = new Map<string, number>();
+  for (const [bowlerId, rows] of byBowler) {
+    const sorted = [...rows].sort((a, b) => a.effective_from_week - b.effective_from_week);
+    const first = sorted[0]!;
+    let total = 0;
+    for (const week of allWeeks) {
+      let teamId: string | null = null;
+      if (week < first.effective_from_week) teamId = first.team_id;
+      else {
+        // Latest-starting active spell wins (a transfer supersedes the old team).
+        for (const s of sorted) if (rosterActive(s, week)) teamId = s.team_id;
+      }
+      if (teamId && teamWeeks.get(teamId)?.has(week)) total += GAMES_PER_MATCH;
+    }
+    out.set(bowlerId, total);
   }
   return out;
 }
