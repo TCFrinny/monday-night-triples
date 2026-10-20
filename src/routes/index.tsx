@@ -65,10 +65,13 @@ function HomePage() {
   const nextWeek = (weeks ?? []).find((w: any) => w.week_number > lastWeek);
   const nextMatches = (matches ?? []).filter((m: any) => m.weeks.id === nextWeek?.id);
   const minGames = season?.establishment_threshold ?? 15;
-  const avgLeaders = [...(bowlerStats ?? [])]
-    .filter((r: any) => (r.games ?? 0) >= minGames)
-    .sort((a: any, b: any) => Number(b.average) - Number(a.average))
-    .slice(0, 5);
+  const avgLeaders = topPositions(
+    [...(bowlerStats ?? [])]
+      .filter((r: any) => (r.games ?? 0) >= minGames)
+      .sort((a: any, b: any) => Number(b.average) - Number(a.average)),
+    (r: any) => Number(r.average),
+    5,
+  );
 
   if (!season) {
     return (
