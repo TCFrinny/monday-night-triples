@@ -566,6 +566,7 @@ export type Database = {
         Row: {
           created_at: string
           finalized_at: string | null
+          game_lane_pairs: Json
           game_points: Json
           handicap_pins: number
           handicap_team_id: string | null
@@ -591,6 +592,7 @@ export type Database = {
         Insert: {
           created_at?: string
           finalized_at?: string | null
+          game_lane_pairs?: Json
           game_points?: Json
           handicap_pins?: number
           handicap_team_id?: string | null
@@ -616,6 +618,7 @@ export type Database = {
         Update: {
           created_at?: string
           finalized_at?: string | null
+          game_lane_pairs?: Json
           game_points?: Json
           handicap_pins?: number
           handicap_team_id?: string | null
@@ -1689,6 +1692,7 @@ export type Database = {
           is_sub: boolean
         }[]
       }
+      valid_game_lane_pairs: { Args: { p: Json }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
