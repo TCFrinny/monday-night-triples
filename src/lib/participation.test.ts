@@ -194,8 +194,34 @@ describe("2/3 minimum — Don-like scenarios", () => {
   it.each([[2, false], [4, false], [5, true]])("%i weeks bowled (x3 games) vs 14", (w, ok) => {
     expect(w * 3 >= participationMinimums(weeks(7), [spot(1)], "full").get("D")!).toBe(ok);
   });
-  it("late joiner from week 6 only accrues weeks 6-7", () => {
-    expect(participationMinimums(weeks(7), [spot(6)], "full").get("D")).toBe(4);
+  it("late joiner from week 6 inherits all 7 team weeks: min 14, 6 games ineligible", () => {
+    const min = participationMinimums(weeks(7), [spot(6)], "full").get("D")!;
+    expect(min).toBe(14);
+    expect(6 >= min).toBe(false);
+  });
+  it("third scope charges pre-join weeks inside that third only", () => {
+    const ms = [1, 2, 3, 4].map((w) => match(w, 1, "T", "X")).concat([5, 6, 7].map((w) => match(w, 2, "T", "X")));
+    expect(teamGameOpportunities(ms, [spot(6)], "third_2").get("D")).toBe(9);
+    expect(teamGameOpportunities(ms, [spot(6)], "third_1").get("D")).toBe(12);
+  });
+  it("team bye week contributes zero", () => {
+    const ms = [...weeks(3), match(4, 1, "T", null, { is_bye: true })];
+    expect(teamGameOpportunities(ms, [spot(1)], "full").get("D")).toBe(9);
+  });
+  it("transfer uses old team before, new team from transfer week, one match per week", () => {
+    const ms = [1, 2, 3, 4].map((w) => match(w, 1, "T", "X"))
+      .concat(match(3, 1, "U", "Y"), match(5, 1, "U", "Y"));
+    // T weeks 1-4 (to 4), U from 5. Week 3 has both teams' matches but counts once.
+    expect(teamGameOpportunities(ms, [spot(1, 4), spot(5, null, "U")], "full").get("D")).toBe(15);
+  });
+  it("overlapping duplicate rows do not double count", () => {
+    expect(teamGameOpportunities(weeks(7), [spot(1), spot(1), spot(3)], "full").get("D")).toBe(21);
+  });
+  it("Fewest Opens hides a late joiner under the inherited minimum", () => {
+    const opensBoard = BOWLER_BOARDS.find((b) => b.key === "opens")!;
+    const min = participationMinimums(weeks(7), [spot(6)], "full");
+    const r = { id: "D", bowler_id: "D", games: 6, frames: 60, opens: 1, bowlers: { full_name: "D", slug: "d", is_sub: false } };
+    expect(boardLeaders(opensBoard, [r], 5, { minGames: min })).toHaveLength(0);
   });
   it("transfer accrues each team's weeks once; overlapping rows don't double count", () => {
     const ms = [...weeks(4), ...[5, 6, 7].map((w) => match(w, 1, "U", "X"))];
