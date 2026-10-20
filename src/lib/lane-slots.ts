@@ -292,3 +292,89 @@ export function sortSlotsForDisplay(
     })
     .map((e) => e.s);
 }
+
+// ---------------------------------------------------------------------------
+// Per-game lane overrides (matches.game_lane_pairs)
+// Keys "1".."3"; only games bowled on a pair different from matches.lane_pair
+// are stored. Absent key = game inherits the match's actual pair.
+// ---------------------------------------------------------------------------
+
+export type GameLanePairs = Partial<Record<"1" | "2" | "3", string>>;
+export const GAME_NUMBERS = [1, 2, 3] as const;
+
+function asMap(v: unknown): Record<string, unknown> {
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+}
+
+/** Actual pair a game was bowled on: valid per-game override, else the match pair. */
+export function gameLanePair(
+  match: { lane_pair?: string | null; game_lane_pairs?: unknown },
+  gameNumber: number,
+): string | null {
+  const raw = asMap(match.game_lane_pairs)[String(gameNumber)];
+  const parsed = typeof raw === "string" ? parseLanePair(raw) : null;
+  return parsed ?? match.lane_pair ?? null;
+}
+
+/** Returns a message for the first malformed non-blank per-game entry, or null. */
+export function validateGameLanePairs(draft: Record<string, string | null | undefined>): string | null {
+  for (const [k, v] of Object.entries(draft)) {
+    if (!["1", "2", "3"].includes(k)) return `Unknown game "${k}".`;
+    const raw = (v ?? "").trim();
+    if (raw && !parseLanePair(raw)) {
+      return `Game ${k} lanes "${raw}" is not a valid pair — use two consecutive lanes, e.g. 41-42.`;
+    }
+  }
+  return null;
+}
+
+/**
+ * Canonicalizes a per-game draft: "41" → "41-42", blanks dropped, entries equal
+ * to the primary pair omitted. Throws on malformed entries.
+ */
+export function normalizeGameLanePairs(
+  primaryPair: string | null | undefined,
+  draft: Record<string, string | null | undefined> | unknown,
+): GameLanePairs {
+  const map = asMap(draft) as Record<string, string | null | undefined>;
+  const err = validateGameLanePairs(map);
+  if (err) throw new Error(err);
+  const primary = parseLanePair(primaryPair ?? null);
+  const out: GameLanePairs = {};
+  for (const n of GAME_NUMBERS) {
+    const raw = (map[String(n)] ?? "").toString().trim();
+    if (!raw) continue;
+    const p = parseLanePair(raw)!;
+    if (p === primary) continue;
+    out[String(n) as "1" | "2" | "3"] = p;
+  }
+  return out;
+}
+
+/** Short summary of overrides, e.g. "G3 41-42", or "" when none. */
+export function gameLaneSummary(match: { lane_pair?: string | null; game_lane_pairs?: unknown }): string {
+  const parts: string[] = [];
+  for (const n of GAME_NUMBERS) {
+    const p = gameLanePair(match, n);
+    if (p && p !== (match.lane_pair ?? null)) parts.push(`G${n} ${p}`);
+  }
+  return parts.join(" · ");
+}
+
+/** Public lane note: "Lanes 37-38 · G3 moved to 41-42". */
+export function laneNote(match: { lane_pair?: string | null; game_lane_pairs?: unknown }): string {
+  const base = `Lanes ${match.lane_pair ?? "—"}`;
+  const moves: string[] = [];
+  for (const n of GAME_NUMBERS) {
+    const p = gameLanePair(match, n);
+    if (p && p !== (match.lane_pair ?? null)) moves.push(`G${n} moved to ${p}`);
+  }
+  return moves.length ? `${base} · ${moves.join(" · ")}` : base;
+}
+
+/** True when two lane maps are equal after normalization. */
+export function sameGameLanePairs(a: unknown, b: unknown): boolean {
+  const ka = asMap(a);
+  const kb = asMap(b);
+  return GAME_NUMBERS.every((n) => (ka[String(n)] ?? null) === (kb[String(n)] ?? null));
+}
