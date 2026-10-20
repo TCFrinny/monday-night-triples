@@ -1,30 +1,32 @@
-# What happens when you change an entering average
+# Per-game lane pairs (findings + recommendation, nothing changed)
 
-This was a read-only check. Nothing was changed. The plan section at the bottom is optional repair work, for you to decide on.
+## Findings
+1. Yes. `matches.lane_pair` is the only stored lane value. No other table has a lane column (only `seasons.starting_lane_number` and the cache).
+2. Yes. `refresh_lane_aggregates_impl` reads `v_game_context`, which takes `m.lane_pair` for every game. All 3 games of every bowler land on the match's single pair.
+3. No per-game lane field exists anywhere (`bowler_games`, `frames`, `match_lineups` have none).
 
-## Current behavior
+## Recommendation (smallest robust model)
+Add one nullable JSON column on `matches`: `game_lane_pairs` jsonb, default `{}`, e.g. `{"3": "41-42"}`.
+- `matches.lane_pair` stays the primary/whole-match pair. Schedule, Score Entry and public sorting keep using it unchanged.
+- A game's actual pair = `game_lane_pairs[game_number]` if set, otherwise `lane_pair`. Empty map = today's behaviour.
+- Only matches store it (the two teams bowl each game on the same pair), so no per-bowler data, no score tables touched.
+- Duplicates stay allowed: no uniqueness constraint added.
 
-1. **What Admin saves:** Only the bowler's entering average is updated. The database step that runs on save does nothing except record the time of the edit. No other database logic uses the entering average.
-2. **Stored match averages:** Not changed. When a match is set up, each bowler's average at that time is saved with that match's lineup, and it stays as saved.
-3. **Finished matches:** Handicap, points, pinfall and standings are not recalculated. Finishing a match uses the averages saved with the lineup. Reopening and finishing it again still uses those saved averages, not the entering average.
-4. **Unfinished matches that are already set up:** These keep the old average. Setup only fills empty lineup spots. The new value is picked up only if an admin changes that spot's player type (Rostered, Sub or Blind) or picks a different bowler, because that re-saves the average.
-5. **Future weeks for bowlers under 15 games:** These use the new entering average when their match is set up in Score Entry. The projected handicaps on the upcoming schedule update right away.
-6. **Bowlers with 15+ games before a week:** They use their league average, so the entering average has no effect on new matches. Their past matches from before they reached 15 games keep the old value.
-7. **Singles:** Singles handicap comes from the average saved with each Triples lineup. Past Singles results do not change, even after a Singles recalculation. Future Singles results follow whatever average their Triples lineup saves.
-8. **Stats and league averages:** Unaffected. Only handicap and blind scores depend on it. Blind score = saved average minus the blind deduction, so past blind scores also stay as they were.
-9. **Reports:** The All Bowlers "Entering Average" column, bowler profiles and the Bowlers list update right away. Past results do not.
-10. **Repair tool:** None exists today. "Recalculate Singles" and the stats refresh both reuse the saved lineup averages. The only manual fix is reopening a match and re-selecting each affected bowler's player type in every past match. This is clumsy and only works on unfinished or reopened matches.
+Why not a `matches_games` table or a column on `bowler_games`: a table adds joins/RLS for 3 values; a `bowler_games` column would repeat the same value 6 times per game and could disagree.
 
-## Main caveat
+## Lane Data
+- `v_game_context.lane_pair` becomes `COALESCE(m.game_lane_pairs ->> g.game_number::text, m.lane_pair)` (append-only view change, same column name), so the existing aggregate attributes each game to its actual pair with no other SQL change.
+- Extend the `matches_lane_pair_refresh` trigger to also fire when `game_lane_pairs` changes, so corrections on finalized matches rebuild Lane Data.
+- One-off backfill call not needed (all maps start empty).
 
-If you fix the entering average now, every match the bowler already bowled keeps the wrong average. That includes the team handicap, points, blind scores, standings and Singles handicap for those weeks. Those stay wrong until they are repaired by hand.
+## Admin UX (Admin → Schedule week editor)
+- Keep the current "Actual lanes" field per match (whole-match override).
+- Add a small "Per game" toggle on that row revealing G1/G2/G3 inputs, prefilled with the actual pair; blank = same as the match pair. Saved only when different.
+- Row shows a badge like "G3: 41-42". Public schedule/match page can show the same note.
+- Allowed on finalized (locked) rows: saving writes only `lane_pair`/`game_lane_pairs` and never calls finalization, so scores and points are untouched. Validation reuses `parseLanePair`.
 
-## Optional follow-up: a repair tool (not built unless approved)
-
-"Correct entering average" button in Admin → Teams/Bowlers:
-- Shows every match where this bowler used the entering average, and which finished matches would change: handicap, points, and roll-off effects.
-- When you confirm, it updates only the saved averages that came from the entering average. Saved league averages are left alone. Blind lineups that used this bowler's average are included.
-- Then it re-finishes the affected matches with the existing finish logic, keeping roll-off decisions. Standings and Singles then update automatically.
-- It never changes ball-by-ball scores.
-
-Please tell me whether you want this tool, or would rather correct the average for future weeks only.
+## Technical details
+- Migration: `ALTER TABLE matches ADD COLUMN game_lane_pairs jsonb NOT NULL DEFAULT '{}'`; check constraint keys in ('1','2','3'); `CREATE OR REPLACE VIEW v_game_context` with COALESCE; update trigger condition.
+- Pure helper `gameLanePair(match, n)` + `validateGameLanePairs` in `src/lib/lane-slots.ts` with tests (override, fallback, blank cleared, malformed rejected, duplicates allowed).
+- Schedule save in `admin.schedule.tsx` writes the map alongside `lane_pair`; sorting unchanged (`compareByActualLane` on primary pair).
+- Verify: Lane Data test match with G3 override shows 1/3 of its games on the second pair; finalized match points/totals identical before/after.
