@@ -378,3 +378,16 @@ export function sameGameLanePairs(a: unknown, b: unknown): boolean {
   const kb = asMap(b);
   return GAME_NUMBERS.every((n) => (ka[String(n)] ?? null) === (kb[String(n)] ?? null));
 }
+
+/**
+ * Metadata-only patch for a lane correction (safe on finalized matches):
+ * contains ONLY lane_pair and game_lane_pairs — never teams, scores or points.
+ */
+export function laneMetadataPatch(
+  primary: string,
+  games: Record<string, string | null | undefined> | unknown,
+): { lane_pair: string; game_lane_pairs: GameLanePairs } {
+  const lane = parseLanePair(primary);
+  if (!lane) throw new Error("Enter two consecutive lanes, e.g. 31-32.");
+  return { lane_pair: lane, game_lane_pairs: normalizeGameLanePairs(lane, games) };
+}
