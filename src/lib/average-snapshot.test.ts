@@ -76,8 +76,8 @@ describe("recalcLineupSnapshots", () => {
     ];
     const changes = recalcLineupSnapshots({ lineups, entryAverages, prior, threshold: 15 });
     expect(changes.map((c) => c.id)).toEqual(["1", "3"]);
-    expect(changes[0].after).toEqual({ games_before: 21, applicable_average: 136, applicable_average_truncated: 136, average_source: "current" });
-    expect(changes[1].bowlerId).toBe("abs");
-    expect(Object.keys(changes[0].after)).not.toContain("bowler_id");
+    expect(changes[0]!.after).toEqual({ games_before: 21, applicable_average: 136, applicable_average_truncated: 136, average_source: "current" });
+    expect(changes[1]!.bowlerId).toBe("abs");
+    expect(Object.keys(changes[0]!.after)).not.toContain("bowler_id");
   });
 });
