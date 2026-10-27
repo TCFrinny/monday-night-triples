@@ -12,4 +12,4 @@
 - [x] Verify 22-team standings, all four report routes, and print media.
 - [x] Run full tests, typecheck, production build, and retrieve connector commit SHA.
 - Build retroactive entering-average correction workflow (Admin) and apply Joyce Leon 124->130
-- [ ] Established-average seeding fix + Recalculate Averages + Week 8 25-26 repair
+- [x] Established-average seeding fix + Recalculate Averages + Week 8 25-26 repair
