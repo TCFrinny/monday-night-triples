@@ -672,3 +672,26 @@ export function milestoneLeaders(
       : events;
   return topFivePlusMilestones(pool, board.threshold);
 }
+
+/** Longest strike / mark streaks across a bowler's games. Mirrors the `seq`,
+ *  `strk` and `mrk` CTEs in the aggregate refresh: streaks reset at every game
+ *  boundary, an incomplete (B-ball) or open/10-box frame breaks a streak, and
+ *  full blind games contribute nothing. No spare-only streak is tracked. */
+export function longestStreaks(
+  games: { frames: FrameLike[]; isBlind?: boolean }[],
+): { strike: number; mark: number } {
+  let strike = 0;
+  let mark = 0;
+  for (const g of games) {
+    if (g.isBlind) continue;
+    let s = 0;
+    let m = 0;
+    for (const f of [...g.frames].sort((a, b) => a.frame_number - b.frame_number)) {
+      s = f.outcome === "strike" ? s + 1 : 0;
+      m = f.outcome === "strike" || f.outcome === "spare" ? m + 1 : 0;
+      strike = Math.max(strike, s);
+      mark = Math.max(mark, m);
+    }
+  }
+  return { strike, mark };
+}
