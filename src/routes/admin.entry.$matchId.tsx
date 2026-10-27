@@ -247,7 +247,10 @@ function ScoreEntry() {
     },
     onSuccess: (changes) => {
       invalidate();
-      if (!changes.length) return toast.success("Averages already correct — no changes.");
+      if (!changes.length) {
+        toast.success("Averages already correct — no changes.");
+        return;
+      }
       const name = (id: string) => (bowlers ?? []).find((b: any) => b.id === id)?.full_name ?? id;
       const lab = (v: { average_source: string; applicable_average: number }) =>
         `${v.average_source === "current" ? "Current" : "Entry"} ${+v.applicable_average.toFixed(2)}`;
