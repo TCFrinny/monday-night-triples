@@ -15,8 +15,10 @@ import { framesFromRows } from "@/components/league/ui";
 import { BallGrid } from "@/components/league/ball-grid";
 import { rosterForWeek } from "@/lib/roster";
 import {
-  applicableAverage,
+  canSeedLineups,
   formatPoints,
+  recalcLineupSnapshots,
+  snapshotFor,
   priorAveragesBefore,
   type PriorGameRow,
   teamAverage,
@@ -43,14 +45,23 @@ type Participation = "rostered" | "sub" | "blind";
 
 const sheetKey = (lineupId: string, game: number) => `${lineupId}:${game}`;
 
+const season_id = (s: { id?: string } | null | undefined) => s?.id;
+
 function ScoreEntry() {
   const { matchId } = Route.useParams();
   const qc = useQueryClient();
-  const { data: season } = useQuery(activeSeasonQuery);
-  const { data: detail } = useQuery(matchDetailQuery(matchId));
-  const { data: bowlers } = useQuery(bowlersQuery(season?.id));
-  const { data: priorGames } = useQuery(seasonGamesByWeekQuery(season?.id));
-  const { data: spots } = useQuery(rosterSpotsQuery(season?.id));
+  const seasonQ = useQuery(activeSeasonQuery);
+  const detailQ = useQuery(matchDetailQuery(matchId));
+  const bowlersQ = useQuery(bowlersQuery(season_id(seasonQ.data)));
+  const priorQ = useQuery(seasonGamesByWeekQuery(season_id(seasonQ.data)));
+  const spotsQ = useQuery(rosterSpotsQuery(season_id(seasonQ.data)));
+  const season = seasonQ.data;
+  const detail = detailQ.data;
+  const bowlers = bowlersQ.data;
+  const priorGames = priorQ.data;
+  const spots = spotsQ.data;
+  // Averages may only be computed once BOTH bowlers and prior games loaded.
+  const avgReady = bowlersQ.isSuccess && priorQ.isSuccess && seasonQ.isSuccess;
   const [game, setGame] = useState(1);
   const [sheets, setSheets] = useState<Record<string, Frame[]>>({});
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -80,22 +91,19 @@ function ScoreEntry() {
     return priorAveragesBefore(rows, week);
   }, [priorGames, week]);
 
-  /** Applicable average for a bowler, from entry average + established current. */
+  const entryAverages = useMemo(
+    () => new Map((bowlers ?? []).map((b: any) => [b.id as string, Number(b.entry_average)])),
+    [bowlers],
+  );
+  const threshold = season?.establishment_threshold ?? 15;
+
+  /** Applicable average for a bowler. Throws while data is still loading. */
   const appFor = useMemo(
     () => (bowlerId: string | null | undefined) => {
-      const b = (bowlers ?? []).find((x: any) => x.id === bowlerId);
-      if (!b) return { value: 0, source: "entry" as const, games: 0 };
-      const prior = bowlerId ? priorByBowler.get(bowlerId) : undefined;
-      const games = prior?.games ?? 0;
-      const app = applicableAverage({
-        entryAverage: Number(b.entry_average),
-        currentAverage: prior?.average ?? null,
-        gamesBefore: games,
-        threshold: season?.establishment_threshold ?? 15,
-      });
-      return { ...app, games };
+      const s = snapshotFor({ ready: avgReady, bowlerId, entryAverages, prior: priorByBowler, threshold });
+      return { value: s.applicable_average, source: s.average_source, games: s.games_before };
     },
-    [bowlers, priorByBowler, season?.establishment_threshold],
+    [avgReady, entryAverages, priorByBowler, threshold],
   );
 
   /** Auto-create the lineup snapshot from the roster effective for this week. */
@@ -109,7 +117,15 @@ function ScoreEntry() {
   });
 
   useEffect(() => {
-    if (!detail || !season || !spots || seeded.current) return;
+    if (seeded.current || !detail || !season || !spots) return;
+    const ready = canSeedLineups({
+      match: detailQ.isSuccess,
+      season: seasonQ.isSuccess,
+      roster: spotsQ.isSuccess,
+      bowlers: bowlersQ.isSuccess,
+      priorGames: priorQ.isSuccess,
+    });
+    if (!ready) return;
     if (detail.match.status === "final") return;
     const teamIds = [detail.match.team_a_id, detail.match.team_b_id].filter(Boolean) as string[];
     const rows: any[] = [];
@@ -142,7 +158,7 @@ function ScoreEntry() {
       seed.mutate(rows);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detail, season, spots, week]);
+  }, [detail, season, spots, week, avgReady, appFor]);
 
   /** Hydrate local ball sheets from stored frames. */
   useEffect(() => {
@@ -201,6 +217,47 @@ function ScoreEntry() {
       }
     },
     onSuccess: invalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const recalc = useMutation({
+    mutationFn: async () => {
+      if (!avgReady || !detail) throw new Error("Data still loading — try again in a moment.");
+      if (detail.match.status === "final")
+        throw new Error("Finalized matches use the entering-average correction tool.");
+      const changes = recalcLineupSnapshots({
+        lineups: (detail.lineups ?? []) as any,
+        entryAverages,
+        prior: priorByBowler,
+        threshold,
+      });
+      for (const c of changes) {
+        const { error } = await supabase
+          .from("match_lineups")
+          .update({
+            games_before: c.after.games_before,
+            applicable_average: c.after.applicable_average,
+            applicable_average_truncated: c.after.applicable_average_truncated,
+            average_source: c.after.average_source,
+          })
+          .eq("id", c.id);
+        if (error) throw new Error(error.message);
+      }
+      return changes;
+    },
+    onSuccess: (changes) => {
+      invalidate();
+      if (!changes.length) return toast.success("Averages already correct — no changes.");
+      const name = (id: string) => (bowlers ?? []).find((b: any) => b.id === id)?.full_name ?? id;
+      const lab = (v: { average_source: string; applicable_average: number }) =>
+        `${v.average_source === "current" ? "Current" : "Entry"} ${+v.applicable_average.toFixed(2)}`;
+      toast.success(`Updated ${changes.length} average(s)`, {
+        description: changes
+          .map((c) => `${name(c.bowlerId)}: ${lab(c.before)} → ${lab(c.after)} (${c.after.games_before} games)`)
+          .join("\n"),
+        duration: 15000,
+      });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -368,9 +425,19 @@ function ScoreEntry() {
               </Button>
             </>
           ) : (
+            <>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!avgReady || recalc.isPending}
+              onClick={() => recalc.mutate()}
+            >
+              Recalculate Averages
+            </Button>
             <Button size="sm" onClick={() => finalizeNow()}>
               Finalize match
             </Button>
+            </>
           )}
         </span>
       </div>
