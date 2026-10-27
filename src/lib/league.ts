@@ -230,3 +230,105 @@ export function formatGamesBehind(gb: number): string {
   if (gb <= 0) return "—";
   return gb.toFixed(1);
 }
+
+/** A saved lineup snapshot, as stored on match_lineups. */
+export interface LineupSnapshot {
+  id: string;
+  participation: string;
+  bowler_id: string | null;
+  absent_bowler_id: string | null;
+  games_before: number;
+  applicable_average: number | string;
+  applicable_average_truncated: number;
+  average_source: string;
+}
+
+export interface SnapshotValues {
+  games_before: number;
+  applicable_average: number;
+  applicable_average_truncated: number;
+  average_source: AverageSource;
+}
+
+/**
+ * Snapshot values for one bowler in a league week. Requires fully loaded data:
+ * callers must pass `ready = true` only once bowlers AND prior games have loaded,
+ * so a loading state can never masquerade as "0 prior games".
+ */
+export function snapshotFor(args: {
+  ready: boolean;
+  bowlerId: string | null | undefined;
+  entryAverages: Map<string, number>;
+  prior: Map<string, PriorAverage>;
+  threshold: number;
+}): SnapshotValues {
+  if (!args.ready) throw new Error("Bowler and prior-game data are still loading.");
+  if (!args.bowlerId) throw new Error("No bowler for this slot.");
+  const entry = args.entryAverages.get(args.bowlerId);
+  if (entry === undefined) throw new Error("Bowler not found in this season.");
+  const p = args.prior.get(args.bowlerId);
+  const games = p?.games ?? 0;
+  const app = applicableAverage({
+    entryAverage: entry,
+    currentAverage: p?.average ?? null,
+    gamesBefore: games,
+    threshold: args.threshold,
+  });
+  return {
+    games_before: games,
+    applicable_average: app.value,
+    applicable_average_truncated: truncateAverage(app.value),
+    average_source: app.source,
+  };
+}
+
+/** Whether automatic lineup creation may run. Every source must have loaded. */
+export function canSeedLineups(s: {
+  match: boolean;
+  season: boolean;
+  roster: boolean;
+  bowlers: boolean;
+  priorGames: boolean;
+}): boolean {
+  return s.match && s.season && s.roster && s.bowlers && s.priorGames;
+}
+
+export interface SnapshotChange {
+  id: string;
+  bowlerId: string;
+  before: SnapshotValues;
+  after: SnapshotValues;
+}
+
+const sameSnapshot = (a: SnapshotValues, b: SnapshotValues) =>
+  a.games_before === b.games_before &&
+  a.average_source === b.average_source &&
+  a.applicable_average_truncated === b.applicable_average_truncated &&
+  Math.abs(a.applicable_average - b.applicable_average) < 1e-6;
+
+/**
+ * Recompute saved lineup snapshots. Blind slots use the absent bowler's
+ * average. Returns only rows whose stored values differ; identities and
+ * participation are never part of the result.
+ */
+export function recalcLineupSnapshots(args: {
+  lineups: LineupSnapshot[];
+  entryAverages: Map<string, number>;
+  prior: Map<string, PriorAverage>;
+  threshold: number;
+}): SnapshotChange[] {
+  const out: SnapshotChange[] = [];
+  for (const l of args.lineups) {
+    const who = l.participation === "blind" ? l.absent_bowler_id : l.bowler_id;
+    if (!who || !args.entryAverages.has(who)) continue;
+    const after = snapshotFor({ ready: true, bowlerId: who, entryAverages: args.entryAverages, prior: args.prior, threshold: args.threshold });
+    const before: SnapshotValues = {
+      games_before: Number(l.games_before),
+      applicable_average: Number(l.applicable_average),
+      applicable_average_truncated: Number(l.applicable_average_truncated),
+      average_source: l.average_source as AverageSource,
+    };
+    if (!sameSnapshot(before, after)) out.push({ id: l.id, bowlerId: who, before, after });
+  }
+  return out;
+}
