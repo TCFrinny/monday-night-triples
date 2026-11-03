@@ -332,3 +332,35 @@ export function recalcLineupSnapshots(args: {
   }
   return out;
 }
+
+/**
+ * Database patch for a Score Entry participation/identity change. The average
+ * owner is the absent rostered bowler for a blind, otherwise the playing bowler.
+ * A Sub slot with no replacement chosen yet is saved as identity-only: no
+ * average snapshot is computed or written until a real bowler exists.
+ * Scores are never part of this patch.
+ */
+export function lineupPatchFor(args: {
+  ready: boolean;
+  participation: "rostered" | "sub" | "blind";
+  bowlerId: string | null;
+  absentId: string | null;
+  entryAverages: Map<string, number>;
+  prior: Map<string, PriorAverage>;
+  threshold: number;
+}): Record<string, unknown> & { incomplete: boolean } {
+  const identity = {
+    participation: args.participation,
+    bowler_id: args.participation === "blind" ? null : args.bowlerId,
+    absent_bowler_id: args.absentId,
+  };
+  const owner = args.participation === "blind" ? args.absentId : args.bowlerId;
+  if (args.participation === "sub" && !owner) return { ...identity, incomplete: true };
+  const s = snapshotFor({ ready: args.ready, bowlerId: owner, entryAverages: args.entryAverages, prior: args.prior, threshold: args.threshold });
+  return { ...identity, ...s, incomplete: false };
+}
+
+/** Lineup slots that cannot be finalized: a Sub with no replacement bowler chosen. */
+export function incompleteLineups<T extends { participation: string; bowler_id: string | null }>(lineups: T[]): T[] {
+  return lineups.filter((l) => l.participation === "sub" && !l.bowler_id);
+}

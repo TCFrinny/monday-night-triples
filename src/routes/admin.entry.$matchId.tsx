@@ -19,6 +19,8 @@ import {
   formatPoints,
   recalcLineupSnapshots,
   snapshotFor,
+  lineupPatchFor,
+  incompleteLineups,
   priorAveragesBefore,
   type PriorGameRow,
   teamAverage,
@@ -190,20 +192,20 @@ function ScoreEntry() {
         patch.bowlerId !== undefined ? patch.bowlerId : (lineup.bowler_id as string | null);
       const absentId =
         patch.absentId !== undefined ? patch.absentId : (lineup.absent_bowler_id as string | null);
-      // Blind uses the ABSENT rostered bowler's own applicable average.
-      const avgOf = participation === "blind" ? absentId : bowlerId;
-      const app = appFor(avgOf);
+      // Blind uses the ABSENT rostered bowler's own applicable average. A Sub
+      // with no replacement chosen yet saves identity only (no snapshot).
+      const { incomplete: _incomplete, ...update } = lineupPatchFor({
+        ready: avgReady,
+        participation,
+        bowlerId,
+        absentId,
+        entryAverages,
+        prior: priorByBowler,
+        threshold,
+      });
       const { error } = await supabase
         .from("match_lineups")
-        .update({
-          participation,
-          bowler_id: participation === "blind" ? null : bowlerId,
-          absent_bowler_id: absentId,
-          applicable_average: app.value,
-          applicable_average_truncated: truncateAverage(app.value),
-          average_source: app.source,
-          games_before: app.games,
-        })
+        .update(update as any)
         .eq("id", lineup.id);
       if (error) throw new Error(error.message);
       // Correcting a legacy full-match blind back to a real identity un-blinds
@@ -654,7 +656,7 @@ function ScoreEntry() {
                         }
                         className="rounded-md border border-border bg-card px-2 py-1.5 text-sm"
                       >
-                        <option value="">— choose sub —</option>
+                        <option value="">Choose substitute</option>
                         {(bowlers ?? [])
                           .filter((b: any) => b.is_sub && b.is_active)
                           .map((b: any) => (
@@ -750,6 +752,9 @@ function ScoreEntry() {
 
   async function finalizeNow() {
     try {
+      const missing = incompleteLineups((detail?.lineups ?? []) as any[]);
+      if (missing.length)
+        throw new Error(`Choose a substitute for slot ${missing.map((l: any) => l.slot).join(", ")} before finalizing.`);
       // Flush any pending autosaves first (skip games that are blind).
       for (const [k, t] of Object.entries(timers.current)) {
         clearTimeout(t);
