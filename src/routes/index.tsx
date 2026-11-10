@@ -89,7 +89,7 @@ function HomePage() {
     <PageShell
       eyebrow={`AMF Dundalk · ${season.season_name}`}
       title={leagueName}
-      description="Three-person duckpin teams, 80% team handicap, seven points a week. Everything below updates the moment a sheet is finalized."
+      description="Three-person duckpin teams, 80.00% team handicap, seven points a week. Everything below updates the moment a sheet is finalized."
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Weeks completed" value={`${lastWeek} of ${season.total_weeks ?? weeks?.length ?? 0}`} />

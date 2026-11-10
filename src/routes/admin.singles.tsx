@@ -17,6 +17,7 @@ import {
   weeksQuery,
 } from "@/lib/queries";
 import { naturalCompare } from "@/lib/standings-order";
+import { formatPercentValue } from "@/lib/percentages";
 import { formatDateOnly } from "@/lib/schedule-dates";
 import {
   SINGLES_RULES,
@@ -247,7 +248,7 @@ function AdminSingles() {
           <div className="rounded-lg border border-border bg-secondary/30 p-3 text-sm">
             <p className="eyebrow">Handicap</p>
             <p className="mt-1 text-foreground">
-              {SINGLES_RULES.handicapPercent}% of ({config?.handicap_base ?? SINGLES_RULES.handicapBase} − own
+              {formatPercentValue(SINGLES_RULES.handicapPercent)} of ({config?.handicap_base ?? SINGLES_RULES.handicapBase} − own
               applicable average), rounded down. Never inherited.
             </p>
           </div>

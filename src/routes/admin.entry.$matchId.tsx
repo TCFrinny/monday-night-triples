@@ -533,7 +533,7 @@ function ScoreEntry() {
                   </div>
                   {ro.nextGame && (
                     <div className="mt-1 text-muted-foreground tabular-nums">
-                      Roll-off = Game {ro.nextGame} frame 1 (natural score incl. bonus) + 10% of the
+                      Roll-off = Game {ro.nextGame} frame 1 (natural score incl. bonus) + 10.00% of the
                       handicap to the receiving team:{" "}
                       {teams[0]!.name} {ro.aScratch ?? "?"} + {ro.aHdcp} = {ro.aTotal ?? "?"} ·{" "}
                       {teams[1]!.name} {ro.bScratch ?? "?"} + {ro.bHdcp} = {ro.bTotal ?? "?"}

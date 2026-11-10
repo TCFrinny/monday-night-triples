@@ -40,7 +40,7 @@ function AdminOverview() {
       total_weeks: String(season.total_weeks),
       position_round_weeks: (season.position_round_weeks ?? []).join(", "),
       third_boundaries: (season.third_boundaries ?? []).join(", "),
-      handicap_percent: String(season.handicap_percent),
+      handicap_percent: Number(season.handicap_percent).toFixed(2),
       establishment_threshold: String(season.establishment_threshold),
       blind_deduction: String(season.blind_deduction),
     });
@@ -103,7 +103,7 @@ function AdminOverview() {
     ["total_weeks", "Total weeks"],
     ["third_boundaries", "Third boundaries (last week of each third)", "e.g. 12, 24, 36"],
     ["position_round_weeks", "Position round weeks", "e.g. 12, 24, 36"],
-    ["handicap_percent", "Handicap %", "80 = 80% of the team average difference"],
+    ["handicap_percent", "Handicap %", "80.00 = 80.00% of the team average difference"],
     ["establishment_threshold", "Games to establish an average", "Entry average used until reached"],
     ["blind_deduction", "Blind deduction (pins)"],
   ];
