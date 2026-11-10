@@ -15,6 +15,13 @@ const row = (id: string, makes: number, attempts: number) => ({
 });
 
 describe("percentage ranking and formatting", () => {
+  it.each([
+    [BOWLER_BOARDS, "split", "singlepin"],
+    [TEAM_BOARDS, "tsplitconv", "tsinglepin"],
+  ] as const)("conversion board order is split then single pin", (boards, split, single) => {
+    const keys = boards.map((b) => b.key);
+    expect(keys.indexOf(single)).toBe(keys.indexOf(split) + 1);
+  });
   it.each([[2, 3, "66.67%"], [1, 2, "50.00%"], [0, 3, "0.00%"], [0, 0, "0.00%"]] as const)("formats %i/%i exactly", (makes, attempts, expected) => expect(formatPercent(makes, attempts)).toBe(expected));
   it("keeps percentages unrounded for ranking", () => expect(percentage(2, 3)).toBeCloseTo(66.6666666667));
   it.each(["split", "tsplitconv", "singlepin", "tsinglepin"])("%s puts more makes first only for exact ties", (key) => {
