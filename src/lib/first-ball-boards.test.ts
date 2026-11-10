@@ -63,6 +63,12 @@ describe.each(["fb8", "fb9"])("%s individual participation", (key) => {
 });
 
 describe("first-ball aggregate semantics", () => {
+  it("keeps the individual first-ball section parallel to the team section", () => {
+    const bowlerKeys = BOWLER_BOARDS.map((b) => b.key);
+    const teamKeys = TEAM_BOARDS.map((b) => b.key);
+    expect(bowlerKeys.slice(bowlerKeys.indexOf("fb"), bowlerKeys.indexOf("fb") + 5)).toEqual(["fb", "fb8", "fb9", "split", "singlepin"]);
+    expect(teamKeys.slice(teamKeys.indexOf("tfb"), teamKeys.indexOf("tfb") + 5)).toEqual(["tfb", "tfb8", "tfb9", "tsplitconv", "tsinglepin"]);
+  });
   it("excludes B first balls while retaining real pre-withdrawal first balls", () => {
     const frames: Frame[] = [
       { balls: [{ pins: 8 }, { pins: 2 }] },
