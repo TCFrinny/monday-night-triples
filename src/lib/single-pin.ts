@@ -1,4 +1,5 @@
 import type { Ball, Frame } from "@/lib/duckpin";
+import { formatPercentValue, percentage } from "@/lib/percentages";
 
 export interface SinglePinCounts {
   single_pin_attempts: number;
@@ -30,12 +31,12 @@ export function singlePinTotals(games: { frames: Frame[]; isBlind?: boolean }[])
 /** Rank on the exact ratio, not the rounded display value. */
 export function singlePinPercentage(row: Partial<SinglePinCounts> | null | undefined): number {
   const attempts = Number(row?.single_pin_attempts) || 0;
-  return attempts > 0 ? (Number(row?.single_pin_conversions) || 0) / attempts * 100 : 0;
+  return percentage(Number(row?.single_pin_conversions) || 0, attempts);
 }
 
 export function formatSinglePin(row: Partial<SinglePinCounts> | null | undefined): string {
   const attempts = Number(row?.single_pin_attempts) || 0;
   return attempts > 0
-    ? `${singlePinPercentage(row).toFixed(1)}% (${row?.single_pin_conversions ?? 0}/${attempts})`
+    ? `${formatPercentValue(singlePinPercentage(row))} (${row?.single_pin_conversions ?? 0}/${attempts})`
     : "—";
 }
