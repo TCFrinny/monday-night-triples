@@ -12,6 +12,7 @@ import {
 } from "@/lib/queries";
 import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 import { formatDateOnly } from "@/lib/schedule-dates";
+import { formatPercentValue } from "@/lib/percentages";
 import { SINGLES_RULES, formatSinglesPoints, isSinglesPositionWeek } from "@/lib/singles";
 
 export const Route = createFileRoute("/singles")({
@@ -58,7 +59,7 @@ function SinglesPage() {
     <PageShell
       eyebrow={`${season.season_name} · Head to head`}
       title="Singles"
-      description={`One-on-one competition riding on the Triples weeks. Three points a night — one per game, no set point. Handicap is ${SINGLES_RULES.handicapPercent}% of ${SINGLES_RULES.handicapBase} minus your own applicable average, rounded down.`}
+      description={`One-on-one competition riding on the Triples weeks. Three points a night — one per game, no set point. Handicap is ${formatPercentValue(SINGLES_RULES.handicapPercent)} of ${SINGLES_RULES.handicapBase} minus your own applicable average, rounded down.`}
     >
       <div className="mb-5">
         <ScopeTabs

@@ -51,11 +51,11 @@ describe("single pin leaderboards", () => {
   });
   it("rounded-equal percentages are not false ties", () => expect(singlePinPercentage(counts(10000, 5001))).not.toBe(singlePinPercentage(counts(2, 1))));
   it("exemptions are exactly unchanged", () => expect([...PARTICIPATION_EXEMPT_BOARDS].sort()).toEqual(["hg", "hs", "strikes", "sparect", "clean", "streak", "marks"].sort()));
-  it("one decimal and counts are shared by boards and profiles", () => {
+  it("two decimals and counts are shared by boards and profiles", () => {
     const stats = counts(3, 2);
-    expect(formatSinglePin(stats)).toBe("66.7% (2/3)");
-    expect(board("singlepin").fmt?.(stats)).toBe("66.7% (2/3)");
-    expect(board("tsinglepin").fmt?.(stats)).toBe("66.7% (2/3)");
+    expect(formatSinglePin(stats)).toBe("66.67% (2/3)");
+    expect(board("singlepin").fmt?.(stats)).toBe("66.67% (2/3)");
+    expect(board("tsinglepin").fmt?.(stats)).toBe("66.67% (2/3)");
     expect(formatSinglePin(counts(0, 0))).toBe("—");
   });
 });

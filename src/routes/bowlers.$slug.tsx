@@ -5,7 +5,7 @@ import { PageShell } from "@/components/page-shell";
 import { EmptyState, Linescore, ParticipationTag, Stat, framesFromRows } from "@/components/league/ui";
 import { activeSeasonQuery, bowlerHistoryQuery, bowlerStatsQuery, bowlersQuery } from "@/lib/queries";
 import { applicableAverage, formatAverage } from "@/lib/league";
-import { pct } from "@/lib/duckpin";
+import { formatPercent } from "@/lib/percentages";
 import { formatSinglePin } from "@/lib/single-pin";
 import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
@@ -89,18 +89,15 @@ function BowlerProfile() {
       <h2 className="mb-3 mt-10 font-display text-xl uppercase text-foreground">Marks</h2>
       <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label="Strikes" value={s?.strikes ?? 0} />
-        <Stat label="Strike %" value={`${pct(s?.strikes ?? 0, s?.frames ?? 0)}%`} />
+        <Stat label="Strike %" value={`${formatPercent(s?.strikes ?? 0, s?.frames ?? 0)}`} />
         <Stat label="Spare attempts" value={s?.spare_attempts ?? 0} />
         <Stat label="Spares" value={s?.spares ?? 0} />
-        <Stat label="Spare %" value={`${pct(s?.spares ?? 0, s?.spare_attempts ?? 0)}%`} />
-        <Stat label="Single Pin Conversion %" value={formatSinglePin(s)} />
-        <Stat label="Single pin attempts" value={s?.single_pin_attempts ?? 0} />
-        <Stat label="Single pin conversions" value={s?.single_pin_conversions ?? 0} />
+        <Stat label="Spare %" value={`${formatPercent(s?.spares ?? 0, s?.spare_attempts ?? 0)}`} />
         <Stat label="10-boxes" value={s?.ten_boxes ?? 0} />
-        <Stat label="10-box %" value={`${pct(s?.ten_boxes ?? 0, s?.frames ?? 0)}%`} />
+        <Stat label="10-box %" value={`${formatPercent(s?.ten_boxes ?? 0, s?.frames ?? 0)}`} />
         <Stat label="Opens" value={s?.opens ?? 0} />
-        <Stat label="Open %" value={`${pct(s?.opens ?? 0, s?.frames ?? 0)}%`} />
-        <Stat label="Mark %" value={`${pct((s?.strikes ?? 0) + (s?.spares ?? 0), s?.frames ?? 0)}%`} />
+        <Stat label="Open %" value={`${formatPercent(s?.opens ?? 0, s?.frames ?? 0)}`} />
+        <Stat label="Mark %" value={`${formatPercent((s?.strikes ?? 0) + (s?.spares ?? 0), s?.frames ?? 0)}`} />
         <Stat label="Clean frames" value={s?.clean_frames ?? 0} />
         <Stat label="Clean games" value={s?.clean_games ?? 0} />
         <Stat label="Longest strike streak" value={s?.longest_strike_streak ?? 0} gold />
@@ -116,9 +113,9 @@ function BowlerProfile() {
           label="First-ball average"
           value={s?.first_ball_count ? (Number(s.first_ball_pins) / Number(s.first_ball_count)).toFixed(2) : "—"}
         />
-        <Stat label="Strike %" value={`${pct(s?.strikes ?? 0, s?.first_ball_count ?? 0)}%`} />
-        <Stat label="9+ %" value={`${pct(s?.first_ball_nine_plus ?? 0, s?.first_ball_count ?? 0)}%`} />
-        <Stat label="8+ %" value={`${pct(s?.first_ball_eight_plus ?? 0, s?.first_ball_count ?? 0)}%`} />
+        <Stat label="Strike %" value={`${formatPercent(s?.strikes ?? 0, s?.first_ball_count ?? 0)}`} />
+        <Stat label="9+ %" value={`${formatPercent(s?.first_ball_nine_plus ?? 0, s?.first_ball_count ?? 0)}`} />
+        <Stat label="8+ %" value={`${formatPercent(s?.first_ball_eight_plus ?? 0, s?.first_ball_count ?? 0)}`} />
       </div>
       <div className="panel mt-4 p-4">
         <div className="grid grid-cols-11 gap-1 text-center">
@@ -136,9 +133,12 @@ function BowlerProfile() {
       <h2 className="mb-3 mt-10 font-display text-xl uppercase text-foreground">Splits</h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Stat label="Splits left" value={s?.splits ?? 0} />
-        <Stat label="Split frequency" value={`${pct(s?.splits ?? 0, s?.frames ?? 0)}%`} />
+        <Stat label="Split frequency" value={`${formatPercent(s?.splits ?? 0, s?.frames ?? 0)}`} />
         <Stat label="Converted for spare" value={s?.split_conversions ?? 0} />
-        <Stat label="Conversion %" value={`${pct(s?.split_conversions ?? 0, s?.splits ?? 0)}%`} gold />
+        <Stat label="Conversion %" value={`${formatPercent(s?.split_conversions ?? 0, s?.splits ?? 0)}`} gold />
+        <Stat label="Single Pin Conversion %" value={formatSinglePin(s)} />
+        <Stat label="Single pin attempts" value={s?.single_pin_attempts ?? 0} />
+        <Stat label="Single pin conversions" value={s?.single_pin_conversions ?? 0} />
         <Stat label="Cleared for 10-box" value={s?.split_ten_boxes ?? 0} />
         <Stat label="Ended open" value={s?.split_opens ?? 0} />
       </div>

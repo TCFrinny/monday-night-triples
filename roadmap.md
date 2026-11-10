@@ -15,3 +15,5 @@
 - [x] Established-average seeding fix + Recalculate Averages + Week 8 25-26 repair
 - [x] Add Single Pin Conversion aggregation, profiles, leaderboards, reports, and focused tests.
 - [x] Refresh live aggregates and verify public results and printed reports.
+- [x] Reorder conversion stats, add makes tiebreaks, and standardize percentage displays.
+- [x] Verify percentage tests and live Stats, profiles, Lane Data, and reports.

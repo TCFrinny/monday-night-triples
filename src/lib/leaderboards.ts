@@ -1,5 +1,6 @@
 import { formatAverage } from "@/lib/league";
 import { pct } from "@/lib/duckpin";
+import { percentage, formatPercent } from "@/lib/percentages";
 import { isParticipationExempt } from "@/lib/participation";
 import { formatSinglePin, singlePinPercentage } from "@/lib/single-pin";
 
@@ -9,6 +10,8 @@ export type Leader = {
   note?: string;
   value: (r: any) => number;
   fmt?: (r: any) => string;
+  /** Descending display tiebreak only; never used for cutoff inclusion. */
+  secondaryValue?: (r: any) => number;
   /** Row qualifies for this board — based on the board's own denominator,
    *  never on the handicap establishment threshold. */
   eligible?: (r: any) => boolean;
@@ -24,13 +27,6 @@ const hasCompleteGames = (r: any) => num(r.complete_games) > 0;
 const hasTeamGames = (r: any) => num(r.team_games) > 0;
 
 export const BOWLER_BOARDS: Leader[] = [
-  {
-    key: "singlepin",
-    title: "Single Pin Conversion",
-    value: singlePinPercentage,
-    fmt: formatSinglePin,
-    eligible: (r) => num(r.single_pin_attempts) > 0,
-  },
   {
     key: "avg",
     title: "Average",
@@ -50,29 +46,29 @@ export const BOWLER_BOARDS: Leader[] = [
   {
     key: "strike",
     title: "Strike %",
-    value: (r) => pct(r.strikes, r.frames),
-    fmt: (r) => `${pct(r.strikes, r.frames)}%`,
+    value: (r) => percentage(r.strikes, r.frames),
+    fmt: (r) => `${formatPercent(r.strikes, r.frames)}`,
     eligible: hasFrames,
   },
   {
     key: "spare",
     title: "Spare %",
-    value: (r) => pct(r.spares, r.spare_attempts),
-    fmt: (r) => `${pct(r.spares, r.spare_attempts)}%`,
+    value: (r) => percentage(r.spares, r.spare_attempts),
+    fmt: (r) => `${formatPercent(r.spares, r.spare_attempts)}`,
     eligible: (r) => num(r.spare_attempts) > 0,
   },
   {
     key: "mark",
     title: "Mark %",
-    value: (r) => pct(r.strikes + r.spares, r.frames),
-    fmt: (r) => `${pct(r.strikes + r.spares, r.frames)}%`,
+    value: (r) => percentage(r.strikes + r.spares, r.frames),
+    fmt: (r) => `${formatPercent(r.strikes + r.spares, r.frames)}`,
     eligible: hasFrames,
   },
   {
     key: "tenbox",
     title: "10-Box %",
-    value: (r) => pct(r.ten_boxes, r.frames),
-    fmt: (r) => `${pct(r.ten_boxes, r.frames)}%`,
+    value: (r) => percentage(r.ten_boxes, r.frames),
+    fmt: (r) => `${formatPercent(r.ten_boxes, r.frames)}`,
     eligible: hasFrames,
   },
   {
@@ -86,9 +82,18 @@ export const BOWLER_BOARDS: Leader[] = [
   {
     key: "split",
     title: "Split Conversion %",
-    value: (r) => pct(r.split_conversions, r.splits),
-    fmt: (r) => `${pct(r.split_conversions, r.splits)}% (${r.split_conversions}/${r.splits})`,
+    value: (r) => percentage(r.split_conversions, r.splits),
+    fmt: (r) => `${formatPercent(r.split_conversions, r.splits)} (${r.split_conversions}/${r.splits})`,
+    secondaryValue: (r) => num(r.split_conversions),
     eligible: (r) => num(r.splits) > 0,
+  },
+  {
+    key: "singlepin",
+    title: "Single Pin Conversion",
+    value: singlePinPercentage,
+    fmt: formatSinglePin,
+    secondaryValue: (r) => num(r.single_pin_conversions),
+    eligible: (r) => num(r.single_pin_attempts) > 0,
   },
   { key: "streak", title: "Longest Strike Streak", value: (r) => r.longest_strike_streak, eligible: hasFrames },
   { key: "clean", title: "Clean Games", value: (r) => r.clean_games, eligible: hasGames },
@@ -104,8 +109,8 @@ export const BOWLER_BOARDS: Leader[] = [
   {
     key: "openpct",
     title: "Open %",
-    value: (r) => pct(r.opens, r.frames),
-    fmt: (r) => `${pct(r.opens, r.frames)}%`,
+    value: (r) => percentage(r.opens, r.frames),
+    fmt: (r) => `${formatPercent(r.opens, r.frames)}`,
     eligible: hasFrames,
     lowerIsBetter: true,
   },
@@ -161,8 +166,8 @@ export const BOWLER_BOARDS: Leader[] = [
     key: "clutch",
     title: "Clutch % (Frames 9–10)",
     note: "Marks in completed frames 9–10 as a share of those frames.",
-    value: (r) => pct(r.clutch_marks, r.clutch_frames),
-    fmt: (r) => `${pct(r.clutch_marks, r.clutch_frames)}%`,
+    value: (r) => percentage(r.clutch_marks, r.clutch_frames),
+    fmt: (r) => `${formatPercent(r.clutch_marks, r.clutch_frames)}`,
     eligible: (r) => num(r.clutch_frames) > 0,
   },
 
@@ -177,13 +182,6 @@ export const BOWLER_BOARDS: Leader[] = [
 const hasMatches = (r: any) => num(r.matches) > 0;
 
 export const TEAM_BOARDS: Leader[] = [
-  {
-    key: "tsinglepin",
-    title: "Team Single Pin Conversion",
-    value: singlePinPercentage,
-    fmt: formatSinglePin,
-    eligible: (r) => num(r.single_pin_attempts) > 0,
-  },
 
   {
     key: "tavg",
@@ -226,36 +224,36 @@ export const TEAM_BOARDS: Leader[] = [
   {
     key: "tstrike",
     title: "Team Strike %",
-    value: (r) => pct(r.strikes, r.frames),
-    fmt: (r) => `${pct(r.strikes, r.frames)}%`,
+    value: (r) => percentage(r.strikes, r.frames),
+    fmt: (r) => `${formatPercent(r.strikes, r.frames)}`,
     eligible: hasFrames,
   },
   {
     key: "tspare",
     title: "Team Spare %",
-    value: (r) => pct(r.spares, r.spare_attempts),
-    fmt: (r) => `${pct(r.spares, r.spare_attempts)}%`,
+    value: (r) => percentage(r.spares, r.spare_attempts),
+    fmt: (r) => `${formatPercent(r.spares, r.spare_attempts)}`,
     eligible: (r) => num(r.spare_attempts) > 0,
   },
   {
     key: "ttenbox",
     title: "Team 10-Box %",
-    value: (r) => pct(r.ten_boxes, r.frames),
-    fmt: (r) => `${pct(r.ten_boxes, r.frames)}%`,
+    value: (r) => percentage(r.ten_boxes, r.frames),
+    fmt: (r) => `${formatPercent(r.ten_boxes, r.frames)}`,
     eligible: hasFrames,
   },
   {
     key: "tmark",
     title: "Team Mark %",
-    value: (r) => pct(num(r.strikes) + num(r.spares), r.frames),
-    fmt: (r) => `${pct(num(r.strikes) + num(r.spares), r.frames)}%`,
+    value: (r) => percentage(num(r.strikes) + num(r.spares), r.frames),
+    fmt: (r) => `${formatPercent(num(r.strikes) + num(r.spares), r.frames)}`,
     eligible: hasFrames,
   },
   {
     key: "topen",
     title: "Team Open %",
-    value: (r) => pct(r.opens, r.frames),
-    fmt: (r) => `${pct(r.opens, r.frames)}%`,
+    value: (r) => percentage(r.opens, r.frames),
+    fmt: (r) => `${formatPercent(r.opens, r.frames)}`,
     eligible: hasFrames,
     lowerIsBetter: true,
   },
@@ -320,8 +318,8 @@ export const TEAM_BOARDS: Leader[] = [
     key: "tclutch",
     title: "Team Clutch % (Frames 9–10)",
     note: "Marks in completed frames 9–10 as a share of those frames, all bowlers including subs.",
-    value: (r) => pct(r.clutch_marks, r.clutch_frames),
-    fmt: (r) => `${pct(r.clutch_marks, r.clutch_frames)}%`,
+    value: (r) => percentage(r.clutch_marks, r.clutch_frames),
+    fmt: (r) => `${formatPercent(r.clutch_marks, r.clutch_frames)}`,
     eligible: (r) => num(r.clutch_frames) > 0,
   },
 
@@ -346,23 +344,32 @@ export const TEAM_BOARDS: Leader[] = [
   {
     key: "tfb8",
     title: "Team 8+ First-Ball %",
-    value: (r) => pct(r.first_ball_eight_plus, r.first_ball_count),
-    fmt: (r) => `${pct(r.first_ball_eight_plus, r.first_ball_count)}%`,
+    value: (r) => percentage(r.first_ball_eight_plus, r.first_ball_count),
+    fmt: (r) => `${formatPercent(r.first_ball_eight_plus, r.first_ball_count)}`,
     eligible: (r) => num(r.first_ball_count) > 0,
   },
   {
     key: "tfb9",
     title: "Team 9+ First-Ball %",
-    value: (r) => pct(r.first_ball_nine_plus, r.first_ball_count),
-    fmt: (r) => `${pct(r.first_ball_nine_plus, r.first_ball_count)}%`,
+    value: (r) => percentage(r.first_ball_nine_plus, r.first_ball_count),
+    fmt: (r) => `${formatPercent(r.first_ball_nine_plus, r.first_ball_count)}`,
     eligible: (r) => num(r.first_ball_count) > 0,
   },
   {
     key: "tsplitconv",
     title: "Team Split Conversion %",
-    value: (r) => pct(r.split_conversions, r.splits),
-    fmt: (r) => `${pct(r.split_conversions, r.splits)}% (${r.split_conversions}/${r.splits})`,
+    value: (r) => percentage(r.split_conversions, r.splits),
+    fmt: (r) => `${formatPercent(r.split_conversions, r.splits)} (${r.split_conversions}/${r.splits})`,
+    secondaryValue: (r) => num(r.split_conversions),
     eligible: (r) => num(r.splits) > 0,
+  },
+  {
+    key: "tsinglepin",
+    title: "Team Single Pin Conversion",
+    value: singlePinPercentage,
+    fmt: formatSinglePin,
+    secondaryValue: (r) => num(r.single_pin_conversions),
+    eligible: (r) => num(r.single_pin_attempts) > 0,
   },
   {
     key: "tsplits",
@@ -405,7 +412,10 @@ export function boardLeaders(
       if (required === undefined) return false;
       return (Number(r.games) || 0) >= required;
     })
-    .sort((a, b) => (board.value(b) - board.value(a)) * dir);
+    .sort((a, b) => {
+      const primary = (board.value(b) - board.value(a)) * dir;
+      return primary || (board.secondaryValue ? board.secondaryValue(b) - board.secondaryValue(a) : 0);
+    });
   return topPositions(sorted, board.value, limit);
 }
 
