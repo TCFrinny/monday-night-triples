@@ -29,6 +29,13 @@
       "when": 1793131994679,
       "tag": "0003_streaks_reset_per_game",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794322295525,
+      "tag": "0004_single_pin_conversion_stats",
+      "breakpoints": true
     }
   ]
 }
