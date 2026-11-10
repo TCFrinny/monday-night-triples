@@ -27,13 +27,14 @@ export function LeaderboardGrid({
   /** Season/Third individual participation minimums, keyed by bowler id. */
   minGames?: Map<string, number> | null;
 }) {
-  return <div className={printable ? "print-leaderboard-grid" : "grid gap-4 md:grid-cols-2 xl:grid-cols-3"}>
+  const liveTeams = mode === "teams" && !printable;
+  return <div className={printable ? "print-leaderboard-grid" : liveTeams ? "grid gap-4 xl:grid-cols-2" : "grid gap-4 md:grid-cols-2 xl:grid-cols-3"}>
     {boards.map((board) => {
       const milestone = milestoneBoard(board.key);
       const entries = milestone
         ? milestoneLeaders(milestone, eventsFor(milestone.kind), { includeSubs })
         : boardLeaders(board, rows, 5, { includeSubs, minGames });
-      return <section key={board.key} className={printable ? "print-leaderboard-card" : "panel p-5"}>
+      return <section key={board.key} className={printable ? "print-leaderboard-card" : "panel min-w-0 p-5"}>
         <h2 className="font-display text-base uppercase tracking-wide text-foreground">{board.title}</h2>
         {milestone ? <p className="mt-1 text-[11px] text-muted-foreground">Top 5, plus every {milestone.threshold}+ performance in this scope.</p> : board.note ? <p className="mt-1 text-[11px] text-muted-foreground">{board.note}</p> : null}
         <ol className="mt-3 space-y-1.5 text-sm">
@@ -47,14 +48,14 @@ export function LeaderboardGrid({
               : (isBowler ? entry.bowlers?.slug : entry.teams?.slug);
             const value = milestone ? entry.score : (board.fmt ? board.fmt(entry) : board.value(entry));
             return <li key={milestone ? entry.event_id : entry.id ?? index} className="flex items-center gap-2">
-              <span className={index === 0 ? "stat-num w-5 text-gold" : "stat-num w-5 text-muted-foreground"}>{index + 1}</span>
+              <span className={index === 0 ? `stat-num w-5 text-gold${liveTeams ? " shrink-0" : ""}` : `stat-num w-5 text-muted-foreground${liveTeams ? " shrink-0" : ""}`}>{index + 1}</span>
               {printable ? <span className="truncate text-foreground">{name ?? "—"}</span> : isBowler ? (
                 <Link to="/bowlers/$slug" params={{ slug: slug ?? "" }} className="truncate text-foreground hover:text-primary hover:underline">{name ?? "—"}</Link>
               ) : (
-                <Link to="/teams/$slug" params={{ slug: slug ?? "" }} className="truncate text-foreground hover:text-primary hover:underline">{name ?? "—"}</Link>
+                <Link to="/teams/$slug" params={{ slug: slug ?? "" }} className={liveTeams ? "min-w-0 flex-1 truncate text-foreground hover:text-primary hover:underline" : "truncate text-foreground hover:text-primary hover:underline"}>{name ?? "—"}</Link>
               )}
               {milestone && showEventWeeks && entry.week_number != null && <span className="shrink-0 text-[11px] text-muted-foreground">Week {entry.week_number}</span>}
-              <span className="ml-auto flex items-center gap-1.5">
+              <span className={liveTeams ? "ml-auto flex shrink-0 items-center gap-1.5 whitespace-nowrap" : "ml-auto flex items-center gap-1.5"}>
                 {milestone && Number(entry.score) >= milestone.threshold && <span className="milestone-label">{milestone.threshold}+</span>}
                 <span className="stat-num text-primary">{value}</span>
               </span>
