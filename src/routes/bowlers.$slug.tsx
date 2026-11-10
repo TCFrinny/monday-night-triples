@@ -114,8 +114,8 @@ function BowlerProfile() {
           value={s?.first_ball_count ? (Number(s.first_ball_pins) / Number(s.first_ball_count)).toFixed(2) : "—"}
         />
         <Stat label="Strike %" value={`${formatPercent(s?.strikes ?? 0, s?.first_ball_count ?? 0)}`} />
-        <Stat label="9+ %" value={`${formatPercent(s?.first_ball_nine_plus ?? 0, s?.first_ball_count ?? 0)}`} />
-        <Stat label="8+ %" value={`${formatPercent(s?.first_ball_eight_plus ?? 0, s?.first_ball_count ?? 0)}`} />
+        <Stat label="First Ball 8+ %" value={formatPercent(s?.first_ball_eight_plus ?? 0, s?.first_ball_count ?? 0)} />
+        <Stat label="First Ball 9+ %" value={formatPercent(s?.first_ball_nine_plus ?? 0, s?.first_ball_count ?? 0)} />
       </div>
       <div className="panel mt-4 p-4">
         <div className="grid grid-cols-11 gap-1 text-center">
