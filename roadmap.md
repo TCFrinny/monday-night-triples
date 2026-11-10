@@ -13,3 +13,5 @@
 - [x] Run full tests, typecheck, production build, and retrieve connector commit SHA.
 - Build retroactive entering-average correction workflow (Admin) and apply Joyce Leon 124->130
 - [x] Established-average seeding fix + Recalculate Averages + Week 8 25-26 repair
+- [ ] Add Single Pin Conversion aggregation, profiles, leaderboards, reports, and focused tests.
+- [ ] Refresh live aggregates and verify public results and printed reports.
