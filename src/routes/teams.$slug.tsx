@@ -10,7 +10,7 @@ import {
   teamsQuery,
 } from "@/lib/queries";
 import { formatPoints, formatRecord, recordFromPoints } from "@/lib/league";
-import { pct } from "@/lib/duckpin";
+import { formatPercent } from "@/lib/percentages";
 import { formatSinglePin } from "@/lib/single-pin";
 import { useProjections } from "@/hooks/use-projections";
 import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
@@ -75,7 +75,7 @@ function TeamProfile() {
         <Stat label="Team average" value={proj?.average ?? "—"} />
         <Stat
           label="Point %"
-          value={stats?.points_possible ? `${pct(Number(stats.points), Number(stats.points_possible))}%` : "—"}
+          value={stats?.points_possible ? `${formatPercent(Number(stats.points), Number(stats.points_possible))}` : "—"}
         />
       </div>
 
@@ -154,17 +154,14 @@ function TeamProfile() {
         <Stat label="High scratch set" value={stats?.high_scratch_set || "—"} gold />
         <Stat label="High HDCP set" value={stats?.high_hdcp_set || "—"} />
         <Stat label="Scratch pinfall" value={(stats?.scratch_pinfall ?? 0).toLocaleString()} />
-        <Stat label="Strike %" value={`${pct(stats?.strikes ?? 0, stats?.frames ?? 0)}%`} />
-        <Stat label="Spare %" value={`${pct(stats?.spares ?? 0, stats?.spare_attempts ?? 0)}%`} />
-        <Stat label="Single Pin Conversion %" value={formatSinglePin(stats)} />
-        <Stat label="Single pin attempts" value={stats?.single_pin_attempts ?? 0} />
-        <Stat label="Single pin conversions" value={stats?.single_pin_conversions ?? 0} />
-        <Stat label="10-box %" value={`${pct(stats?.ten_boxes ?? 0, stats?.frames ?? 0)}%`} />
+        <Stat label="Strike %" value={`${formatPercent(stats?.strikes ?? 0, stats?.frames ?? 0)}`} />
+        <Stat label="Spare %" value={`${formatPercent(stats?.spares ?? 0, stats?.spare_attempts ?? 0)}`} />
+        <Stat label="10-box %" value={`${formatPercent(stats?.ten_boxes ?? 0, stats?.frames ?? 0)}`} />
         <Stat
           label="Mark %"
-          value={`${pct((stats?.strikes ?? 0) + (stats?.spares ?? 0), stats?.frames ?? 0)}%`}
+          value={`${formatPercent((stats?.strikes ?? 0) + (stats?.spares ?? 0), stats?.frames ?? 0)}`}
         />
-        <Stat label="Open %" value={`${pct(stats?.opens ?? 0, stats?.frames ?? 0)}%`} />
+        <Stat label="Open %" value={`${formatPercent(stats?.opens ?? 0, stats?.frames ?? 0)}`} />
         <Stat
           label="First-ball avg"
           value={
@@ -173,14 +170,17 @@ function TeamProfile() {
               : "—"
           }
         />
-        <Stat label="8+ first ball" value={`${pct(stats?.first_ball_eight_plus ?? 0, stats?.first_ball_count ?? 0)}%`} />
-        <Stat label="9+ first ball" value={`${pct(stats?.first_ball_nine_plus ?? 0, stats?.first_ball_count ?? 0)}%`} />
+        <Stat label="8+ first ball" value={`${formatPercent(stats?.first_ball_eight_plus ?? 0, stats?.first_ball_count ?? 0)}`} />
+        <Stat label="9+ first ball" value={`${formatPercent(stats?.first_ball_nine_plus ?? 0, stats?.first_ball_count ?? 0)}`} />
         <Stat label="Split attempts" value={stats?.splits ?? 0} />
         <Stat label="Split conversions" value={stats?.split_conversions ?? 0} />
         <Stat
           label="Split conv %"
-          value={`${pct(stats?.split_conversions ?? 0, stats?.splits ?? 0)}%`}
+          value={`${formatPercent(stats?.split_conversions ?? 0, stats?.splits ?? 0)}`}
         />
+        <Stat label="Single Pin Conversion %" value={formatSinglePin(stats)} />
+        <Stat label="Single pin attempts" value={stats?.single_pin_attempts ?? 0} />
+        <Stat label="Single pin conversions" value={stats?.single_pin_conversions ?? 0} />
         <Stat
           label="Record (W-L)"
           value={stats ? formatRecord(recordFromPoints(Number(stats.points), Number(stats.matches))) : "—"}

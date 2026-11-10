@@ -357,14 +357,14 @@ describe("clutch percentage", () => {
         { ...advBowler("Hot"), clutch_marks: 8, clutch_frames: 10 },
       ];
       expect(boardLeaders(b, rows)[0]!.bowlers.full_name).toBe("Hot");
-      expect(b.fmt!(rows[1]!)).toBe("80%");
+      expect(b.fmt!(rows[1]!)).toBe("80.00%");
       expect(b.eligible!({ clutch_frames: 0 })).toBe(false);
     }
   });
 
   it("includes substitute-thrown frames in team clutch", () => {
     const teamRow = { clutch_marks: 12, clutch_frames: 18 }; // 18 = 3 bowlers x 3 games x 2 frames, one a sub
-    expect(board("tclutch").value(teamRow)).toBe(66.7);
+    expect(board("tclutch").value(teamRow)).toBeCloseTo(66.66666667);
     expect(boardLeaders(board("tclutch"), [teamRow])).toHaveLength(1);
   });
 

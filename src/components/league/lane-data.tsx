@@ -1,3 +1,4 @@
+import { formatPercentValue } from "@/lib/percentages";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { EmptyState, ScopeTabs } from "@/components/league/ui";
@@ -92,11 +93,11 @@ export function LaneData({
                 <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                   <Cell label="Pair Average" value={Number(r.average).toFixed(2)} highlight />
                   <Cell label="Pair POA" value={formatPoa(r.poa)} highlight />
-                  <Cell label="Strike %" value={`${laneStrikePct(r)}%`} highlight />
+                  <Cell label="Strike %" value={`${formatPercentValue(laneStrikePct(r))}`} highlight />
                   <Cell label="First Ball" value={Number(r.first_ball_avg).toFixed(2)} highlight />
-                  <Cell label="Spare %" value={`${laneSparePct(r)}%`} />
-                  <Cell label="Open %" value={`${laneOpenPct(r)}%`} />
-                  <Cell label="10-Box %" value={`${laneTenBoxPct(r)}%`} />
+                  <Cell label="Spare %" value={`${formatPercentValue(laneSparePct(r))}`} />
+                  <Cell label="Open %" value={`${formatPercentValue(laneOpenPct(r))}`} />
+                  <Cell label="10-Box %" value={`${formatPercentValue(laneTenBoxPct(r))}`} />
                   <Cell label="Pins Lost / G" value={Number(r.pins_lost_per_game).toFixed(2)} />
                   <Cell label="High Game" value={String(r.high_scratch_game)} />
                 </div>
@@ -133,19 +134,19 @@ export function LaneData({
                     </td>
                     <td className="stat-num px-3 py-2 text-right text-gold">{formatPoa(r.poa)}</td>
                     <td className="stat-num px-3 py-2 text-right text-primary">
-                      {laneStrikePct(r)}%
+                      {formatPercentValue(laneStrikePct(r))}
                     </td>
                     <td className="stat-num px-3 py-2 text-right text-primary">
                       {Number(r.first_ball_avg).toFixed(2)}
                     </td>
                     <td className="stat-num px-3 py-2 text-right text-foreground">
-                      {laneSparePct(r)}%
+                      {formatPercentValue(laneSparePct(r))}
                     </td>
                     <td className="stat-num px-3 py-2 text-right text-foreground">
-                      {laneOpenPct(r)}%
+                      {formatPercentValue(laneOpenPct(r))}
                     </td>
                     <td className="stat-num px-3 py-2 text-right text-foreground">
-                      {laneTenBoxPct(r)}%
+                      {formatPercentValue(laneTenBoxPct(r))}
                     </td>
                     <td className="stat-num px-3 py-2 text-right text-foreground">
                       {Number(r.pins_lost_per_game).toFixed(2)}

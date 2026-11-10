@@ -9,7 +9,7 @@
  * Pair POA uses `match_lineups.applicable_average` — the historical average
  * snapshot stored when the match was scored — never a bowler's current average.
  */
-import { pct } from "@/lib/duckpin";
+import { percentage } from "@/lib/percentages";
 
 export interface LaneRow {
   lane_pair: string;
@@ -50,10 +50,10 @@ export function laneSortKey(label: string | null | undefined): number {
   return m ? Number(m[1]) : 0;
 }
 
-export const laneStrikePct = (r: LaneRow) => pct(r.strikes, r.frames);
-export const laneSparePct = (r: LaneRow) => pct(r.spares, r.spare_attempts);
-export const laneOpenPct = (r: LaneRow) => pct(r.opens, r.frames);
-export const laneTenBoxPct = (r: LaneRow) => pct(r.ten_boxes, r.frames);
+export const laneStrikePct = (r: LaneRow) => percentage(r.strikes, r.frames);
+export const laneSparePct = (r: LaneRow) => percentage(r.spares, r.spare_attempts);
+export const laneOpenPct = (r: LaneRow) => percentage(r.opens, r.frames);
+export const laneTenBoxPct = (r: LaneRow) => percentage(r.ten_boxes, r.frames);
 
 /** Signed POA display: +4.11 / -2.33 / 0.00 */
 export function formatPoa(v: number | string): string {
