@@ -179,6 +179,8 @@ export type Database = {
           score_stddev: number
           season_id: string
           sets: number
+          single_pin_attempts: number
+          single_pin_conversions: number
           spare_attempts: number
           spares: number
           split_conversions: number
@@ -223,6 +225,8 @@ export type Database = {
           score_stddev?: number
           season_id: string
           sets?: number
+          single_pin_attempts?: number
+          single_pin_conversions?: number
           spare_attempts?: number
           spares?: number
           split_conversions?: number
@@ -267,6 +271,8 @@ export type Database = {
           score_stddev?: number
           season_id?: string
           sets?: number
+          single_pin_attempts?: number
+          single_pin_conversions?: number
           spare_attempts?: number
           spares?: number
           split_conversions?: number
@@ -1212,6 +1218,8 @@ export type Database = {
           scratch_pinfall: number
           season_id: string
           set_points: number
+          single_pin_attempts: number
+          single_pin_conversions: number
           spare_attempts: number
           spares: number
           split_conversions: number
@@ -1254,6 +1262,8 @@ export type Database = {
           scratch_pinfall?: number
           season_id: string
           set_points?: number
+          single_pin_attempts?: number
+          single_pin_conversions?: number
           spare_attempts?: number
           spares?: number
           split_conversions?: number
@@ -1296,6 +1306,8 @@ export type Database = {
           scratch_pinfall?: number
           season_id?: string
           set_points?: number
+          single_pin_attempts?: number
+          single_pin_conversions?: number
           spare_attempts?: number
           spares?: number
           split_conversions?: number
@@ -1678,6 +1690,15 @@ export type Database = {
       shift_schedule_dates: {
         Args: { p_days: number; p_from_week: number; p_season_id: string }
         Returns: number
+      }
+      single_pin_scope_counts: {
+        Args: { p_season_id: string; p_third: number; p_week: number }
+        Returns: {
+          attempts: number
+          bowler_id: string
+          conversions: number
+          team_id: string
+        }[]
       }
       singles_side_scores: {
         Args: { p_bowler: string; p_week_id: string }
