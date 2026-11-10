@@ -80,6 +80,22 @@ export const BOWLER_BOARDS: Leader[] = [
     eligible: (r) => num(r.first_ball_count) > 0,
   },
   {
+    key: "fb8",
+    title: "First Ball 8+ %",
+    value: (r) => percentage(r.first_ball_eight_plus, r.first_ball_count),
+    fmt: (r) => formatPercent(r.first_ball_eight_plus, r.first_ball_count),
+    secondaryValue: (r) => num(r.first_ball_eight_plus),
+    eligible: (r) => num(r.first_ball_count) > 0,
+  },
+  {
+    key: "fb9",
+    title: "First Ball 9+ %",
+    value: (r) => percentage(r.first_ball_nine_plus, r.first_ball_count),
+    fmt: (r) => formatPercent(r.first_ball_nine_plus, r.first_ball_count),
+    secondaryValue: (r) => num(r.first_ball_nine_plus),
+    eligible: (r) => num(r.first_ball_count) > 0,
+  },
+  {
     key: "split",
     title: "Split Conversion %",
     value: (r) => percentage(r.split_conversions, r.splits),
@@ -346,6 +362,7 @@ export const TEAM_BOARDS: Leader[] = [
     title: "Team 8+ First-Ball %",
     value: (r) => percentage(r.first_ball_eight_plus, r.first_ball_count),
     fmt: (r) => `${formatPercent(r.first_ball_eight_plus, r.first_ball_count)}`,
+    secondaryValue: (r) => num(r.first_ball_eight_plus),
     eligible: (r) => num(r.first_ball_count) > 0,
   },
   {
@@ -353,6 +370,7 @@ export const TEAM_BOARDS: Leader[] = [
     title: "Team 9+ First-Ball %",
     value: (r) => percentage(r.first_ball_nine_plus, r.first_ball_count),
     fmt: (r) => `${formatPercent(r.first_ball_nine_plus, r.first_ball_count)}`,
+    secondaryValue: (r) => num(r.first_ball_nine_plus),
     eligible: (r) => num(r.first_ball_count) > 0,
   },
   {
