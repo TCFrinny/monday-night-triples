@@ -31,6 +31,8 @@ export const Route = createFileRoute("/stats/")({
           "Advanced duckpin leaderboards: averages, marks, consistency (std. dev.), pins lost per game, first five, last five, big opening, big finish and clutch frames for bowlers and teams.",
       },
       { property: "og:title", content: `Stats & Leaders — ${DEFAULT_LEAGUE_NAME}` },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       {
         property: "og:description",
         content:

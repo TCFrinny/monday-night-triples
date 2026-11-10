@@ -1,6 +1,7 @@
 import { formatAverage } from "@/lib/league";
 import { pct } from "@/lib/duckpin";
 import { isParticipationExempt } from "@/lib/participation";
+import { formatSinglePin, singlePinPercentage } from "@/lib/single-pin";
 
 export type Leader = {
   key: string;
@@ -23,6 +24,13 @@ const hasCompleteGames = (r: any) => num(r.complete_games) > 0;
 const hasTeamGames = (r: any) => num(r.team_games) > 0;
 
 export const BOWLER_BOARDS: Leader[] = [
+  {
+    key: "singlepin",
+    title: "Single Pin Conversion",
+    value: singlePinPercentage,
+    fmt: formatSinglePin,
+    eligible: (r) => num(r.single_pin_attempts) > 0,
+  },
   {
     key: "avg",
     title: "Average",
@@ -169,6 +177,13 @@ export const BOWLER_BOARDS: Leader[] = [
 const hasMatches = (r: any) => num(r.matches) > 0;
 
 export const TEAM_BOARDS: Leader[] = [
+  {
+    key: "tsinglepin",
+    title: "Team Single Pin Conversion",
+    value: singlePinPercentage,
+    fmt: formatSinglePin,
+    eligible: (r) => num(r.single_pin_attempts) > 0,
+  },
 
   {
     key: "tavg",

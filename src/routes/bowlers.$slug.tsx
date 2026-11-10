@@ -6,6 +6,7 @@ import { EmptyState, Linescore, ParticipationTag, Stat, framesFromRows } from "@
 import { activeSeasonQuery, bowlerHistoryQuery, bowlerStatsQuery, bowlersQuery } from "@/lib/queries";
 import { applicableAverage, formatAverage } from "@/lib/league";
 import { pct } from "@/lib/duckpin";
+import { formatSinglePin } from "@/lib/single-pin";
 import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
 export const Route = createFileRoute("/bowlers/$slug")({
@@ -18,6 +19,8 @@ export const Route = createFileRoute("/bowlers/$slug")({
           `Duckpin scoring, mark, first-ball and split statistics plus week-by-week linescores for a ${DEFAULT_LEAGUE_NAME} bowler.`,
       },
       { property: "og:title", content: `Bowler Profile — ${DEFAULT_LEAGUE_NAME}` },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       {
         property: "og:description",
         content: "Scoring, marks, first ball and split statistics with full linescores.",
@@ -90,6 +93,9 @@ function BowlerProfile() {
         <Stat label="Spare attempts" value={s?.spare_attempts ?? 0} />
         <Stat label="Spares" value={s?.spares ?? 0} />
         <Stat label="Spare %" value={`${pct(s?.spares ?? 0, s?.spare_attempts ?? 0)}%`} />
+        <Stat label="Single Pin Conversion %" value={formatSinglePin(s)} />
+        <Stat label="Single pin attempts" value={s?.single_pin_attempts ?? 0} />
+        <Stat label="Single pin conversions" value={s?.single_pin_conversions ?? 0} />
         <Stat label="10-boxes" value={s?.ten_boxes ?? 0} />
         <Stat label="10-box %" value={`${pct(s?.ten_boxes ?? 0, s?.frames ?? 0)}%`} />
         <Stat label="Opens" value={s?.opens ?? 0} />

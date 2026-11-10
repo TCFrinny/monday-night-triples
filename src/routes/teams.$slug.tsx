@@ -11,6 +11,7 @@ import {
 } from "@/lib/queries";
 import { formatPoints, formatRecord, recordFromPoints } from "@/lib/league";
 import { pct } from "@/lib/duckpin";
+import { formatSinglePin } from "@/lib/single-pin";
 import { useProjections } from "@/hooks/use-projections";
 import { DEFAULT_LEAGUE_NAME } from "@/lib/branding";
 
@@ -24,6 +25,8 @@ export const Route = createFileRoute("/teams/$slug")({
           `Roster, roster history, standings snapshots, team bowling statistics and week-by-week results for a ${DEFAULT_LEAGUE_NAME} team.`,
       },
       { property: "og:title", content: `Team Profile — ${DEFAULT_LEAGUE_NAME}` },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       {
         property: "og:description",
         content: "Roster history, standings snapshots and team bowling statistics.",
@@ -153,6 +156,9 @@ function TeamProfile() {
         <Stat label="Scratch pinfall" value={(stats?.scratch_pinfall ?? 0).toLocaleString()} />
         <Stat label="Strike %" value={`${pct(stats?.strikes ?? 0, stats?.frames ?? 0)}%`} />
         <Stat label="Spare %" value={`${pct(stats?.spares ?? 0, stats?.spare_attempts ?? 0)}%`} />
+        <Stat label="Single Pin Conversion %" value={formatSinglePin(stats)} />
+        <Stat label="Single pin attempts" value={stats?.single_pin_attempts ?? 0} />
+        <Stat label="Single pin conversions" value={stats?.single_pin_conversions ?? 0} />
         <Stat label="10-box %" value={`${pct(stats?.ten_boxes ?? 0, stats?.frames ?? 0)}%`} />
         <Stat
           label="Mark %"
