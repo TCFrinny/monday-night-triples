@@ -17,4 +17,4 @@
 - [x] Refresh live aggregates and verify public results and printed reports.
 - [x] Reorder conversion stats, add makes tiebreaks, and standardize percentage displays.
 - [x] Verify percentage tests and live Stats, profiles, Lane Data, and reports.
-- [ ] Widen live Team leaderboard cards only; verify desktop rows, mobile, print, and existing tests.
+- [x] Widen live Team leaderboard cards only; verified desktop rows, mobile, one-page print, and 390 existing tests.
