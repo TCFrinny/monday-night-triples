@@ -33,10 +33,11 @@ export function countTeamFrames(
     const first = actual[0];
     if (!first) continue;
     let count = 0;
-    if (actual.length >= 2) {
+    if (actual.length >= 1) {
       for (let n = 1; n <= 10; n++) {
         if (actual.every((g) => g.frames.some((f) =>
-          f.frameNumber === n && !f.anyBlind && (f.outcome === "strike" || f.outcome === "spare"),
+          f.frameNumber === n && !f.anyBlind && (f.outcome === "strike" || f.outcome === "spare")
+          && !g.frames.some((prior) => prior.frameNumber <= n && prior.anyBlind),
         ))) count++;
       }
     }

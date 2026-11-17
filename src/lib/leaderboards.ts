@@ -347,7 +347,7 @@ export const TEAM_BOARDS: Leader[] = [
   },
   {
     key: "tframes",
-    title: "Team Frame",
+    title: "Team Frames",
     value: (r) => num(r.team_frames),
     eligible: hasMatches,
   },

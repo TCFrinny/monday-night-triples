@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Revise Team Frames to minimum one actual bowler and block all post-B frames; refreshed 620 total, zero independent cache mismatches, 450 tests passed, team boards/profile/one-page PDF verified; automatic compilation clean, separate typecheck/build unverified.
+
 - [x] Add Team Frame derived counts, shared team board, and profile display.
 - [x] Inspect multiple blinds (none below two actuals), refresh live aggregates (620 full-season), and verify unchanged raw data/standings.
 - [x] Verify 447 tests, populated season/weekly team boards and profile, one-page PDF, and clean automatic compilation; separate typecheck/production build unverified.

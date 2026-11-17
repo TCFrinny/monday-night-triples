@@ -31,8 +31,16 @@ describe("Team Frame actual-bowler rules", () => {
     expect(count([game("a", [frame("strike", 10)]), game("b", [frame("spare", 10)]), game("c", [frame("strike", 10, true)])])).toBe(0));
   it("a missing withdrawn frame blocks rather than reducing required bowlers", () =>
     expect(count([game("a"), game("b"), game("withdrawn", [])])).toBe(0));
-  it("requires at least two actual bowlers", () =>
-    expect(count([game("a"), game("b", [], { isBlind: true }), game("c", [], { isBlind: true })])).toBe(0));
+  it("allows one actual mark with two full blinds", () =>
+    expect(count([game("a"), game("b", [], { isBlind: true }), game("c", [], { isBlind: true })])).toBe(1));
+  it("all three full blinds produce zero", () =>
+    expect(count(["a", "b", "c"].map((id) => game(id, [frame("strike")], { isBlind: true })))).toBe(0));
+  it("marks in different numbered frames do not count", () =>
+    expect(count([game("a", [frame("strike", 1)]), game("b", [frame("spare", 2)]), game("c", [frame("strike", 3)])])).toBe(0));
+  it("a nominal real mark after first B remains blocked", () => {
+    const frames = [frame("strike", 4), frame("spare", 5)];
+    expect(count([game("a", frames), game("b", frames), game("hybrid", [frame("open", 3, true), ...frames])])).toBe(0);
+  });
   it("accumulates across numbered frames and games, max ten per game", () => {
     const frames = Array.from({ length: 10 }, (_, i) => frame("strike", i + 1));
     const games = [1, 2, 3].flatMap((gameNumber) => ["a", "b", "c"].map((id) => game(`${id}${gameNumber}`, frames, { gameNumber })));
@@ -46,7 +54,7 @@ describe("Team Frame actual-bowler rules", () => {
     expect(count([game("a", undefined, { status }), game("b", undefined, { status })])).toBe(0));
   it("excludes byes", () => expect(count([game("a", undefined, { isBye: true }), game("b", undefined, { isBye: true })])).toBe(0));
   it("keeps teams and matches separate", () =>
-    expect(count([game("a"), game("b", undefined, { teamId: "other" }), game("c", undefined, { matchId: "other" })])).toBe(0));
+    expect(count([game("a"), game("b", [frame("open")], { teamId: "other" }), game("c", [frame("open")], { matchId: "other" })])).toBe(1));
   it("full, third and weekly filters use league scopes", () => {
     const games = [1, 2].flatMap((week) => ["a", "b"].map((id) => game(`${id}${week}`, undefined, { week, third: week, matchId: `m${week}` })));
     expect(count(games)).toBe(2);
