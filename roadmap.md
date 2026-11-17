@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Place Team Frame immediately after Team High HDCP Set; 451 tests pass, live counts independently verified (620, zero mismatches), aggregates refreshed, Season/Weekly/profile checked, printed report one page. Automatic compilation clean; standalone typecheck/production build not run per environment rules.
+
 - [x] Revise Team Frames to minimum one actual bowler and block all post-B frames; refreshed 620 total, zero independent cache mismatches, 450 tests passed, team boards/profile/one-page PDF verified; automatic compilation clean, separate typecheck/build unverified.
 
 - [x] Add Team Frame derived counts, shared team board, and profile display.

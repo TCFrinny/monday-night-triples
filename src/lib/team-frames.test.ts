@@ -80,4 +80,12 @@ describe("Team Frame shared leaderboard", () => {
   it("does not add an individual ranking rule", () => {
     expect(BOWLER_BOARDS.some((b) => b.key === "tframes")).toBe(false);
   });
+  it("places the team count immediately after HDCP set without reordering other metrics", () => {
+    expect(TEAM_BOARDS.map((b) => b.key)).toEqual([
+      "tavg", "thavg", "thg", "thhg", "ths", "thhs", "tframes", "tstrike", "tspare",
+      "ttenbox", "tmark", "topen", "tstrikes", "tsparect", "topens", "tpinslost",
+      "tconsistency", "tfirst5", "tlast5", "tbigopen", "tbigfinish", "tclutch", "tmarks",
+      "tfb", "tfb8", "tfb9", "tsplitconv", "tsinglepin", "tsplits",
+    ]);
+  });
 });

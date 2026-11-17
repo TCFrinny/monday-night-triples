@@ -238,6 +238,12 @@ export const TEAM_BOARDS: Leader[] = [
     eligible: hasMatches,
   },
   {
+    key: "tframes",
+    title: "Team Frame",
+    value: (r) => num(r.team_frames),
+    eligible: hasMatches,
+  },
+  {
     key: "tstrike",
     title: "Team Strike %",
     value: (r) => percentage(r.strikes, r.frames),
@@ -344,12 +350,6 @@ export const TEAM_BOARDS: Leader[] = [
     title: "Team Total Marks",
     value: (r) => num(r.strikes) + num(r.spares),
     eligible: hasFrames,
-  },
-  {
-    key: "tframes",
-    title: "Team Frames",
-    value: (r) => num(r.team_frames),
-    eligible: hasMatches,
   },
 
 
