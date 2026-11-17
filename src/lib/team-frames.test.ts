@@ -9,7 +9,7 @@ const game = (id: string, frames = [frame("strike")], extra: Partial<TeamFrameGa
 });
 const count = (games: TeamFrameGame[]) => countTeamFrames(games).get("team") ?? 0;
 
-describe("Team Frame actual-bowler rules", () => {
+describe("Team Frames actual-bowler rules", () => {
   it("counts three real strikes once", () => expect(count([game("a"), game("b"), game("c")])).toBe(1));
   it("counts strike plus two spares", () => expect(count([game("a"), game("b", [frame("spare")]), game("c", [frame("spare")])])).toBe(1));
   it.each(["open", "ten_box", "incomplete"])("a real %s blocks the frame", (outcome) =>
@@ -64,9 +64,9 @@ describe("Team Frame actual-bowler rules", () => {
   });
 });
 
-describe("Team Frame shared leaderboard", () => {
+describe("Team Frames shared leaderboard", () => {
   const board = TEAM_BOARDS.find((b) => b.key === "tframes");
-  if (!board) throw new Error("Missing Team Frame board");
+  if (!board) throw new Error("Missing Team Frames board");
   it("ranks raw counts descending and expands fifth-position ties", () => {
     const rows = [3, 5, 4, 7, 6, 3, 2].map((team_frames, id) => ({ id, team_frames, matches: 1 }));
     expect(boardLeaders(board, rows).map((r) => r.team_frames)).toEqual([7, 6, 5, 4, 3, 3]);
