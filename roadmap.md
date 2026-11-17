@@ -1,5 +1,9 @@
 # Roadmap
 
+- [x] Add Team Frame derived counts, shared team board, and profile display.
+- [x] Inspect multiple blinds (none below two actuals), refresh live aggregates (620 full-season), and verify unchanged raw data/standings.
+- [x] Verify 447 tests, populated season/weekly team boards and profile, one-page PDF, and clean automatic compilation; separate typecheck/production build unverified.
+
 - [x] Compact standings and stats exports to one Letter landscape page each.
 - [x] Add one-page All Bowlers report with rostered bowlers and subs.
 - [x] Test report shaping and verify five one-page PDFs plus normal report links.

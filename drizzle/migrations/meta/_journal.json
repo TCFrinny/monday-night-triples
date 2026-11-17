@@ -36,6 +36,13 @@
       "when": 1794322295525,
       "tag": "0004_single_pin_conversion_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794925835272,
+      "tag": "0005_team_frame_stats",
+      "breakpoints": true
     }
   ]
 }

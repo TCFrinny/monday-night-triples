@@ -1225,6 +1225,7 @@ export type Database = {
           split_conversions: number
           splits: number
           strikes: number
+          team_frames: number
           team_games: number
           team_id: string
           ten_boxes: number
@@ -1269,6 +1270,7 @@ export type Database = {
           split_conversions?: number
           splits?: number
           strikes?: number
+          team_frames?: number
           team_games?: number
           team_id: string
           ten_boxes?: number
@@ -1313,6 +1315,7 @@ export type Database = {
           split_conversions?: number
           splits?: number
           strikes?: number
+          team_frames?: number
           team_games?: number
           team_id?: string
           ten_boxes?: number
@@ -1711,6 +1714,13 @@ export type Database = {
           games: number
           is_blind: boolean
           is_sub: boolean
+        }[]
+      }
+      team_frame_scope_counts: {
+        Args: { p_season_id: string; p_third: number; p_week: number }
+        Returns: {
+          team_frames: number
+          team_id: string
         }[]
       }
       valid_game_lane_pairs: { Args: { p: Json }; Returns: boolean }
