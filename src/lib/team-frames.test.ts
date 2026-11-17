@@ -81,6 +81,9 @@ describe("Team Frame shared leaderboard", () => {
     expect(BOWLER_BOARDS.some((b) => b.key === "tframes")).toBe(false);
   });
   it("places the team count immediately after HDCP set without reordering other metrics", () => {
+    const hdcpSetIndex = TEAM_BOARDS.findIndex((b) => b.key === "thhs");
+    expect(hdcpSetIndex).toBeGreaterThanOrEqual(0);
+    expect(TEAM_BOARDS[hdcpSetIndex + 1]?.key).toBe("tframes");
     expect(TEAM_BOARDS.map((b) => b.key)).toEqual([
       "tavg", "thavg", "thg", "thhg", "ths", "thhs", "tframes", "tstrike", "tspare",
       "ttenbox", "tmark", "topen", "tstrikes", "tsparect", "topens", "tpinslost",

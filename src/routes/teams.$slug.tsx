@@ -162,7 +162,7 @@ function TeamProfile() {
           value={`${formatPercent((stats?.strikes ?? 0) + (stats?.spares ?? 0), stats?.frames ?? 0)}`}
         />
         <Stat label="Open %" value={`${formatPercent(stats?.opens ?? 0, stats?.frames ?? 0)}`} />
-        <Stat label="Team Frames" value={stats?.team_frames ?? 0} />
+        <Stat label="Team Frame" value={stats?.team_frames ?? 0} />
         <Stat
           label="First-ball avg"
           value={
