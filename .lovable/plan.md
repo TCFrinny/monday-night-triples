@@ -117,3 +117,15 @@ The totals match the earlier audit: 144 side handicaps, 110 matchups, 8 flipped 
 - Week 10 G2: Kropfelder, Debbie vs Morris, Trina: tie -> Kropfelder, Debbie
 - Week 11 G2: Green, Jon vs Watson, Keith: tie -> Watson, Keith
 - Week 11 G1: Manns, Mike vs McGinley, Jason: tie -> Manns, Mike
+
+## Code line count (commit ea95fb30cc6acbd4078e90c24a3774d003e0f370)
+Counts are physical lines from saved project files only. Excluded: lockfiles, routeTree.gen.ts, generated database types, migration snapshot and journal files (11 generated files, 2,693 lines), images, and docs/memory/roadmap.
+| Category | Files | Lines |
+|---|---|---|
+| TypeScript/TSX app source (src, including UI kit) | 127 | 16,783 |
+| SQL migrations | 36 | 4,909 |
+| Tests (.test.ts/.tsx) | 31 | 3,858 |
+| CSS | 1 | 269 |
+| Config/build (package.json, vite, wrangler, tsconfig, eslint, etc.) | 15 | 304 |
+| **Total** | **210** | **26,123** |
+Project code without tests or config: 21,961 lines (app source + SQL + CSS).
