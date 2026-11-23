@@ -27,3 +27,4 @@
 - [x] Verify percentage tests and live Stats, profiles, Lane Data, and reports.
 - [x] Widen live Team leaderboard cards only; verified desktop rows, mobile, one-page print, and 390 existing tests.
 - [x] Add individual first-ball 8+/9+ boards with makes tiebreaks; verified eligibility, 424 tests, live boards/profile, and one-page print.
+- [x] Singles handicap: floor average before 160 diff, rebuild Singles

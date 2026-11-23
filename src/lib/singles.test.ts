@@ -18,6 +18,22 @@ import {
 } from "@/lib/singles";
 
 describe("singles handicap", () => {
+  it("truncates the average to a whole pin before subtracting, then floors", () => {
+    expect(singlesHandicap(121.33)).toBe(31);
+    expect(singlesHandicap(116.5)).toBe(35);
+    expect(singlesHandicap(131)).toBe(23);
+    expect(singlesHandicap(159.99)).toBe(0);
+    expect(singlesHandicap(160)).toBe(0);
+    expect(singlesHandicap(175)).toBe(0);
+  });
+  it("uses floor, never round, on the final value", () => {
+    expect(singlesHandicap(150)).toBe(8); // 0.8 * 10 = 8
+    expect(singlesHandicap(119)).toBe(32); // 0.8 * 41 = 32.8 -> 32
+  });
+  it("matches the database formula for every stored decimal average", () => {
+    const sql = (avg: number) => Math.floor(0.8 * Math.max(0, 160 - Math.floor(avg)));
+    for (const a of [96.5, 121.333, 131.533, 139.133, 145.6, 158.9]) expect(singlesHandicap(a)).toBe(sql(a));
+  });
   it("is 80% of (160 - average), floored", () => {
     expect(singlesHandicap(100)).toBe(48);
     expect(singlesHandicap(120)).toBe(32);

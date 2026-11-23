@@ -50,6 +50,13 @@
       "when": 1794926025441,
       "tag": "0006_team_frames_single_actual_and_post_blind",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795441812539,
+      "tag": "0007_singles_handicap_truncate_average",
+      "breakpoints": true
     }
   ]
 }

@@ -29,7 +29,7 @@ export const SINGLES_RULES = {
 export const SINGLES_POINTS_PER_MATCH =
   SINGLES_RULES.gamesPerMatch * SINGLES_RULES.pointsPerGame;
 
-/** floor(80% of (160 - average)); 0 when the average is at or above the base. */
+/** floor(80% of (160 - floor(average))) — average truncated to a whole pin first, like Triples; 0 when the average is at or above the base. */
 export function singlesHandicap(
   applicableAverage: number,
   base: number = SINGLES_RULES.handicapBase,
@@ -37,7 +37,7 @@ export function singlesHandicap(
 ): number {
   const avg = Number(applicableAverage);
   if (!Number.isFinite(avg)) return 0;
-  const diff = Math.max(0, base - avg);
+  const diff = Math.max(0, base - Math.floor(avg));
   return Math.floor((percent / 100) * diff);
 }
 
